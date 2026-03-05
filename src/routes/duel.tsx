@@ -1,24 +1,21 @@
-import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
+import { CrownIcon } from '../components/icons/CrownIcon'
+import { DoubleMegaphone } from '../components/icons/DoubleMegaphone'
 import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
 import {
   clearActiveSessionId,
   getActiveSessionId,
-  getDisplayName,
-  getExternalUserId,
   getJson,
   postJson,
-  setActiveSessionId,
   setLastSummary,
 } from '../lib/kalot-client'
 import type {
   DuelTrack,
   PickVoteResponse,
   SessionStateResponse,
-  StartSessionResponse,
 } from '../lib/kalot-client'
 
 export const Route = createFileRoute('/duel')({
@@ -27,9 +24,6 @@ export const Route = createFileRoute('/duel')({
 
 function DuelPage() {
   const navigate = useNavigate()
-  const { user } = useUser()
-  const externalUserId = getExternalUserId(user)
-  const displayName = getDisplayName(user)
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [champion, setChampion] = useState<DuelTrack | null>(null)
@@ -95,40 +89,6 @@ function DuelPage() {
     setDuelIndex(stateQuery.data.duel.roundsPlayed + 1)
     setTotalDuels(Math.max(stateQuery.data.duel.progress?.total ?? 2, 2))
   }, [navigate, stateQuery.data])
-
-  const startSessionMutation = useMutation({
-    mutationFn: async () => {
-      if (!externalUserId) {
-        throw new Error('Connecte-toi pour lancer la competition.')
-      }
-
-      return postJson<StartSessionResponse>('/api/vote/start', {
-        externalUserId,
-        username: displayName,
-      })
-    },
-    onSuccess: (response) => {
-      if (!response.ok) {
-        setFeedback(response.message)
-        return
-      }
-
-      setActiveSessionId(response.sessionId)
-      setSessionId(response.sessionId)
-      setChampion(response.duel.leftTrack)
-      setChallenger(response.duel.rightTrack)
-      setDuelIndex(1)
-      setTotalDuels(Math.max(response.duel.progress?.total ?? 2, 2))
-      setFeedback(null)
-    },
-    onError: (error) => {
-      setFeedback(
-        error instanceof Error
-          ? error.message
-          : 'Impossible de demarrer la session.',
-      )
-    },
-  })
 
   const voteMutation = useMutation({
     mutationFn: async (winnerSide: 'left' | 'right') => {
@@ -239,6 +199,7 @@ function DuelPage() {
     }
 
     audio.pause()
+    audio.currentTime = 0
     audio.src = track.streamUrl
     void audio.play().catch(() => {
       setFeedback('Lecture audio indisponible.')
@@ -246,34 +207,25 @@ function DuelPage() {
     setPlayingTrackId(track.id)
   }
 
-  const progressPct = Math.round((duelIndex / Math.max(totalDuels, 1)) * 100)
   const voteLocked = voteMutation.isPending || isTransitioning
 
   return (
     <Layout>
-      <div className="max-w-lg md:max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5 space-y-4">
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs font-body text-muted-foreground">
-            <span>
-              Duel {Math.min(duelIndex, totalDuels)}/{totalDuels}
-            </span>
-            <span>{Math.min(progressPct, 100)}%</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(progressPct, 100)}%` }}
-            />
-          </div>
+      <div className="max-w-lg md:max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-5 space-y-4">
+        <div className="flex justify-between text-xs md:text-sm font-body text-muted-foreground">
+          <span>En duel</span>
+          <span className="tabular">
+            {Math.min(duelIndex, totalDuels)}/{totalDuels}
+          </span>
         </div>
 
         {champion && challenger ? (
           <>
-            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
-              <div className="min-w-0 w-full max-w-[620px] mx-auto space-y-2">
-                <p className="font-display font-bold text-sm text-foreground text-left">
-                  Champion
-                </p>
+            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-6">
+              <div className="min-w-0 w-full max-w-[540px] mx-auto space-y-2.5">
+                <span className="inline-flex items-center gap-1 bg-primary/15 text-foreground text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
+                  <CrownIcon className="w-4 h-4" /> Champion
+                </span>
                 <div className="aspect-square">
                   <SongCard
                     track={champion}
@@ -290,13 +242,13 @@ function DuelPage() {
                   />
                 </div>
               </div>
-              <span className="font-display font-black text-3xl text-accent">
+              <span className="font-display font-black text-4xl  text-accent">
                 VS
               </span>
-              <div className="min-w-0 w-full max-w-[620px] mx-auto space-y-2">
-                <p className="font-display font-bold text-sm text-foreground text-right">
-                  Challenger
-                </p>
+              <div className="min-w-0 w-full mx-auto space-y-2.5 text-right">
+                <span className="inline-flex items-center gap-1 bg-accent/15 text-accent text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
+                  <DoubleMegaphone className="w-4 h-4" /> Challenger
+                </span>
                 <div className="aspect-square">
                   <SongCard
                     track={challenger}
@@ -315,60 +267,58 @@ function DuelPage() {
               </div>
             </div>
 
-            <div className="md:hidden space-y-3">
-              <p className="font-display font-bold text-sm text-foreground text-left">
-                Champion
-              </p>
-              <SongCard
-                track={champion}
-                isChampion
-                className={championAnim}
-                isPlaying={playingTrackId === champion.id}
-                onPlay={() => playTrack(champion)}
-                onVote={() => {
-                  if (!voteLocked) {
-                    void voteMutation.mutate('left')
-                  }
-                }}
-                disabled={voteLocked}
-              />
-              <div className="text-center font-display font-black text-2xl text-accent">
+            <div className="md:hidden space-y-2.5 py-4">
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1 bg-primary/15 text-foreground text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
+                  <CrownIcon className="w-4 h-4" /> Champion
+                </span>
+                <div>
+                  <SongCard
+                    track={champion}
+                    isChampion
+                    className={`${championAnim}`}
+                    isPlaying={playingTrackId === champion.id}
+                    onPlay={() => playTrack(champion)}
+                    onVote={() => {
+                      if (!voteLocked) {
+                        void voteMutation.mutate('left')
+                      }
+                    }}
+                    disabled={voteLocked}
+                  />
+                </div>
+              </div>
+
+              <div className="text-center font-display font-black text-3xl pt-4 text-accent">
                 VS
               </div>
-              <p className="font-display font-bold text-sm text-foreground text-right">
-                Challenger
-              </p>
-              <SongCard
-                track={challenger}
-                isPlaying={playingTrackId === challenger.id}
-                onPlay={() => playTrack(challenger)}
-                onVote={() => {
-                  if (!voteLocked) {
-                    void voteMutation.mutate('right')
-                  }
-                }}
-                animationClass={challengerAnim}
-                disabled={voteLocked}
-              />
-            </div>
 
-            <p className="text-center text-xs font-body text-muted-foreground">
-              Tape sur la carte pour voter plus vite
-            </p>
+              <div className="space-y-2 text-right">
+                <span className="inline-flex items-center gap-1 bg-accent/15 text-accent text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
+                  <DoubleMegaphone className="w-4 h-4" /> Challenger
+                </span>
+                <div>
+                  <SongCard
+                    track={challenger}
+                    isPlaying={playingTrackId === challenger.id}
+                    onPlay={() => playTrack(challenger)}
+                    onVote={() => {
+                      if (!voteLocked) {
+                        void voteMutation.mutate('right')
+                      }
+                    }}
+                    animationClass={challengerAnim}
+                    disabled={voteLocked}
+                  />
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           <div className="space-y-4 rounded-xl bg-card border border-border p-4">
             <p className="text-sm font-body text-muted-foreground">
-              Aucun duel actif.
+              Aucun duel actif pour le moment.
             </p>
-            <button
-              type="button"
-              onClick={() => void startSessionMutation.mutate()}
-              disabled={startSessionMutation.isPending}
-              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold min-h-[44px]"
-            >
-              {startSessionMutation.isPending ? 'Demarrage…' : 'Lancer un duel'}
-            </button>
           </div>
         )}
 

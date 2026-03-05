@@ -105,11 +105,10 @@ function HomePage() {
         <div className="text-center space-y-4">
           <DoubleMegaphone className="w-20 h-20 mx-auto" animate />
           <h1 className="text-4xl md:text-5xl font-display font-black text-foreground leading-tight">
-            An nou vote !
+            Kalòt'Municipales
           </h1>
           <p className="text-muted-foreground font-body text-base max-w-xs mx-auto">
-            Ecoute les sons de campagne, vote pour ton prefere, partage ton
-            champion.
+            Vote pour la meilleure chanson de campagne 2026.
           </p>
         </div>
 
@@ -121,10 +120,9 @@ function HomePage() {
             hover:brightness-105 active:scale-[0.97] transition-all shadow-lg
             flex items-center justify-center gap-3 min-h-[56px]"
         >
-          <DoubleMegaphone className="w-7 h-7" />
           {startSessionMutation.isPending
             ? 'Lancement…'
-            : 'Lancer ma competition'}
+            : "Entrer dans l'isoloir"}
         </button>
 
         <div className="grid grid-cols-3 gap-4 text-center">

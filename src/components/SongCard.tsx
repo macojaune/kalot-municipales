@@ -25,13 +25,13 @@ export function SongCard({
 }: SongCardProps) {
   return (
     <div
-      className={`relative flex flex-col rounded-xl border-2 p-4 transition-shadow ${
+      className={`relative flex flex-col rounded-xl border-2 p-4 gap-4 transition-shadow ${
         isChampion
           ? 'border-primary bg-card shadow-lg animate-winner-pulse'
           : 'border-accent/50 bg-card shadow-md'
       } ${animationClass || ''} ${
         disabled
-          ? 'opacity-70 cursor-not-allowed'
+          ? 'cursor-not-allowed'
           : 'cursor-pointer active:scale-[0.995] hover:shadow-xl'
       } ${className || ''}`}
     >
@@ -43,7 +43,7 @@ export function SongCard({
         className="absolute inset-0 z-0 rounded-xl"
       />
 
-      <div className="relative z-10 flex h-full flex-col pointer-events-none">
+      <div className="relative z-10 flex h-full flex-col gap-4 justify-between items-start text-left pointer-events-none">
         <button
           type="button"
           onClick={onPlay}
@@ -59,24 +59,36 @@ export function SongCard({
           )}
         </button>
 
-        <h3 className="pr-12 font-display font-black text-lg leading-tight text-foreground break-words">
+        <h3 className="pr-12 font-display font-black text-xl md:text-2xl leading-tight text-foreground break-words">
           {track.title}
         </h3>
-        <p className="pr-12 font-body text-sm text-muted-foreground mt-0.5 break-words">
-          {track.artistName}
-        </p>
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-xs font-body text-muted-foreground">
-          <span>{track.communeName}</span>
-          {track.listName ? <span>{track.listName}</span> : null}
-          {track.candidateName ? <span>{track.candidateName}</span> : null}
+        <div className="mt-2 space-y-1.5 text-md md:text-lg font-body text-muted-foreground w-full">
+          <p className="break-words">
+            Artiste:{' '}
+            <span className="font-semibold text-foreground/80">
+              {track.artistName}
+            </span>
+          </p>
+          <p className="break-words">
+            Commune:{' '}
+            <span className="font-semibold text-foreground/80">
+              {track.communeName}
+            </span>
+          </p>
+          <p className="break-words">
+            {track.listName ? 'Liste:' : 'Candidat:'}{' '}
+            <span className="font-semibold text-foreground/80">
+              {track.listName ?? track.candidateName ?? 'Non renseigne'}
+            </span>
+          </p>
         </div>
 
-        <div className="mt-auto pt-3 pointer-events-auto flex justify-center">
+        <div className="mt-auto pt-3 w-full pointer-events-auto">
           <button
             type="button"
             onClick={onVote}
-            className="w-[min(100%,18rem)] py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold text-sm
-            hover:brightness-105 active:animate-vote-tap transition-all min-h-[46px]
+            className=" w-full py-3 rounded-md bg-primary text-primary-foreground font-display font-bold 
+            hover:brightness-105 active:animate-vote-tap transition-all 
             inline-flex items-center justify-center gap-2 shadow-md"
             disabled={disabled}
           >
