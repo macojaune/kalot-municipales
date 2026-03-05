@@ -35,6 +35,7 @@ function DuelPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [waitingMessage, setWaitingMessage] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const transitionTimeoutRef = useRef<number | null>(null)
   const pulseTimeoutRef = useRef<number | null>(null)
@@ -70,24 +71,35 @@ function DuelPage() {
     queryFn: () =>
       getJson<SessionStateResponse>(`/api/vote/state?sessionId=${sessionId}`),
     enabled: Boolean(sessionId),
+    refetchInterval: 15000,
   })
 
   useEffect(() => {
-    if (!stateQuery.data || !stateQuery.data.ok) {
+    const payload = stateQuery.data
+
+    if (!payload || !payload.ok) {
       return
     }
 
-    if (stateQuery.data.status === 'completed') {
-      setLastSummary(stateQuery.data.summary)
+    if (payload.status === 'completed') {
+      setLastSummary(payload.summary)
       clearActiveSessionId()
       void navigate({ to: '/results' })
       return
     }
 
-    setChampion(stateQuery.data.duel.leftTrack)
-    setChallenger(stateQuery.data.duel.rightTrack)
-    setDuelIndex(stateQuery.data.duel.roundsPlayed + 1)
-    setTotalDuels(Math.max(stateQuery.data.duel.progress?.total ?? 2, 2))
+    if (payload.status === 'waiting') {
+      setChampion(null)
+      setChallenger(null)
+      setWaitingMessage(payload.waiting.message)
+      return
+    }
+
+    setWaitingMessage(null)
+    setChampion(payload.duel.leftTrack)
+    setChallenger(payload.duel.rightTrack)
+    setDuelIndex(payload.duel.roundsPlayed + 1)
+    setTotalDuels(Math.max(payload.duel.progress?.total ?? 2, 2))
   }, [navigate, stateQuery.data])
 
   const voteMutation = useMutation({
@@ -120,6 +132,61 @@ function DuelPage() {
         return
       }
 
+      if (response.status === 'active') {
+        if (!response.nextChallenger) {
+          setFeedback('Plus de challenger disponible.')
+          return
+        }
+
+        if (transitionTimeoutRef.current) {
+          window.clearTimeout(transitionTimeoutRef.current)
+        }
+
+        if (pulseTimeoutRef.current) {
+          window.clearTimeout(pulseTimeoutRef.current)
+        }
+
+        setIsTransitioning(true)
+        setWaitingMessage(null)
+
+        if (winnerSide === 'right') {
+          setChampionAnim('animate-card-fade-out')
+          setChallengerAnim('animate-card-promote')
+
+          transitionTimeoutRef.current = window.setTimeout(() => {
+            setChampion(winnerTrack)
+            setChallenger(response.nextChallenger)
+            setDuelIndex(response.roundsPlayed + 1)
+            setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
+            setChampionAnim('animate-champion-selected')
+            setChallengerAnim('animate-slide-in-up')
+            setIsTransitioning(false)
+
+            pulseTimeoutRef.current = window.setTimeout(() => {
+              setChampionAnim('')
+            }, 200)
+          }, 320)
+        } else {
+          setChampionAnim('animate-champion-selected')
+          setChallengerAnim('animate-card-out')
+
+          transitionTimeoutRef.current = window.setTimeout(() => {
+            setChampion(winnerTrack)
+            setChallenger(response.nextChallenger)
+            setDuelIndex(response.roundsPlayed + 1)
+            setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
+            setChallengerAnim('animate-slide-in-up')
+            setIsTransitioning(false)
+
+            pulseTimeoutRef.current = window.setTimeout(() => {
+              setChampionAnim('')
+            }, 180)
+          }, 260)
+        }
+
+        return
+      }
+
       if (response.status === 'completed') {
         setLastSummary(response.summary)
         clearActiveSessionId()
@@ -127,54 +194,14 @@ function DuelPage() {
         return
       }
 
-      if (!response.nextChallenger) {
-        setFeedback('Plus de challenger disponible.')
-        return
+      setChampion(null)
+      setChallenger(null)
+      setWaitingMessage(response.waiting.message)
+      if (typeof response.roundsPlayed === 'number') {
+        setDuelIndex(response.roundsPlayed + 1)
       }
-
-      if (transitionTimeoutRef.current) {
-        window.clearTimeout(transitionTimeoutRef.current)
-      }
-
-      if (pulseTimeoutRef.current) {
-        window.clearTimeout(pulseTimeoutRef.current)
-      }
-
-      setIsTransitioning(true)
-
-      if (winnerSide === 'right') {
-        setChampionAnim('animate-card-fade-out')
-        setChallengerAnim('animate-card-promote')
-
-        transitionTimeoutRef.current = window.setTimeout(() => {
-          setChampion(winnerTrack)
-          setChallenger(response.nextChallenger)
-          setDuelIndex(response.roundsPlayed + 1)
-          setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
-          setChampionAnim('animate-champion-selected')
-          setChallengerAnim('animate-slide-in-up')
-          setIsTransitioning(false)
-
-          pulseTimeoutRef.current = window.setTimeout(() => {
-            setChampionAnim('')
-          }, 200)
-        }, 320)
-      } else {
-        setChampionAnim('animate-champion-selected')
-        setChallengerAnim('animate-card-out')
-
-        transitionTimeoutRef.current = window.setTimeout(() => {
-          setChampion(winnerTrack)
-          setChallenger(response.nextChallenger)
-          setDuelIndex(response.roundsPlayed + 1)
-          setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
-          setChallengerAnim('animate-slide-in-up')
-          setIsTransitioning(false)
-
-          pulseTimeoutRef.current = window.setTimeout(() => {
-            setChampionAnim('')
-          }, 180)
-        }, 260)
+      if (response.progress?.total) {
+        setTotalDuels(Math.max(response.progress.total, 2))
       }
     },
     onError: (error) => {
@@ -317,7 +344,7 @@ function DuelPage() {
         ) : (
           <div className="space-y-4 rounded-xl bg-card border border-border p-4">
             <p className="text-sm font-body text-muted-foreground">
-              Aucun duel actif pour le moment.
+              {waitingMessage ?? 'Aucun duel actif pour le moment.'}
             </p>
           </div>
         )}

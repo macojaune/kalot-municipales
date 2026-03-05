@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
+  appSettings,
   artists,
   communes,
   electoralLists,
@@ -13,6 +14,43 @@ import {
 
 const STARTING_RATING = 1200
 const K_FACTOR = 24
+const VOTING_FINALIZATION_SETTING_KEY = 'voting_finalization_at'
+const DEFAULT_VOTING_FINALIZATION_AT = '2026-03-23T03:59:59.000Z'
+
+const GUADELOUPE_COMMUNES = [
+  'Anse-Bertrand',
+  'Baie-Mahault',
+  'Baillif',
+  'Basse-Terre',
+  'Bouillante',
+  'Capesterre-Belle-Eau',
+  'Capesterre-de-Marie-Galante',
+  'Deshaies',
+  'Gourbeyre',
+  'Goyave',
+  'Grand-Bourg',
+  'La Desirade',
+  'Le Gosier',
+  'Le Lamentin',
+  'Le Moule',
+  'Les Abymes',
+  "Morne-a-l'Eau",
+  'Petit-Bourg',
+  'Petit-Canal',
+  'Pointe-a-Pitre',
+  'Pointe-Noire',
+  'Port-Louis',
+  'Saint-Claude',
+  'Saint-Francois',
+  'Saint-Louis',
+  'Sainte-Anne',
+  'Sainte-Rose',
+  'Terre-de-Bas',
+  'Terre-de-Haut',
+  'Trois-Rivieres',
+  'Vieux-Fort',
+  'Vieux-Habitants',
+] as const
 
 type Db = ReturnType<typeof getDb>
 
@@ -80,6 +118,52 @@ function parseSeenTrackIds(raw: string) {
   } catch {
     return new Set<number>()
   }
+}
+
+function parseIsoDate(raw: string | null | undefined) {
+  if (!raw) {
+    return null
+  }
+
+  const parsed = new Date(raw)
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+
+  return parsed
+}
+
+async function resolveVotingFinalizationAt(db: Db) {
+  const settingRows = await db
+    .select({ value: appSettings.value })
+    .from(appSettings)
+    .where(eq(appSettings.key, VOTING_FINALIZATION_SETTING_KEY))
+    .limit(1)
+
+  const fromDb = parseIsoDate(settingRows.at(0)?.value)
+  if (fromDb) {
+    return fromDb
+  }
+
+  const fromEnv = parseIsoDate(process.env.ELECTION_FINALIZATION_AT)
+  const fallback = parseIsoDate(DEFAULT_VOTING_FINALIZATION_AT)
+
+  if (!fallback) {
+    throw new Error('Invalid default finalization date')
+  }
+
+  const initialValue = (fromEnv ?? fallback).toISOString()
+
+  await db
+    .insert(appSettings)
+    .values({
+      key: VOTING_FINALIZATION_SETTING_KEY,
+      value: initialValue,
+      updatedAt: new Date().toISOString(),
+    })
+    .onConflictDoNothing()
+
+  return fromEnv ?? fallback
 }
 
 async function getTrackViewsByIds(db: Db, ids: number[]) {
@@ -465,6 +549,69 @@ export async function seedDemoTracks() {
   return { created, total: existingCount + created }
 }
 
+export async function seedGuadeloupeCommunes() {
+  const db = getDb()
+
+  const existingRows = await db
+    .select({ name: communes.name })
+    .from(communes)
+    .where(inArray(communes.name, [...GUADELOUPE_COMMUNES]))
+
+  const existingSet = new Set(existingRows.map((row) => row.name))
+
+  let inserted = 0
+  for (const communeName of GUADELOUPE_COMMUNES) {
+    if (existingSet.has(communeName)) {
+      continue
+    }
+
+    await db.insert(communes).values({
+      name: communeName,
+      slug: slugify(communeName),
+    })
+    inserted += 1
+  }
+
+  return {
+    inserted,
+    totalTarget: GUADELOUPE_COMMUNES.length,
+  }
+}
+
+export async function assertAdminAccess(input: {
+  externalUserId?: string | null
+}) {
+  if (!input.externalUserId) {
+    return {
+      ok: false as const,
+      code: 'UNAUTHORIZED',
+      message: 'Acces admin non autorise.',
+    }
+  }
+
+  const db = getDb()
+
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, input.externalUserId))
+    .limit(1)
+
+  const account = existing.at(0)
+
+  if (!account || account.id !== 1) {
+    return {
+      ok: false as const,
+      code: 'FORBIDDEN',
+      message: 'Seul le compte admin principal peut acceder a cette route.',
+    }
+  }
+
+  return {
+    ok: true as const,
+  }
+}
+
 export async function startVoteSession(input: {
   externalUserId: string
   username?: string | null
@@ -474,6 +621,30 @@ export async function startVoteSession(input: {
     externalUserId: input.externalUserId,
     username: input.username,
   })
+
+  const existingSessionRows = await db
+    .select({ id: voteSessions.id, status: voteSessions.status })
+    .from(voteSessions)
+    .where(
+      and(
+        eq(voteSessions.userId, user.id),
+        inArray(voteSessions.status, ['active', 'waiting']),
+      ),
+    )
+    .orderBy(desc(voteSessions.createdAt))
+    .limit(1)
+
+  const existingSession = existingSessionRows.at(0)
+  if (existingSession) {
+    return {
+      ok: false as const,
+      code: 'SESSION_ALREADY_OPEN' as const,
+      message:
+        existingSession.status === 'waiting'
+          ? 'Ta session est en attente de nouveaux sons.'
+          : 'Tu as deja une session active.',
+    }
+  }
 
   const available = await db
     .select({ id: tracks.id })
@@ -566,6 +737,71 @@ export async function getSessionState(input: { sessionId: string }) {
     }
   }
 
+  if (currentSession.status === 'waiting') {
+    const nextChallengerId = await pickRandomChallenger(db, Array.from(seen))
+
+    if (nextChallengerId) {
+      seen.add(nextChallengerId)
+
+      await db
+        .update(voteSessions)
+        .set({
+          status: 'active',
+          currentChallengerTrackId: nextChallengerId,
+          seenTrackIds: JSON.stringify(Array.from(seen)),
+        })
+        .where(eq(voteSessions.id, currentSession.id))
+
+      const waitingTracks = await getTrackViewsByIds(db, [
+        currentSession.currentChampionTrackId,
+        nextChallengerId,
+      ])
+      const leftTrack = waitingTracks.at(0)
+      const rightTrack = waitingTracks.at(1)
+
+      if (!leftTrack || !rightTrack) {
+        throw new Error('Unable to load waiting duel tracks')
+      }
+
+      return {
+        status: 'active' as const,
+        duel: {
+          leftTrack,
+          rightTrack,
+          roundsPlayed: currentSession.roundsPlayed,
+          progress: {
+            seen: seen.size,
+            total: totalActiveTracks,
+          },
+        },
+      }
+    }
+
+    const votingFinalizationAt = await resolveVotingFinalizationAt(db)
+    if (new Date() >= votingFinalizationAt) {
+      await db
+        .update(voteSessions)
+        .set({
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        })
+        .where(eq(voteSessions.id, currentSession.id))
+
+      const summary = await getSessionSummary({ sessionId: currentSession.id })
+      return {
+        status: 'completed' as const,
+        summary,
+      }
+    }
+
+    return {
+      status: 'waiting' as const,
+      waiting: {
+        message: 'Session en attente de nouveaux morceaux.',
+      },
+    }
+  }
+
   const activeTracks = await getTrackViewsByIds(db, [
     currentSession.currentChampionTrackId,
     currentSession.currentChallengerTrackId,
@@ -622,12 +858,22 @@ export async function pickWinner(input: {
     }
   }
 
-  if (session.status !== 'active') {
+  if (session.status === 'completed') {
     const summary = await getSessionSummary({ sessionId: session.id })
     return {
       ok: true as const,
       status: 'completed' as const,
       summary,
+    }
+  }
+
+  if (session.status === 'waiting') {
+    return {
+      ok: true as const,
+      status: 'waiting' as const,
+      waiting: {
+        message: 'Session en attente de nouveaux morceaux.',
+      },
     }
   }
 
@@ -704,17 +950,35 @@ export async function pickWinner(input: {
   const nextChallengerId = await pickRandomChallenger(db, Array.from(seen))
 
   if (!nextChallengerId) {
+    const votingFinalizationAt = await resolveVotingFinalizationAt(db)
+    const shouldCompleteSession = new Date() >= votingFinalizationAt
+
     await db
       .update(voteSessions)
       .set({
-        status: 'completed',
+        status: shouldCompleteSession ? 'completed' : 'waiting',
         roundsPlayed: session.roundsPlayed + 1,
         currentChampionTrackId: input.winnerTrackId,
         currentChallengerTrackId: input.loserTrackId,
         seenTrackIds: JSON.stringify(Array.from(seen)),
-        completedAt: new Date().toISOString(),
+        completedAt: shouldCompleteSession ? new Date().toISOString() : null,
       })
       .where(eq(voteSessions.id, session.id))
+
+    if (!shouldCompleteSession) {
+      return {
+        ok: true as const,
+        status: 'waiting' as const,
+        waiting: {
+          message: 'Session en attente de nouveaux morceaux.',
+        },
+        roundsPlayed: session.roundsPlayed + 1,
+        progress: {
+          seen: seen.size,
+          total: totalActiveTracks,
+        },
+      }
+    }
 
     const summary = await getSessionSummary({ sessionId: session.id })
     return {

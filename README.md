@@ -28,7 +28,10 @@ VITE_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 TURSO_DATABASE_URL=
 TURSO_AUTH_TOKEN=
+ELECTION_FINALIZATION_AT=
 ```
+
+`ELECTION_FINALIZATION_AT` sert de fallback au premier demarrage, puis la valeur est stockee en base dans `app_settings.voting_finalization_at`.
 
 ## Base de donnees (Drizzle)
 

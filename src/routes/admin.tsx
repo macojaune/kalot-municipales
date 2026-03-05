@@ -1,39 +1,57 @@
+import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Lock, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Layout } from '../components/Layout'
 import { useRegion } from '../context/RegionContext'
-import { deleteJson, getJson, postJson } from '../lib/kalot-client'
+import {
+  deleteJson,
+  getExternalUserId,
+  getJson,
+  postJson,
+} from '../lib/kalot-client'
 import type { Region } from '../types/song'
 import { COMMUNES, REGION_LABELS } from '../types/song'
 
 const ADMIN_PASSWORD = 'kalot2026'
 
-type AdminTrackListResponse = {
-  ok: true
-  tracks: Array<{
-    id: number
-    title: string
-    artistName: string
-    communeName: string
-    listName: string | null
-    candidateName: string | null
-    streamUrl: string | null
-    wins: number
-    losses: number
-    rating: number
-    isActive: boolean
-  }>
-}
+type AdminTrackListResponse =
+  | {
+      ok: true
+      tracks: Array<{
+        id: number
+        title: string
+        artistName: string
+        communeName: string
+        listName: string | null
+        candidateName: string | null
+        streamUrl: string | null
+        wins: number
+        losses: number
+        rating: number
+        isActive: boolean
+      }>
+    }
+  | {
+      ok: false
+      code: string
+      message: string
+    }
+
+type AdminMutationResponse =
+  | { ok: true }
+  | { ok: false; code?: string; message: string }
 
 export const Route = createFileRoute('/admin')({
   component: AdminPage,
 })
 
 function AdminPage() {
+  const { user } = useUser()
   const { region } = useRegion()
   const queryClient = useQueryClient()
+  const externalUserId = getExternalUserId(user)
 
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
@@ -52,22 +70,33 @@ function AdminPage() {
     queryKey: ['admin-tracks'],
     queryFn: () =>
       getJson<AdminTrackListResponse>(
-        '/api/admin/track?includeInactive=true&limit=300',
+        `/api/admin/track?includeInactive=true&limit=300&externalUserId=${encodeURIComponent(
+          externalUserId ?? '',
+        )}`,
       ),
-    enabled: authenticated,
+    enabled: authenticated && Boolean(externalUserId),
   })
 
   const createTrackMutation = useMutation({
     mutationFn: () =>
-      postJson('/api/admin/track', {
-        title: form.title,
-        artistName: form.artistName,
-        communeName: form.communeName,
-        listName: form.listName || null,
-        candidateName: form.candidateName || null,
-        streamUrl: form.streamUrl || null,
-      }),
-    onSuccess: async () => {
+      postJson<AdminMutationResponse>(
+        '/api/admin/track',
+        {
+          externalUserId,
+          title: form.title,
+          artistName: form.artistName,
+          communeName: form.communeName,
+          listName: form.listName || null,
+          candidateName: form.candidateName || null,
+          streamUrl: form.streamUrl || null,
+        },
+      ),
+    onSuccess: async (response) => {
+      if (!response.ok) {
+        setFeedback(response.message)
+        return
+      }
+
       setFeedback('Son ajoute !')
       setForm((previous) => ({
         ...previous,
@@ -80,32 +109,80 @@ function AdminPage() {
       }))
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
+    onError: () => {
+      setFeedback("Impossible d'ajouter le son.")
+    },
   })
 
   const archiveTrackMutation = useMutation({
     mutationFn: (trackId: number) =>
-      deleteJson('/api/admin/track', { trackId }),
-    onSuccess: async () => {
+      deleteJson<AdminMutationResponse>(
+        '/api/admin/track',
+        { trackId, externalUserId },
+      ),
+    onSuccess: async (response) => {
+      if (!response.ok) {
+        setFeedback(response.message)
+        return
+      }
+
       setFeedback('Son retire de la competition.')
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
+    },
+    onError: () => {
+      setFeedback('Impossible de retirer ce son.')
     },
   })
 
   const seedMutation = useMutation({
     mutationFn: () =>
-      postJson<{ ok: true; created: number; total: number }>(
-        '/api/admin/seed',
-        {},
-      ),
+      postJson<{
+        ok: true
+        communes: { inserted: number; totalTarget: number }
+        tracks: { created: number; total: number }
+      } | {
+        ok: false
+        message: string
+      }>('/api/admin/seed', { externalUserId }),
     onSuccess: async (response) => {
-      setFeedback(`${response.created} sons demo injectes !`)
+      if (!response.ok) {
+        setFeedback(response.message)
+        return
+      }
+
+      setFeedback(
+        `${response.communes.inserted} communes ajoutees, ${response.tracks.created} sons demo injectes !`,
+      )
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
+    },
+    onError: () => {
+      setFeedback("Impossible d'injecter les donnees demo.")
     },
   })
 
-  const adminTracks = Array.isArray(tracksQuery.data?.tracks)
+  const adminAccessError =
+    tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null
+
+  const adminTracks =
+    tracksQuery.data?.ok && Array.isArray(tracksQuery.data.tracks)
     ? tracksQuery.data.tracks
     : []
+
+  if (!externalUserId) {
+    return (
+      <Layout>
+        <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
+          <div className="text-center space-y-2">
+            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
+            <h1 className="font-display font-bold text-xl">Admin</h1>
+          </div>
+          <p className="text-xs text-muted-foreground font-body text-center">
+            Connexion requise pour acceder a l'administration.
+          </p>
+        </div>
+      </Layout>
+    )
+  }
 
   if (!authenticated) {
     return (
@@ -134,6 +211,7 @@ function AdminPage() {
             type="button"
             onClick={() => {
               if (password === ADMIN_PASSWORD) {
+                setFeedback(null)
                 setAuthenticated(true)
                 return
               }
@@ -151,6 +229,22 @@ function AdminPage() {
               {feedback}
             </p>
           ) : null}
+        </div>
+      </Layout>
+    )
+  }
+
+  if (adminAccessError) {
+    return (
+      <Layout>
+        <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
+          <div className="text-center space-y-2">
+            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
+            <h1 className="font-display font-bold text-xl">Admin</h1>
+          </div>
+          <p className="text-xs text-muted-foreground font-body text-center">
+            {adminAccessError.message}
+          </p>
         </div>
       </Layout>
     )

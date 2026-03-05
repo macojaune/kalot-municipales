@@ -72,7 +72,7 @@ export const voteSessions = sqliteTable('vote_sessions', {
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
-  status: text('status', { enum: ['active', 'completed'] })
+  status: text('status', { enum: ['active', 'waiting', 'completed'] })
     .notNull()
     .default('active'),
   currentChampionTrackId: integer('current_champion_track_id')
@@ -87,6 +87,17 @@ export const voteSessions = sqliteTable('vote_sessions', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
   completedAt: text('completed_at'),
+})
+
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
 })
 
 export const votes = sqliteTable('votes', {

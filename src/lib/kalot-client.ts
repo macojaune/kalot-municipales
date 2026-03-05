@@ -74,6 +74,18 @@ export type PickVoteResponse =
       status: 'completed'
       summary: SessionSummary
     }
+  | {
+      ok: true
+      status: 'waiting'
+      waiting: {
+        message: string
+      }
+      roundsPlayed?: number
+      progress?: {
+        seen: number
+        total: number
+      }
+    }
   | ApiError
 
 export type SessionStateResponse =
@@ -86,6 +98,13 @@ export type SessionStateResponse =
       ok: true
       status: 'completed'
       summary: SessionSummary
+    }
+  | {
+      ok: true
+      status: 'waiting'
+      waiting: {
+        message: string
+      }
     }
   | ApiError
 
