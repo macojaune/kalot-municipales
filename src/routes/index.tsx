@@ -175,7 +175,7 @@ function HomePage() {
                   </p>
                 </div>
                 <span className="tabular text-xs font-body text-muted-foreground">
-                  {Math.round(song.rating)}
+                  {Math.round(song.rating)} points
                 </span>
               </div>
             ))}
