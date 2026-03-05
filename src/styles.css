@@ -190,6 +190,22 @@ textarea:focus-visible {
   animation: fade-in 300ms ease-out;
 }
 
+.animate-card-out {
+  animation: card-out 240ms ease-in forwards;
+}
+
+.animate-card-fade-out {
+  animation: card-fade-out 300ms ease-in forwards;
+}
+
+.animate-card-promote {
+  animation: card-promote-mobile 320ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-champion-selected {
+  animation: champion-selected 220ms ease-out;
+}
+
 @keyframes vote-tap {
   0% {
     transform: scale(1);
@@ -271,6 +287,64 @@ textarea:focus-visible {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes card-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0.25;
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+@keyframes card-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.2;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes card-promote-mobile {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(calc(-100% - 0.75rem)) scale(1.01);
+  }
+}
+
+@keyframes champion-selected {
+  0% {
+    transform: scale(1);
+  }
+  55% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (min-width: 768px) {
+  .animate-card-promote {
+    animation-name: card-promote-desktop;
+  }
+
+  @keyframes card-promote-desktop {
+    0% {
+      transform: translateX(0) scale(1);
+    }
+    100% {
+      transform: translateX(calc(-100% - 5.5rem)) scale(1.015);
+    }
   }
 }
 

@@ -36,10 +36,14 @@ function DuelPage() {
   const [challenger, setChallenger] = useState<DuelTrack | null>(null)
   const [duelIndex, setDuelIndex] = useState(1)
   const [totalDuels, setTotalDuels] = useState(2)
+  const [championAnim, setChampionAnim] = useState('')
   const [challengerAnim, setChallengerAnim] = useState('animate-slide-in-up')
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const transitionTimeoutRef = useRef<number | null>(null)
+  const pulseTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     const audio = new Audio()
@@ -54,6 +58,12 @@ function DuelPage() {
     return () => {
       audio.removeEventListener('ended', handleEnded)
       audio.pause()
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+      if (pulseTimeoutRef.current) {
+        window.clearTimeout(pulseTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -141,7 +151,7 @@ function DuelPage() {
         }),
       }
     },
-    onSuccess: ({ winnerTrack, response }) => {
+    onSuccess: ({ winnerSide, winnerTrack, response }) => {
       audioRef.current?.pause()
       setPlayingTrackId(null)
 
@@ -162,32 +172,53 @@ function DuelPage() {
         return
       }
 
-      setChampion(winnerTrack)
-      setChallengerAnim('')
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+
+      if (pulseTimeoutRef.current) {
+        window.clearTimeout(pulseTimeoutRef.current)
+      }
+
+      setIsTransitioning(true)
+
+      if (winnerSide === 'right') {
+        setChampionAnim('animate-card-fade-out')
+        setChallengerAnim('animate-card-promote')
+
+        transitionTimeoutRef.current = window.setTimeout(() => {
+          setChampion(winnerTrack)
+          setChallenger(response.nextChallenger)
+          setDuelIndex(response.roundsPlayed + 1)
+          setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
+          setChampionAnim('animate-champion-selected')
+          setChallengerAnim('animate-slide-in-up')
+          setIsTransitioning(false)
+
+          pulseTimeoutRef.current = window.setTimeout(() => {
+            setChampionAnim('')
+          }, 200)
+        }, 320)
+      } else {
+        setChampionAnim('animate-champion-selected')
+        setChallengerAnim('animate-card-out')
+
+        transitionTimeoutRef.current = window.setTimeout(() => {
           setChampion(winnerTrack)
           setChallenger(response.nextChallenger)
           setDuelIndex(response.roundsPlayed + 1)
           setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
           setChallengerAnim('animate-slide-in-up')
-        })
-      })
+          setIsTransitioning(false)
+
+          pulseTimeoutRef.current = window.setTimeout(() => {
+            setChampionAnim('')
+          }, 180)
+        }, 260)
+      }
     },
     onError: (error) => {
       setFeedback(error instanceof Error ? error.message : 'Vote impossible.')
-    },
-  })
-
-  const reportMutation = useMutation({
-    mutationFn: (trackId: number) =>
-      postJson('/api/report', {
-        trackId,
-        reason: 'Signalement utilisateur',
-        externalUserId,
-      }),
-    onSuccess: () => {
-      setFeedback('Signalement envoye.')
     },
   })
 
@@ -216,10 +247,11 @@ function DuelPage() {
   }
 
   const progressPct = Math.round((duelIndex / Math.max(totalDuels, 1)) * 100)
+  const voteLocked = voteMutation.isPending || isTransitioning
 
   return (
     <Layout>
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-lg md:max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5 space-y-4">
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-body text-muted-foreground">
             <span>
@@ -237,53 +269,92 @@ function DuelPage() {
 
         {champion && challenger ? (
           <>
-            <div className="hidden md:flex items-center gap-4">
-              <div className="flex-1">
-                <SongCard
-                  track={champion}
-                  isChampion
-                  isPlaying={playingTrackId === champion.id}
-                  onPlay={() => playTrack(champion)}
-                  onVote={() => void voteMutation.mutate('left')}
-                  onReport={() => void reportMutation.mutate(champion.id)}
-                />
+            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-6">
+              <div className="min-w-0 w-full max-w-[620px] mx-auto space-y-2">
+                <p className="font-display font-bold text-sm text-foreground text-left">
+                  Champion
+                </p>
+                <div className="aspect-square">
+                  <SongCard
+                    track={champion}
+                    isChampion
+                    className={`h-full ${championAnim}`}
+                    isPlaying={playingTrackId === champion.id}
+                    onPlay={() => playTrack(champion)}
+                    onVote={() => {
+                      if (!voteLocked) {
+                        void voteMutation.mutate('left')
+                      }
+                    }}
+                    disabled={voteLocked}
+                  />
+                </div>
               </div>
               <span className="font-display font-black text-3xl text-accent">
                 VS
               </span>
-              <div className="flex-1">
-                <SongCard
-                  track={challenger}
-                  isPlaying={playingTrackId === challenger.id}
-                  onPlay={() => playTrack(challenger)}
-                  onVote={() => void voteMutation.mutate('right')}
-                  onReport={() => void reportMutation.mutate(challenger.id)}
-                  animationClass={challengerAnim}
-                />
+              <div className="min-w-0 w-full max-w-[620px] mx-auto space-y-2">
+                <p className="font-display font-bold text-sm text-foreground text-right">
+                  Challenger
+                </p>
+                <div className="aspect-square">
+                  <SongCard
+                    track={challenger}
+                    className="h-full"
+                    isPlaying={playingTrackId === challenger.id}
+                    onPlay={() => playTrack(challenger)}
+                    onVote={() => {
+                      if (!voteLocked) {
+                        void voteMutation.mutate('right')
+                      }
+                    }}
+                    animationClass={challengerAnim}
+                    disabled={voteLocked}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="md:hidden space-y-3">
+              <p className="font-display font-bold text-sm text-foreground text-left">
+                Champion
+              </p>
               <SongCard
                 track={champion}
                 isChampion
+                className={championAnim}
                 isPlaying={playingTrackId === champion.id}
                 onPlay={() => playTrack(champion)}
-                onVote={() => void voteMutation.mutate('left')}
-                onReport={() => void reportMutation.mutate(champion.id)}
+                onVote={() => {
+                  if (!voteLocked) {
+                    void voteMutation.mutate('left')
+                  }
+                }}
+                disabled={voteLocked}
               />
               <div className="text-center font-display font-black text-2xl text-accent">
                 VS
               </div>
+              <p className="font-display font-bold text-sm text-foreground text-right">
+                Challenger
+              </p>
               <SongCard
                 track={challenger}
                 isPlaying={playingTrackId === challenger.id}
                 onPlay={() => playTrack(challenger)}
-                onVote={() => void voteMutation.mutate('right')}
-                onReport={() => void reportMutation.mutate(challenger.id)}
+                onVote={() => {
+                  if (!voteLocked) {
+                    void voteMutation.mutate('right')
+                  }
+                }}
                 animationClass={challengerAnim}
+                disabled={voteLocked}
               />
             </div>
+
+            <p className="text-center text-xs font-body text-muted-foreground">
+              Tape sur la carte pour voter plus vite
+            </p>
           </>
         ) : (
           <div className="space-y-4 rounded-xl bg-card border border-border p-4">
