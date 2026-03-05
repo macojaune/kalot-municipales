@@ -1,0 +1,17 @@
+{
+  "projectName": "elecson",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "npm",
+  "git": false,
+  "install": true,
+  "addOnOptions": {},
+  "includeExamples": false,
+  "envVarValues": {},
+  "routerOnly": false,
+  "version": 1,
+  "addOns": true,
+  "framework": "react",
+  "chosenAddOns": ["eslint", "tanstack-query", "clerk", "shadcn"]
+}
