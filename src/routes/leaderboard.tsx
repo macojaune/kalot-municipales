@@ -3,7 +3,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Trophy } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
-import { CrownIcon } from '../components/icons/CrownIcon'
 import { getJson } from '../lib/kalot-client'
 import type { LeaderboardResponse } from '../lib/kalot-client'
 import { COMMUNES, getRegionForCommune } from '../types/song'
@@ -12,8 +11,10 @@ export const Route = createFileRoute('/leaderboard')({
   component: LeaderboardPage,
 })
 
+const FILTERS = ['Tous', ...COMMUNES.guadeloupe]
+
 function LeaderboardPage() {
-  const [commune, setCommune] = useState('')
+  const [activeFilter, setActiveFilter] = useState('Tous')
 
   const leaderboardQuery = useQuery({
     queryKey: ['leaderboard', 'full-table'],
@@ -30,91 +31,100 @@ function LeaderboardPage() {
       (song) => getRegionForCommune(song.communeName) === 'guadeloupe',
     )
 
-    if (!commune) {
-      return regionRows.sort((a, b) => b.rating - a.rating)
+    const sorted = [...regionRows].sort((a, b) => b.rating - a.rating)
+
+    if (activeFilter === 'Tous') {
+      return sorted
     }
 
-    return regionRows
-      .filter((song) => song.communeName === commune)
-      .sort((a, b) => b.rating - a.rating)
-  }, [commune, leaderboardQuery.data?.leaderboard])
+    return sorted.filter((song) => song.communeName === activeFilter)
+  }, [activeFilter, leaderboardQuery.data?.leaderboard])
 
   return (
     <Layout>
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-5 animate-fade-in">
-        <h1 className="font-display font-black text-2xl flex items-center gap-2">
-          <Trophy className="w-6 h-6 text-primary" />
-          Classement
-        </h1>
+      <div className="mx-auto max-w-4xl px-4 py-6 md:py-8 space-y-5 animate-fade-in">
+        <section className="rounded-2xl border border-secondary/35 bg-card/70 p-4 md:p-6">
+          <h1 className="font-display text-3xl text-secondary text-glow-blue flex items-center gap-2">
+            <Trophy className="w-7 h-7" />
+            Classement general
+          </h1>
 
-        <select
-          value={commune}
-          onChange={(event) => setCommune(event.target.value)}
-          className="w-full p-3 rounded-xl bg-card border border-border font-body text-sm text-foreground min-h-[44px]"
-        >
-          <option value="">Toutes les communes</option>
-          {COMMUNES.guadeloupe.map((communeName) => (
-            <option key={communeName} value={communeName}>
-              {communeName}
-            </option>
-          ))}
-        </select>
+          <div className="mt-4">
+            <label htmlFor="commune-filter" className="sr-only">
+              Filtrer par commune
+            </label>
+            <select
+              id="commune-filter"
+              value={activeFilter}
+              onChange={(event) => setActiveFilter(event.target.value)}
+              className="h-12 w-full rounded-md border border-border bg-background px-3 font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {FILTERS.map((filter) => (
+                <option key={filter} value={filter}>
+                  {filter === 'Tous' ? 'Toutes les communes' : filter}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
 
         {songs.length === 0 ? (
-          <div className="text-center py-16 space-y-3">
-            <DoubleMegaphonePlaceholder />
-            <p className="text-muted-foreground font-body">
-              Pas encore de sons pour la Guadeloupe
-            </p>
+          <div className="rounded-2xl border border-border bg-card/70 p-8 text-center text-muted-foreground">
+            Aucun son trouve pour ce filtre.
           </div>
         ) : (
-          <div className="space-y-2">
-            {songs.map((song, index) => (
-              <div
-                key={song.id}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                  index < 3
-                    ? 'bg-card border-primary/30 shadow-sm'
-                    : 'bg-card border-border'
-                }`}
-              >
-                <span className="font-display font-black text-lg w-8 text-center shrink-0">
-                  {index === 0 ? (
-                    <CrownIcon className="w-6 h-6 mx-auto" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-display font-bold text-sm truncate">
-                    {song.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-body truncate">
-                    {song.artistName} · {song.communeName}
-                  </p>
+          <section className="space-y-3">
+            {songs.map((song, index) => {
+              const medalColor =
+                index === 0
+                  ? 'text-primary text-glow-green'
+                  : index === 1
+                    ? 'text-secondary text-glow-blue'
+                    : index === 2
+                      ? 'text-accent text-glow-orange'
+                      : 'text-muted-foreground'
+
+              const borderTone =
+                index === 0
+                  ? 'border-primary/45 box-glow-green'
+                  : index === 1
+                    ? 'border-secondary/45 box-glow-blue'
+                    : index === 2
+                      ? 'border-accent/45 box-glow-orange'
+                      : 'border-border'
+
+              return (
+                <div
+                  key={song.id}
+                  className={`neon-panel relative overflow-hidden rounded-xl border px-4 py-3 md:py-4 flex items-center gap-3 ${borderTone}`}
+                >
+                  <div className={`w-8 text-center font-display text-2xl ${medalColor}`}>
+                    {index + 1}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-lg text-foreground truncate">
+                      {song.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {song.artistName} - {song.communeName}
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className="tabular font-display text-xl text-foreground">
+                      {Math.round(song.rating)}
+                    </p>
+                    <p className="text-[10px] font-display text-muted-foreground tracking-widest">
+                      POINTS
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="tabular font-display font-bold text-sm text-primary">
-                    {Math.round(song.rating)} points
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              )
+            })}
+          </section>
         )}
       </div>
     </Layout>
-  )
-}
-
-function DoubleMegaphonePlaceholder() {
-  return (
-    <div className="w-16 h-16 mx-auto opacity-30" aria-hidden="true">
-      <svg viewBox="0 0 64 64" fill="none">
-        <title>Placeholder megaphone</title>
-        <path d="M8 28L24 20V44L8 36V28Z" fill="currentColor" opacity="0.5" />
-        <path d="M56 28L40 20V44L56 36V28Z" fill="currentColor" opacity="0.5" />
-      </svg>
-    </div>
   )
 }

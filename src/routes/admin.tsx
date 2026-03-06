@@ -173,8 +173,8 @@ function AdminPage() {
       <Layout>
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
+            <Lock className="w-10 h-10 mx-auto text-primary" />
+            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             Connexion requise pour acceder a l'administration.
@@ -189,8 +189,8 @@ function AdminPage() {
       <Layout>
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
+            <Lock className="w-10 h-10 mx-auto text-primary" />
+            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
           </div>
           <input
             type="password"
@@ -205,7 +205,7 @@ function AdminPage() {
                 setAuthenticated(true)
               }
             }}
-            className="w-full p-3 rounded-xl bg-card border border-border font-body min-h-[44px]"
+            className="w-full p-3 rounded-xl bg-card/80 border border-border font-body min-h-[44px]"
           />
           <button
             type="button"
@@ -217,7 +217,7 @@ function AdminPage() {
               }
               setFeedback('Mot de passe incorrect.')
             }}
-            className="w-full py-3 rounded-xl bg-secondary text-secondary-foreground font-display font-bold min-h-[44px]"
+            className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             Entrer
           </button>
@@ -239,8 +239,8 @@ function AdminPage() {
       <Layout>
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
+            <Lock className="w-10 h-10 mx-auto text-primary" />
+            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             {adminAccessError.message}
@@ -253,10 +253,10 @@ function AdminPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-fade-in">
-        <h1 className="font-display font-black text-2xl">Admin</h1>
+        <h1 className="font-display font-black text-3xl text-primary text-glow-green">Admin</h1>
 
-        <div className="space-y-3 p-4 rounded-xl bg-card border border-border">
-          <h2 className="font-display font-bold text-sm">Ajouter un son</h2>
+        <div className="space-y-3 p-4 rounded-xl bg-card/80 border border-primary/35 neon-panel">
+          <h2 className="font-display font-bold text-sm text-primary">Ajouter un son</h2>
 
           <input
             value={form.title}
@@ -267,7 +267,7 @@ function AdminPage() {
               }))
             }
             placeholder="Titre (ex: Mairie an nou)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
             value={form.artistName}
@@ -278,7 +278,7 @@ function AdminPage() {
               }))
             }
             placeholder="Artiste (ex: DJ Kalot)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
             value={form.listName}
@@ -289,7 +289,7 @@ function AdminPage() {
               }))
             }
             placeholder="Liste electorale…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
             value={form.candidateName}
@@ -300,7 +300,7 @@ function AdminPage() {
               }))
             }
             placeholder="Candidat…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
             type="url"
@@ -313,7 +313,7 @@ function AdminPage() {
               }))
             }
             placeholder="URL audio (ex: https://cdn.exemple.com/track.mp3)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
 
           <select
@@ -325,7 +325,7 @@ function AdminPage() {
                 communeName: '',
               }))
             }
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           >
             {(Object.keys(REGION_LABELS) as Region[]).map((entryRegion) => (
               <option key={entryRegion} value={entryRegion}>
@@ -342,7 +342,7 @@ function AdminPage() {
                 communeName: event.target.value,
               }))
             }
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           >
             <option value="">Commune</option>
             {COMMUNES[form.region].map((communeName) => (
@@ -356,7 +356,7 @@ function AdminPage() {
             type="button"
             onClick={() => void createTrackMutation.mutate()}
             disabled={createTrackMutation.isPending}
-            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold flex items-center justify-center gap-2 min-h-[44px]"
+            className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold flex items-center justify-center gap-2 min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             <Plus className="w-4 h-4" />
             {createTrackMutation.isPending ? 'Ajout…' : 'Ajouter'}
@@ -367,7 +367,7 @@ function AdminPage() {
           type="button"
           onClick={() => void seedMutation.mutate()}
           disabled={seedMutation.isPending}
-          className="w-full py-3 rounded-xl bg-muted text-foreground font-body font-medium min-h-[44px]"
+          className="w-full py-3 rounded-xl border border-secondary/45 bg-secondary/10 text-secondary font-display font-medium min-h-[44px] hover:bg-secondary hover:text-background hover:box-glow-blue transition-all"
         >
           {seedMutation.isPending ? 'Injection…' : 'Injecter sons demo'}
         </button>
@@ -379,7 +379,7 @@ function AdminPage() {
           {adminTracks.map((song) => (
             <div
               key={song.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
+              className="flex items-center gap-3 p-3 rounded-lg bg-card/80 border border-border neon-panel"
             >
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-sm truncate">

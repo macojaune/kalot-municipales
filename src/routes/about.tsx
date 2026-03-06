@@ -8,9 +8,9 @@ export const Route = createFileRoute('/about')({
 function AboutPage() {
   return (
     <Layout>
-      <main className="max-w-lg mx-auto px-4 py-8">
-        <section className="p-6 sm:p-8 rounded-xl bg-card border border-border">
-          <h1 className="font-display m-0 text-4xl font-extrabold">
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <section className="p-6 sm:p-8 rounded-xl bg-card/75 border border-secondary/35 neon-panel">
+          <h1 className="font-display m-0 text-4xl font-extrabold text-secondary text-glow-blue">
             A propos de KalotMunicipales
           </h1>
           <p className="mt-3 text-base text-muted-foreground font-body">

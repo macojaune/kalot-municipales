@@ -34,7 +34,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'theme-color',
-        content: '#f8f2ea',
+        content: '#0d0d0d',
       },
       {
         title: 'KalotMunicipales',
@@ -60,13 +60,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const showDevtools =
+    import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEVTOOLS === 'true'
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(57,255,20,0.24)]">
         <a href="#main-content" className="skip-link">
           Aller au contenu principal
         </a>
@@ -77,18 +80,20 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 {children}
               </div>
             </RegionProvider>
-            <TanStackDevtools
-              config={{
-                position: 'bottom-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-              ]}
-            />
+            {showDevtools ? (
+              <TanStackDevtools
+                config={{
+                  position: 'bottom-right',
+                }}
+                plugins={[
+                  {
+                    name: 'Tanstack Router',
+                    render: <TanStackRouterDevtoolsPanel />,
+                  },
+                  TanStackQueryDevtools,
+                ]}
+              />
+            ) : null}
           </ClerkProvider>
         </TanStackQueryProvider>
         <Scripts />

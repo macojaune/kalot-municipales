@@ -52,6 +52,7 @@ export type ApiError = {
 export type StartSessionResponse =
   | {
       ok: true
+      resumed: boolean
       sessionId: string
       userId: number
       duel: SessionDuel

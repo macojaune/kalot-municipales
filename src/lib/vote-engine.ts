@@ -636,13 +636,22 @@ export async function startVoteSession(input: {
 
   const existingSession = existingSessionRows.at(0)
   if (existingSession) {
+    const existingState = await getSessionState({ sessionId: existingSession.id })
+
+    if (existingState?.status === 'active') {
+      return {
+        ok: true as const,
+        resumed: true as const,
+        sessionId: existingSession.id,
+        userId: user.id,
+        duel: existingState.duel,
+      }
+    }
+
     return {
       ok: false as const,
-      code: 'SESSION_ALREADY_OPEN' as const,
-      message:
-        existingSession.status === 'waiting'
-          ? 'Ta session est en attente de nouveaux sons.'
-          : 'Tu as deja une session active.',
+      code: 'SESSION_WAITING' as const,
+      message: 'Ta session est en attente de nouveaux sons.',
     }
   }
 
@@ -693,6 +702,7 @@ export async function startVoteSession(input: {
 
   return {
     ok: true as const,
+    resumed: false as const,
     sessionId,
     userId: user.id,
     duel: {

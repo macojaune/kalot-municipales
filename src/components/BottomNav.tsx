@@ -19,8 +19,8 @@ export function BottomNav() {
   })
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/25 bg-background/95 backdrop-blur-md md:hidden">
+      <div className="flex items-center justify-around h-16 px-1">
         {tabs.map((tab) => {
           const active =
             pathname === tab.to ||
@@ -29,12 +29,14 @@ export function BottomNav() {
             <Link
               key={tab.to}
               to={tab.to}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors ${
-                active ? 'text-primary' : 'text-muted-foreground'
+              className={`mx-1 flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-md border transition-all ${
+                active
+                  ? 'text-primary border-primary/65 bg-primary/10 box-glow-green'
+                  : 'text-muted-foreground border-transparent bg-transparent'
               }`}
             >
               {tab.icon}
-              <span className="text-[10px] font-body font-medium">
+              <span className="text-[10px] font-display leading-none tracking-wider">
                 {tab.label}
               </span>
             </Link>

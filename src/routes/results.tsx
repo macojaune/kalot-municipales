@@ -3,7 +3,7 @@ import { RotateCcw, Share2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { CrownIcon } from '../components/icons/CrownIcon'
-import { DoubleMegaphone } from '../components/icons/DoubleMegaphone'
+import { NeonButton } from '../components/soundsystem/NeonButton'
 import { getLastSummary } from '../lib/kalot-client'
 
 export const Route = createFileRoute('/results')({
@@ -20,26 +20,8 @@ function ResultsPage() {
       return null
     }
 
-    return (
-      [...summary.scoreboard].sort((a, b) => b.points - a.points)[0] ?? null
-    )
+    return [...summary.scoreboard].sort((a, b) => b.points - a.points)[0] ?? null
   }, [summary])
-
-  const confettiPieces = useMemo(
-    () =>
-      Array.from({ length: 20 }, (_, index) => ({
-        id: index,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 1.5}s`,
-        color: [
-          'hsl(var(--primary))',
-          'hsl(var(--accent))',
-          'hsl(var(--secondary))',
-          'hsl(var(--victory))',
-        ][index % 4],
-      })),
-    [],
-  )
 
   async function handleShare() {
     if (!champion) {
@@ -67,13 +49,8 @@ function ResultsPage() {
     return (
       <Layout>
         <div className="max-w-lg mx-auto px-4 py-20 text-center space-y-4 animate-fade-in">
-          <p className="text-muted-foreground font-body">
-            Aucun resultat disponible
-          </p>
-          <Link
-            to="/duel"
-            className="text-primary font-display font-bold hover:underline"
-          >
+          <p className="text-muted-foreground font-body">Aucun resultat disponible</p>
+          <Link to="/duel" className="text-primary font-display hover:underline">
             Lancer un duel
           </Link>
         </div>
@@ -83,101 +60,94 @@ function ResultsPage() {
 
   return (
     <Layout>
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-8 animate-fade-in relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {confettiPieces.map((piece) => (
-            <div
-              key={piece.id}
-              className="absolute w-2 h-2 rounded-sm animate-confetti-fall"
-              style={{
-                left: piece.left,
-                animationDelay: piece.delay,
-                backgroundColor: piece.color,
-                top: '-8px',
-              }}
-            />
-          ))}
+      <div className="max-w-3xl mx-auto px-4 py-8 md:py-10 space-y-7 animate-fade-in relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-20">
+          <div className="h-[28rem] w-[28rem] rounded-full border border-accent/60 animate-ping [animation-duration:2.8s]" />
         </div>
 
-        <div className="text-center space-y-4">
+        <section className="relative z-10 text-center space-y-3">
           <CrownIcon className="w-16 h-16 mx-auto animate-badge-bounce" />
-          <h1 className="text-3xl font-display font-black text-foreground">
-            Ton champion !
+          <h1 className="font-display text-4xl md:text-5xl text-accent text-glow-orange">
+            Session terminee
           </h1>
-        </div>
+          <p className="text-muted-foreground">Le public a parle. Voici ton champion.</p>
+        </section>
 
-        <div className="p-6 rounded-xl bg-card border-2 border-primary shadow-lg text-center space-y-2">
-          <h2 className="font-display font-black text-2xl text-foreground break-words">
+        <section className="relative z-10 rounded-2xl border border-accent/45 bg-card/80 p-6 md:p-8 text-center box-glow-orange">
+          <p className="font-display text-xs text-accent tracking-widest">#1 CHAMPION</p>
+          <h2 className="mt-2 font-display text-4xl md:text-5xl text-foreground break-words">
             {champion.title}
           </h2>
-          <p className="text-sm text-muted-foreground font-body">
-            Score session: {champion.points}
+          <p className="mt-3 text-sm text-muted-foreground tabular">
+            Score session: {champion.points} points
           </p>
-        </div>
-
-        <div className="text-center font-body text-muted-foreground">
-          {summary.roundsPlayed} duels joues
-        </div>
+          <p className="mt-1 text-xs font-display tracking-widest text-muted-foreground">
+            {summary.roundsPlayed} DUELS JOUES
+          </p>
+        </section>
 
         {summary.scoreboard.length > 1 ? (
-          <div className="space-y-2">
-            <h3 className="font-display font-bold text-sm text-foreground">
-              Ton Top 3
-            </h3>
-            {summary.scoreboard.slice(0, 3).map((song, index) => (
-              <div
-                key={song.trackId}
-                className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
-              >
-                <span className="font-display font-black text-lg text-primary w-6 text-center">
-                  {index + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-display font-bold text-sm truncate">
-                    {song.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate font-body tabular">
-                    {song.points} points
-                  </p>
+          <section className="relative z-10 space-y-2">
+            <h3 className="font-display text-secondary text-glow-blue">Top 3 session</h3>
+            {summary.scoreboard.slice(0, 3).map((song, index) => {
+              const medalColor =
+                index === 0
+                  ? 'text-primary text-glow-green'
+                  : index === 1
+                    ? 'text-secondary text-glow-blue'
+                    : 'text-accent text-glow-orange'
+
+              const borderTone =
+                index === 0
+                  ? 'border-primary/45 box-glow-green'
+                  : index === 1
+                    ? 'border-secondary/45 box-glow-blue'
+                    : 'border-accent/45 box-glow-orange'
+
+              return (
+                <div
+                  key={song.trackId}
+                  className={`neon-panel rounded-lg border p-3 flex items-center gap-3 ${borderTone}`}
+                >
+                  <span className={`w-7 text-center font-display text-xl ${medalColor}`}>
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-base text-foreground truncate">
+                      {song.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground tabular">
+                      {song.points} points
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              )
+            })}
+          </section>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
+        <section className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <NeonButton
+            color="blue"
+            size="md"
+            fullWidth
             onClick={() => void navigate({ to: '/duel' })}
-            className="py-4 rounded-xl bg-secondary text-secondary-foreground font-display font-bold
-              hover:brightness-105 active:scale-[0.97] transition-all flex items-center justify-center gap-2 min-h-[52px]"
           >
             <RotateCcw className="w-5 h-5" />
             Rejouer
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleShare()}
-            className="py-4 rounded-xl bg-primary text-primary-foreground font-display font-bold
-              hover:brightness-105 active:scale-[0.97] transition-all flex items-center justify-center gap-2 min-h-[52px]"
-          >
+          </NeonButton>
+
+          <NeonButton color="orange" size="md" fullWidth onClick={() => void handleShare()}>
             <Share2 className="w-5 h-5" />
             Partager
-          </button>
-        </div>
+          </NeonButton>
+        </section>
 
         {feedback ? (
-          <p
-            aria-live="polite"
-            className="text-sm text-muted-foreground font-body text-center"
-          >
+          <p aria-live="polite" className="relative z-10 text-sm text-center text-accent">
             {feedback}
           </p>
         ) : null}
-
-        <div className="flex justify-center">
-          <DoubleMegaphone className="w-8 h-8 opacity-45" />
-        </div>
       </div>
     </Layout>
   )

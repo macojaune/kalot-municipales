@@ -1,6 +1,7 @@
 import { Pause, Play } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import type { DuelTrack } from '../lib/kalot-client'
-import { FistIcon } from './icons/FistIcon'
+import { NeonButton } from './soundsystem/NeonButton'
 
 type SongCardProps = {
   track: DuelTrack
@@ -8,6 +9,9 @@ type SongCardProps = {
   isPlaying: boolean
   onPlay: () => void
   onVote: () => void
+  onSeek: (ratio: number) => void
+  playbackCurrentTime: number
+  playbackDuration: number
   animationClass?: string
   disabled?: boolean
   className?: string
@@ -19,20 +23,31 @@ export function SongCard({
   isPlaying,
   onPlay,
   onVote,
+  onSeek,
+  playbackCurrentTime,
+  playbackDuration,
   animationClass,
   disabled = false,
   className,
 }: SongCardProps) {
+  const accentClasses = isChampion
+    ? 'border-primary box-glow-green'
+    : 'border-secondary box-glow-blue'
+
+  const sliderHex = isChampion ? '#39ff14' : '#00b4d8'
+
+  const progressRatio =
+    playbackDuration > 0
+      ? Math.max(0, Math.min(playbackCurrentTime / playbackDuration, 1))
+      : 0
+  const progressPercent = Math.round(progressRatio * 100)
+
   return (
     <div
-      className={`relative flex flex-col rounded-xl border-2 p-4 gap-4 transition-shadow ${
-        isChampion
-          ? 'border-primary bg-card shadow-lg animate-winner-pulse'
-          : 'border-accent/50 bg-card shadow-md'
-      } ${animationClass || ''} ${
+      className={`relative neon-panel flex flex-col gap-3 rounded-xl border-2 p-3 transition-shadow ${accentClasses} ${animationClass || ''} ${
         disabled
-          ? 'cursor-not-allowed'
-          : 'cursor-pointer active:scale-[0.995] hover:shadow-xl'
+          ? 'cursor-not-allowed opacity-95'
+          : 'cursor-pointer hover:shadow-[0_0_22px_rgba(255,255,255,0.08)]'
       } ${className || ''}`}
     >
       <button
@@ -43,60 +58,93 @@ export function SongCard({
         className="absolute inset-0 z-0 rounded-xl"
       />
 
-      <div className="relative z-10 flex h-full flex-col gap-4 justify-between items-start text-left pointer-events-none">
-        <button
-          type="button"
-          onClick={onPlay}
-          aria-label={isPlaying ? 'Mettre en pause' : 'Ecouter'}
-          className="pointer-events-auto absolute top-0 right-0 mt-0.5 mr-0.5 h-10 w-10 inline-flex items-center justify-center rounded-full bg-secondary text-secondary-foreground shadow-md
-            hover:opacity-90 active:scale-95 transition-all"
-          disabled={!track.streamUrl}
-        >
-          {isPlaying ? (
-            <Pause className="w-4 h-4" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-        </button>
+      <div className="pointer-events-none relative z-10 flex h-full flex-col gap-3 text-left">
+        <div className="pointer-events-auto flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onPlay}
+            aria-label={isPlaying ? 'Mettre en pause' : 'Ecouter'}
+            className={`play-orb inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 text-background transition-all active:scale-95 ${
+              isChampion
+                ? 'border-primary bg-primary shadow-[0_0_20px_rgba(57,255,20,0.5)]'
+                : 'border-secondary bg-secondary shadow-[0_0_20px_rgba(0,180,216,0.5)]'
+            } ${isPlaying ? 'is-playing' : ''}`}
+            disabled={!track.streamUrl}
+          >
+            {isPlaying ? (
+              <Pause className="h-6 w-6" />
+            ) : (
+              <Play className="h-6 w-6 translate-x-0.5" />
+            )}
+          </button>
 
-        <h3 className="pr-12 font-display font-black text-xl md:text-2xl leading-tight text-foreground break-words">
+          <div className="min-w-0 flex-1 space-y-1">
+            <input
+              type="range"
+              min={0}
+              max={1000}
+              step={1}
+              value={Math.round(progressRatio * 1000)}
+              disabled={playbackDuration <= 0}
+              onChange={(event) => {
+                const ratio = Number(event.target.value) / 1000
+                onSeek(ratio)
+              }}
+              className="audio-slider h-4 w-full"
+              style={
+                {
+                  '--slider-color': sliderHex,
+                  '--slider-progress': `${progressPercent}%`,
+                } as CSSProperties
+              }
+            />
+            <div className="flex items-center justify-between text-[10px] font-display tracking-widest text-muted-foreground">
+              <span>{formatTime(playbackCurrentTime)}</span>
+              <span>{formatTime(playbackDuration)}</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="font-display text-[1.95rem] font-bold leading-tight text-foreground break-words">
           {track.title}
         </h3>
-        <div className="mt-2 space-y-1.5 text-md md:text-lg font-body text-muted-foreground w-full">
+
+        <div className="w-full space-y-1 font-body text-sm text-muted-foreground md:text-base">
           <p className="break-words">
-            Artiste:{' '}
-            <span className="font-semibold text-foreground/80">
-              {track.artistName}
-            </span>
-          </p>
-          <p className="break-words">
-            Commune:{' '}
-            <span className="font-semibold text-foreground/80">
-              {track.communeName}
-            </span>
+            Artiste: <span className="font-semibold text-foreground">{track.artistName}</span>
           </p>
           <p className="break-words">
             {track.listName ? 'Liste:' : 'Candidat:'}{' '}
-            <span className="font-semibold text-foreground/80">
+            <span className="font-semibold text-foreground">
               {track.listName ?? track.candidateName ?? 'Non renseigne'}
             </span>
           </p>
         </div>
 
-        <div className="mt-auto pt-3 w-full pointer-events-auto">
-          <button
-            type="button"
+        <div className="mt-auto w-full pt-1.5 pointer-events-auto">
+          <NeonButton
+            color={isChampion ? 'green' : 'blue'}
+            size="md"
+            fullWidth
             onClick={onVote}
-            className=" w-full py-3 rounded-md bg-primary text-primary-foreground font-display font-bold 
-            hover:brightness-105 active:animate-vote-tap transition-all 
-            inline-flex items-center justify-center gap-2 shadow-md"
             disabled={disabled}
+            className="min-h-[48px]"
           >
-            <FistIcon className="w-5 h-5" />
-            Je vote
-          </button>
+            Voter
+          </NeonButton>
         </div>
       </div>
     </div>
   )
+}
+
+function formatTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return '0:00'
+  }
+
+  const totalSeconds = Math.floor(seconds)
+  const minutes = Math.floor(totalSeconds / 60)
+  const remaining = totalSeconds % 60
+  return `${minutes}:${String(remaining).padStart(2, '0')}`
 }

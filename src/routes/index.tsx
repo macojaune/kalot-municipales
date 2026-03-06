@@ -1,15 +1,13 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { Share2, Trophy } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { DoubleMegaphone } from '../components/icons/DoubleMegaphone'
-import { FistIcon } from '../components/icons/FistIcon'
-import { MusicNoteIcon } from '../components/icons/MusicNoteIcon'
 import { Layout } from '../components/Layout'
-import { CrownIcon } from '../components/icons/CrownIcon'
-import { useRegion } from '../context/RegionContext'
+import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
+import { NeonButton } from '../components/soundsystem/NeonButton'
+import { ScrollingTicker } from '../components/soundsystem/ScrollingTicker'
 import {
+  getActiveSessionId,
   getDisplayName,
   getExternalUserId,
   getJson,
@@ -20,7 +18,7 @@ import type {
   LeaderboardResponse,
   StartSessionResponse,
 } from '../lib/kalot-client'
-import { getRegionForCommune } from '../types/song'
+import { Heart } from 'lucide-react'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -29,7 +27,6 @@ export const Route = createFileRoute('/')({
 function HomePage() {
   const navigate = useNavigate()
   const { user } = useUser()
-  const { region } = useRegion()
   const [feedback, setFeedback] = useState<string | null>(null)
 
   const externalUserId = getExternalUserId(user)
@@ -41,23 +38,22 @@ function HomePage() {
     refetchInterval: 15000,
   })
 
-  const songsByRegion = useMemo(() => {
-    const rows = Array.isArray(leaderboardQuery.data?.leaderboard)
-      ? leaderboardQuery.data.leaderboard
-      : []
+  const songs = useMemo(
+    () =>
+      Array.isArray(leaderboardQuery.data?.leaderboard)
+        ? leaderboardQuery.data.leaderboard
+        : [],
+    [leaderboardQuery.data?.leaderboard],
+  )
 
-    if (!region) {
-      return rows
-    }
+  const topTracks = useMemo(
+    () => [...songs].sort((a, b) => b.rating - a.rating).slice(0, 5),
+    [songs],
+  )
 
-    return rows.filter(
-      (song) => getRegionForCommune(song.communeName) === region,
-    )
-  }, [leaderboardQuery.data?.leaderboard, region])
-
-  const top3 = useMemo(
-    () => [...songsByRegion].sort((a, b) => b.rating - a.rating).slice(0, 3),
-    [songsByRegion],
+  const tickerItems = useMemo(
+    () => topTracks.map((track) => `${track.title} - ${track.artistName}`),
+    [topTracks],
   )
 
   const startSessionMutation = useMutation({
@@ -91,8 +87,10 @@ function HomePage() {
   })
 
   function handleStart() {
-    if (songsByRegion.length < 2) {
-      setFeedback('Il faut au moins 2 sons pour lancer un duel.')
+    const existingSessionId = getActiveSessionId()
+    if (existingSessionId) {
+      setFeedback(null)
+      void navigate({ to: '/duel' })
       return
     }
 
@@ -100,105 +98,74 @@ function HomePage() {
   }
 
   return (
-    <Layout>
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-10 animate-fade-in">
-        <div className="text-center space-y-4">
-          <DoubleMegaphone className="w-20 h-20 mx-auto" animate />
-          <h1 className="text-4xl md:text-5xl font-display font-black text-foreground leading-tight">
-            Kalòt'Municipales
-          </h1>
-          <p className="text-muted-foreground font-body text-base max-w-xs mx-auto">
-            Vote pour la meilleure chanson de campagne 2026.
-          </p>
-        </div>
+    <Layout hideHeader>
+      <div className="relative min-h-screen overflow-hidden flex flex-col justify-around items-center w-full">
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_46%,rgba(57,255,20,0.09),transparent_44%)]" />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.035),transparent_38%)]" />
 
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={startSessionMutation.isPending}
-          className="w-full py-5 rounded-xl bg-primary text-primary-foreground font-display font-bold text-xl
-            hover:brightness-105 active:scale-[0.97] transition-all shadow-lg
-            flex items-center justify-center gap-3 min-h-[56px]"
-        >
-          {startSessionMutation.isPending
-            ? 'Lancement…'
-            : "Entrer dans l'isoloir"}
-        </button>
+        <div className="absolute inset-0 pointer-events-none opacity-[0.24] bg-[radial-gradient(circle_at_4px_4px,rgba(255,255,255,0.22)_1.5px,transparent_1.6px),radial-gradient(circle_at_14px_14px,rgba(255,255,255,0.18)_1.5px,transparent_1.6px)] bg-[length:20px_20px]" />
 
-        <div className="grid grid-cols-3 gap-4 text-center">
-          {[
-            {
-              icon: <MusicNoteIcon className="w-8 h-8 mx-auto" />,
-              label: 'Ecoute',
-            },
-            { icon: <FistIcon className="w-8 h-8 mx-auto" />, label: 'Vote' },
-            {
-              icon: (
-                <Share2 className="w-8 h-8 mx-auto text-muted-foreground" />
-              ),
-              label: 'Partage',
-            },
-          ].map((step) => (
-            <div key={step.label} className="space-y-2">
-              {step.icon}
-              <p className="font-display font-bold text-sm text-foreground">
-                {step.label}
-              </p>
-            </div>
-          ))}
-        </div>
 
-        {top3.length > 0 ? (
-          <section className="space-y-3">
-            <h2 className="font-display font-bold text-lg text-foreground flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-primary" />
-              Top classement
-            </h2>
-            {top3.map((song, index) => (
-              <div
-                key={song.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border"
-              >
-                <span className="font-display font-black text-lg text-primary w-7 text-center">
-                  {index === 0 ? (
-                    <CrownIcon className="w-5 h-5 mx-auto" />
-                  ) : (
-                    index + 1
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-display font-bold text-sm truncate">
-                    {song.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-body truncate">
-                    {song.artistName} · {song.communeName}
-                  </p>
-                </div>
-                <span className="tabular text-xs font-body text-muted-foreground">
-                  {Math.round(song.rating)} points
-                </span>
-              </div>
-            ))}
+
+        <div className="z-10 px-4 md:pt-24 md:pb-10 space-y-8 animate-fade-in  flex-0 mt-auto">
+          <section className="text-center space-y-6">
+            <h1 className="text-6xl md:text-8xl font-display font-bold text-foreground leading-[0.9] ">
+              <span className="text-glow-white">KALÒT</span>
+              <br />
+              <span className="text-primary text-glow-green">MUNICIPALES</span>
+            </h1>
+            <p className="mx-auto max-w-[19rem] md:max-w-xl text-white font-body text-base md:text-lg leading-relaxed">
+              Vote pour la meilleure musique de campagne des municipales 2026.
+            </p>
           </section>
-        ) : null}
 
-        <div className="flex items-center justify-center pt-4 border-t border-border text-sm">
-          <Link
-            to="/leaderboard"
-            className="font-body text-muted-foreground hover:text-foreground transition-colors min-h-[44px] px-2"
-          >
-            Voir le classement complet
-          </Link>
+          <section className="mx-auto w-full max-w-2xl space-y-4 pt-5 relative">
+            <div className="absolute left-1/2 top-[-20%] -translate-x-1/2 w-[90%] max-w-xl pointer-events-none opacity-[0.14]">
+              <EqualizerBars
+                barCount={10}
+                variant="large"
+                color="green"
+                className="w-full justify-between"
+              />
+            </div>
+            <NeonButton
+              color="green"
+              size="lg"
+              fullWidth
+              className="whitespace-nowrap"
+              onClick={handleStart}
+              disabled={startSessionMutation.isPending}
+            >
+              {startSessionMutation.isPending
+                ? 'Lancement...'
+                : 'Démarrer'}
+            </NeonButton>
+            <Link
+              to="/leaderboard"
+              className="relative z-10 inline-flex min-h-14 w-full items-center justify-center rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-[1.55rem] font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97] whitespace-nowrap"
+            >
+              Classement général
+            </Link>
+          </section>
+
+          {feedback ? (
+            <p aria-live="polite" className="text-sm text-center text-accent font-body">
+              {feedback}
+            </p>
+          ) : null}
+          <p className="text-xs text-center text-accent font-body">
+            Politisé avec <span className="mr-1">🫶</span> par <a href='https://marvinl.com' className='text-glow-white text-white font-semibold'>MarvinL.com</a>
+          </p>
         </div>
 
-        {feedback ? (
-          <p
-            aria-live="polite"
-            className="text-sm text-muted-foreground font-body"
-          >
-            {feedback}
-          </p>
-        ) : null}
+        <div className="relative z-10 mt-auto w-full">
+          <div className="mx-auto max-w-6xl px-4 py-3 border-y border-primary/30 bg-card/70">
+            <span className="font-display text-lg text-white">
+              TOP TRACKS DU MOMENT
+            </span>
+          </div>
+          <ScrollingTicker items={tickerItems} />
+        </div>
       </div>
     </Layout>
   )
