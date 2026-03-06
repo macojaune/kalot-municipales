@@ -20,6 +20,7 @@ import { Route as ApiLeaderboardRouteImport } from './routes/api.leaderboard'
 import { Route as ApiVoteStateRouteImport } from './routes/api.vote.state'
 import { Route as ApiVoteStartRouteImport } from './routes/api.vote.start'
 import { Route as ApiVotePickRouteImport } from './routes/api.vote.pick'
+import { Route as ApiVoteOptionsRouteImport } from './routes/api.vote.options'
 import { Route as ApiAdminTrackRouteImport } from './routes/api.admin.track'
 import { Route as ApiAdminSeedRouteImport } from './routes/api.admin.seed'
 
@@ -78,6 +79,11 @@ const ApiVotePickRoute = ApiVotePickRouteImport.update({
   path: '/api/vote/pick',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiVoteOptionsRoute = ApiVoteOptionsRouteImport.update({
+  id: '/api/vote/options',
+  path: '/api/vote/options',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminTrackRoute = ApiAdminTrackRouteImport.update({
   id: '/api/admin/track',
   path: '/api/admin/track',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/api/report': typeof ApiReportRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
   '/api/vote/state': typeof ApiVoteStateRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/api/report': typeof ApiReportRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
   '/api/vote/state': typeof ApiVoteStateRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/api/report': typeof ApiReportRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
   '/api/vote/state': typeof ApiVoteStateRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/api/report'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
     | '/api/vote/state'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/api/report'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
     | '/api/vote/state'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/api/report'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
     | '/api/vote/state'
@@ -194,6 +206,7 @@ export interface RootRouteChildren {
   ApiReportRoute: typeof ApiReportRoute
   ApiAdminSeedRoute: typeof ApiAdminSeedRoute
   ApiAdminTrackRoute: typeof ApiAdminTrackRoute
+  ApiVoteOptionsRoute: typeof ApiVoteOptionsRoute
   ApiVotePickRoute: typeof ApiVotePickRoute
   ApiVoteStartRoute: typeof ApiVoteStartRoute
   ApiVoteStateRoute: typeof ApiVoteStateRoute
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiVotePickRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/vote/options': {
+      id: '/api/vote/options'
+      path: '/api/vote/options'
+      fullPath: '/api/vote/options'
+      preLoaderRoute: typeof ApiVoteOptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/track': {
       id: '/api/admin/track'
       path: '/api/admin/track'
@@ -306,6 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiReportRoute: ApiReportRoute,
   ApiAdminSeedRoute: ApiAdminSeedRoute,
   ApiAdminTrackRoute: ApiAdminTrackRoute,
+  ApiVoteOptionsRoute: ApiVoteOptionsRoute,
   ApiVotePickRoute: ApiVotePickRoute,
   ApiVoteStartRoute: ApiVoteStartRoute,
   ApiVoteStateRoute: ApiVoteStateRoute,

@@ -1,11 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
 import { CrownIcon } from '../components/icons/CrownIcon'
-import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
-import { NeonButton } from '../components/soundsystem/NeonButton'
 import {
   clearActiveSessionId,
   getActiveSessionId,
@@ -61,6 +59,7 @@ function DuelPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const loadedTrackIdRef = useRef<number | null>(null)
   const pendingSeekTimeRef = useRef<number>(0)
+  const transitionTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     const audio = new Audio()
@@ -133,6 +132,9 @@ function DuelPage() {
     audio.addEventListener('play', handlePlay)
 
     return () => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
       audio.removeEventListener('timeupdate', updatePlaybackState)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('ended', handleEnded)
@@ -335,7 +337,7 @@ function DuelPage() {
     }
   }
 
-  function handleContinueToNextRound() {
+  const handleContinueToNextRound = useCallback(() => {
     if (!interlude) {
       return
     }
@@ -346,7 +348,23 @@ function DuelPage() {
     setTotalDuels(Math.max(interlude.progress?.total ?? totalDuels, 2))
     setStage('duel')
     setInterlude(null)
-  }
+  }, [interlude, totalDuels])
+
+  useEffect(() => {
+    if (stage !== 'interlude' || !interlude) {
+      return
+    }
+
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      handleContinueToNextRound()
+    }, 850)
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+    }
+  }, [handleContinueToNextRound, interlude, stage])
 
   const voteLocked = voteMutation.isPending || stage === 'interlude'
 
@@ -371,80 +389,43 @@ function DuelPage() {
         </div>
 
         {stage === 'interlude' && interlude ? (
-          <section className="spotlight-green animate-fade-in relative overflow-hidden rounded-2xl border border-primary/40 bg-card/80 p-5 md:p-7">
-            <div className="relative z-10 space-y-6">
-              <div className="space-y-2 text-center">
-                <CrownIcon className="mx-auto h-14 w-14 animate-badge-bounce" />
-                <h2 className="font-display text-3xl text-glow-green text-primary">
-                  Champion confirme
-                </h2>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="box-glow-green rounded-xl border border-primary/50 bg-background/70 p-4">
-                  <p className="font-display text-[11px] tracking-widest text-primary">
-                    Vainqueur
-                  </p>
-                  <p className="mt-2 break-words font-display text-2xl text-foreground">
-                    {interlude.winnerTrack.title}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {interlude.winnerTrack.artistName} -{' '}
-                    {interlude.winnerTrack.communeName}
-                  </p>
-                </div>
-
-                <div className="box-glow-orange rounded-xl border border-accent/50 bg-background/70 p-4">
-                  <p className="font-display text-[11px] tracking-widest text-accent">
-                    Elimine
-                  </p>
-                  <p className="mt-2 break-words font-display text-2xl text-foreground">
-                    {interlude.loserTrack.title}
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {interlude.loserTrack.artistName} -{' '}
-                    {interlude.loserTrack.communeName}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-secondary/40 bg-background/75 p-4">
-                <p className="mb-2 font-display text-[11px] tracking-widest text-secondary">
-                  Prochain challenger
-                </p>
-                <p className="break-words font-display text-xl text-foreground">
-                  {interlude.nextChallenger.title}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {interlude.nextChallenger.artistName} -{' '}
-                  {interlude.nextChallenger.communeName}
+          <section className="relative rounded-2xl border border-primary/30 bg-card/70 p-3 md:p-4">
+            <div className="mx-auto max-w-xl space-y-2.5 animate-fade-in">
+              <div className="text-center">
+                <p className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1 font-display text-[11px] tracking-widest text-primary">
+                  <CrownIcon className="h-4 w-4" />
+                  Vainqueur
                 </p>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between font-display text-xs tracking-widest text-muted-foreground">
-                  <span>Progression session</span>
-                  <span>
-                    {Math.min(interlude.roundsPlayed, totalDuels)}/{totalDuels}
-                  </span>
-                </div>
-                <EqualizerBars
-                  barCount={20}
-                  variant="progress"
-                  color="green"
-                  progress={Math.min(interlude.roundsPlayed / totalDuels, 1)}
-                  className="w-full justify-between"
-                />
+              <SongCard
+                track={interlude.winnerTrack}
+                isChampion
+                isPlaying={false}
+                onPlay={() => {}}
+                onVote={() => {}}
+                onSeek={() => {}}
+                playbackCurrentTime={0}
+                playbackDuration={0}
+                disabled
+                className="animate-[fade-in_220ms_ease-out]"
+              />
+
+              <div className="pt-1 text-center font-display text-[11px] tracking-widest text-secondary animate-fade-in">
+                Nouveau challenger
               </div>
 
-              <NeonButton
-                color="green"
-                size="lg"
-                fullWidth
-                onClick={handleContinueToNextRound}
-              >
-                Round suivant
-              </NeonButton>
+              <SongCard
+                track={interlude.nextChallenger}
+                isPlaying={false}
+                onPlay={() => {}}
+                onVote={() => {}}
+                onSeek={() => {}}
+                playbackCurrentTime={0}
+                playbackDuration={0}
+                disabled
+                className="opacity-80 animate-[fade-in_300ms_ease-out]"
+              />
             </div>
           </section>
         ) : champion && challenger ? (

@@ -4,8 +4,8 @@ import { Trophy } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { getJson } from '../lib/kalot-client'
-import type { LeaderboardResponse } from '../lib/kalot-client'
-import { COMMUNES, getRegionForCommune } from '../types/song'
+import type { ElectionRound, LeaderboardResponse } from '../lib/kalot-client'
+import { COMMUNES } from '../types/song'
 
 export const Route = createFileRoute('/leaderboard')({
   component: LeaderboardPage,
@@ -17,28 +17,25 @@ function LeaderboardPage() {
   const [activeFilter, setActiveFilter] = useState('Tous')
 
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'full-table'],
-    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=500'),
+    queryKey: ['leaderboard', 'full-table', activeFilter],
+    queryFn: () =>
+      getJson<LeaderboardResponse>(
+        `/api/leaderboard?limit=500${
+          activeFilter !== 'Tous' ? `&commune=${encodeURIComponent(slugify(activeFilter))}` : ''
+        }`,
+      ),
     refetchInterval: 15000,
   })
 
-  const songs = useMemo(() => {
-    const rows = Array.isArray(leaderboardQuery.data?.leaderboard)
-      ? leaderboardQuery.data.leaderboard
-      : []
+  const songs = useMemo(
+    () =>
+      Array.isArray(leaderboardQuery.data?.leaderboard)
+        ? leaderboardQuery.data.leaderboard
+        : [],
+    [leaderboardQuery.data?.leaderboard],
+  )
 
-    const regionRows = rows.filter(
-      (song) => getRegionForCommune(song.communeName) === 'guadeloupe',
-    )
-
-    const sorted = [...regionRows].sort((a, b) => b.rating - a.rating)
-
-    if (activeFilter === 'Tous') {
-      return sorted
-    }
-
-    return sorted.filter((song) => song.communeName === activeFilter)
-  }, [activeFilter, leaderboardQuery.data?.leaderboard])
+  const electionRound: ElectionRound = songs.at(0)?.electionRound ?? 'round1'
 
   return (
     <Layout>
@@ -46,26 +43,32 @@ function LeaderboardPage() {
         <section className="rounded-2xl border border-secondary/35 bg-card/70 p-4 md:p-6">
           <h1 className="font-display text-3xl text-secondary text-glow-blue flex items-center gap-2">
             <Trophy className="w-7 h-7" />
-            Classement general
+            {electionRound === 'round1' ? 'Classement communal' : 'Classement final'}
           </h1>
 
-          <div className="mt-4">
-            <label htmlFor="commune-filter" className="sr-only">
-              Filtrer par commune
-            </label>
-            <select
-              id="commune-filter"
-              value={activeFilter}
-              onChange={(event) => setActiveFilter(event.target.value)}
-              className="h-12 w-full rounded-md border border-border bg-background px-3 font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {FILTERS.map((filter) => (
-                <option key={filter} value={filter}>
-                  {filter === 'Tous' ? 'Toutes les communes' : filter}
-                </option>
-              ))}
-            </select>
-          </div>
+          {electionRound === 'round1' ? (
+            <div className="mt-4">
+              <label htmlFor="commune-filter" className="sr-only">
+                Filtrer par commune
+              </label>
+              <select
+                id="commune-filter"
+                value={activeFilter}
+                onChange={(event) => setActiveFilter(event.target.value)}
+                className="h-12 w-full rounded-md border border-border bg-background px-3 font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {FILTERS.map((filter) => (
+                  <option key={filter} value={filter}>
+                    {filter === 'Tous' ? 'Toutes les communes' : filter}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="mt-4 font-body text-sm text-muted-foreground">
+              Second tour entre les sons arrives #1 dans chaque commune.
+            </p>
+          )}
         </section>
 
         {songs.length === 0 ? (
@@ -127,4 +130,13 @@ function LeaderboardPage() {
       </div>
     </Layout>
   )
+}
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
 }

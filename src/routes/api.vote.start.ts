@@ -9,6 +9,7 @@ export const Route = createFileRoute('/api/vote/start')({
         const body = (await request.json()) as {
           externalUserId?: string
           username?: string | null
+          communeSlug?: string | null
         }
 
         if (!body.externalUserId) {
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/api/vote/start')({
         const result = await startVoteSession({
           externalUserId: body.externalUserId,
           username: body.username,
+          communeSlug: body.communeSlug,
         })
 
         if (!result.ok) {

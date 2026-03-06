@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
   appSettings,
@@ -6,6 +6,7 @@ import {
   communes,
   electoralLists,
   reports,
+  round1CommuneWinners,
   tracks,
   users,
   voteSessions,
@@ -14,8 +15,11 @@ import {
 
 const STARTING_RATING = 1200
 const K_FACTOR = 24
-const VOTING_FINALIZATION_SETTING_KEY = 'voting_finalization_at'
-const DEFAULT_VOTING_FINALIZATION_AT = '2026-03-23T03:59:59.000Z'
+const ROUND1_FINALIZATION_SETTING_KEY = 'round1_finalization_at'
+const ROUND2_FINALIZATION_SETTING_KEY = 'round2_finalization_at'
+const ROUND1_WINNERS_FINALIZED_AT_SETTING_KEY = 'round1_winners_finalized_at'
+const DEFAULT_ROUND1_FINALIZATION_AT = '2026-03-16T03:59:59.000Z'
+const DEFAULT_ROUND2_FINALIZATION_AT = '2026-03-23T03:59:59.000Z'
 
 const GUADELOUPE_COMMUNES = [
   'Anse-Bertrand',
@@ -54,6 +58,9 @@ const GUADELOUPE_COMMUNES = [
 
 type Db = ReturnType<typeof getDb>
 
+export type ElectionRound = 'round1' | 'round2'
+type ElectionPhase = ElectionRound | 'closed'
+
 type TrackView = {
   id: number
   title: string
@@ -64,13 +71,17 @@ type TrackView = {
   wins: number
   losses: number
   appearances: number
+  communeId: number
   artistName: string
   communeName: string
+  communeSlug: string
   listName: string | null
   candidateName: string | null
 }
 
 type SessionSummary = {
+  electionRound: ElectionRound
+  communeName: string | null
   roundsPlayed: number
   winnerTrackId: number
   scoreboard: Array<{
@@ -133,11 +144,18 @@ function parseIsoDate(raw: string | null | undefined) {
   return parsed
 }
 
-async function resolveVotingFinalizationAt(db: Db) {
+async function resolveDateSetting(
+  db: Db,
+  input: {
+    key: string
+    fallback: string
+    envValue?: string | null
+  },
+) {
   const settingRows = await db
     .select({ value: appSettings.value })
     .from(appSettings)
-    .where(eq(appSettings.key, VOTING_FINALIZATION_SETTING_KEY))
+    .where(eq(appSettings.key, input.key))
     .limit(1)
 
   const fromDb = parseIsoDate(settingRows.at(0)?.value)
@@ -145,8 +163,8 @@ async function resolveVotingFinalizationAt(db: Db) {
     return fromDb
   }
 
-  const fromEnv = parseIsoDate(process.env.ELECTION_FINALIZATION_AT)
-  const fallback = parseIsoDate(DEFAULT_VOTING_FINALIZATION_AT)
+  const fromEnv = parseIsoDate(input.envValue)
+  const fallback = parseIsoDate(input.fallback)
 
   if (!fallback) {
     throw new Error('Invalid default finalization date')
@@ -157,7 +175,7 @@ async function resolveVotingFinalizationAt(db: Db) {
   await db
     .insert(appSettings)
     .values({
-      key: VOTING_FINALIZATION_SETTING_KEY,
+      key: input.key,
       value: initialValue,
       updatedAt: new Date().toISOString(),
     })
@@ -166,7 +184,111 @@ async function resolveVotingFinalizationAt(db: Db) {
   return fromEnv ?? fallback
 }
 
-async function getTrackViewsByIds(db: Db, ids: number[]) {
+async function resolveRound1FinalizationAt(db: Db) {
+  return resolveDateSetting(db, {
+    key: ROUND1_FINALIZATION_SETTING_KEY,
+    fallback: DEFAULT_ROUND1_FINALIZATION_AT,
+    envValue: process.env.ROUND1_FINALIZATION_AT,
+  })
+}
+
+async function resolveRound2FinalizationAt(db: Db) {
+  return resolveDateSetting(db, {
+    key: ROUND2_FINALIZATION_SETTING_KEY,
+    fallback: DEFAULT_ROUND2_FINALIZATION_AT,
+    envValue:
+      process.env.ROUND2_FINALIZATION_AT ?? process.env.ELECTION_FINALIZATION_AT,
+  })
+}
+
+async function resolveElectionPhase(db: Db): Promise<ElectionPhase> {
+  const [round1FinalizationAt, round2FinalizationAt] = await Promise.all([
+    resolveRound1FinalizationAt(db),
+    resolveRound2FinalizationAt(db),
+  ])
+
+  const now = new Date()
+  if (now < round1FinalizationAt) {
+    return 'round1'
+  }
+
+  if (now < round2FinalizationAt) {
+    return 'round2'
+  }
+
+  return 'closed'
+}
+
+async function maybeFinalizeRound1Winners(db: Db) {
+  const phase = await resolveElectionPhase(db)
+  if (phase === 'round1') {
+    return
+  }
+
+  const alreadyFinalizedRows = await db
+    .select({ value: appSettings.value })
+    .from(appSettings)
+    .where(eq(appSettings.key, ROUND1_WINNERS_FINALIZED_AT_SETTING_KEY))
+    .limit(1)
+
+  if (alreadyFinalizedRows.at(0)?.value) {
+    return
+  }
+
+  const rows = await db
+    .select({
+      communeId: communes.id,
+      rating: tracks.rating,
+      trackId: tracks.id,
+    })
+    .from(communes)
+    .innerJoin(tracks, eq(tracks.communeId, communes.id))
+    .where(eq(tracks.isActive, true))
+    .orderBy(communes.id, desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
+
+  const winnersByCommune = new Map<
+    number,
+    { communeId: number; trackId: number; rating: number }
+  >()
+
+  for (const row of rows) {
+    if (!winnersByCommune.has(row.communeId)) {
+      winnersByCommune.set(row.communeId, {
+        communeId: row.communeId,
+        trackId: row.trackId,
+        rating: row.rating,
+      })
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    for (const winner of winnersByCommune.values()) {
+      await tx
+        .insert(round1CommuneWinners)
+        .values({
+          communeId: winner.communeId,
+          winningTrackId: winner.trackId,
+          winningRating: winner.rating,
+        })
+        .onConflictDoNothing()
+    }
+
+    await tx
+      .insert(appSettings)
+      .values({
+        key: ROUND1_WINNERS_FINALIZED_AT_SETTING_KEY,
+        value: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .onConflictDoNothing()
+  })
+}
+
+async function getTrackViewsByIds(
+  db: Db,
+  ids: number[],
+  round: ElectionRound = 'round1',
+) {
   if (ids.length === 0) {
     return []
   }
@@ -178,12 +300,14 @@ async function getTrackViewsByIds(db: Db, ids: number[]) {
       slug: tracks.slug,
       streamUrl: tracks.streamUrl,
       r2Key: tracks.r2Key,
-      rating: tracks.rating,
-      wins: tracks.wins,
-      losses: tracks.losses,
-      appearances: tracks.appearances,
+      rating: round === 'round2' ? tracks.round2Rating : tracks.rating,
+      wins: round === 'round2' ? tracks.round2Wins : tracks.wins,
+      losses: round === 'round2' ? tracks.round2Losses : tracks.losses,
+      appearances: round === 'round2' ? tracks.round2Appearances : tracks.appearances,
+      communeId: communes.id,
       artistName: artists.name,
       communeName: communes.name,
+      communeSlug: communes.slug,
       listName: electoralLists.name,
       candidateName: electoralLists.candidateName,
     })
@@ -199,22 +323,50 @@ async function getTrackViewsByIds(db: Db, ids: number[]) {
     .filter((row): row is TrackView => Boolean(row))
 }
 
-async function getTrackViewById(db: Db, id: number) {
-  const rows = await getTrackViewsByIds(db, [id])
+async function getTrackViewById(
+  db: Db,
+  id: number,
+  round: ElectionRound = 'round1',
+) {
+  const rows = await getTrackViewsByIds(db, [id], round)
   return rows.at(0) ?? null
 }
 
-async function pickRandomChallenger(db: Db, excludedTrackIds: number[]) {
+async function pickRandomChallenger(
+  db: Db,
+  input: {
+    excludedTrackIds: number[]
+    round: ElectionRound
+    communeId?: number | null
+  },
+) {
   const filters = [eq(tracks.isActive, true)]
 
-  if (excludedTrackIds.length > 0) {
-    filters.push(notInArray(tracks.id, excludedTrackIds))
+  if (input.round === 'round1' && input.communeId) {
+    filters.push(eq(tracks.communeId, input.communeId))
   }
 
-  const candidates = await db
-    .select({ id: tracks.id, appearances: tracks.appearances })
+  if (input.excludedTrackIds.length > 0) {
+    filters.push(notInArray(tracks.id, input.excludedTrackIds))
+  }
+
+  const sourceQuery = db
+    .select({
+      id: tracks.id,
+      appearances:
+        input.round === 'round2' ? tracks.round2Appearances : tracks.appearances,
+    })
     .from(tracks)
-    .where(and(...filters))
+
+  const candidates =
+    input.round === 'round2'
+      ? await sourceQuery
+          .innerJoin(
+            round1CommuneWinners,
+            eq(round1CommuneWinners.winningTrackId, tracks.id),
+          )
+          .where(and(...filters))
+      : await sourceQuery.where(and(...filters))
 
   if (candidates.length === 0) {
     return null
@@ -612,23 +764,135 @@ export async function assertAdminAccess(input: {
   }
 }
 
+async function getCommuneBySlug(db: Db, communeSlug: string) {
+  const rows = await db
+    .select({ id: communes.id, name: communes.name, slug: communes.slug })
+    .from(communes)
+    .where(eq(communes.slug, communeSlug))
+    .limit(1)
+
+  return rows.at(0) ?? null
+}
+
+async function listEligibleTrackIds(
+  db: Db,
+  input: {
+    round: ElectionRound
+    communeId?: number | null
+  },
+) {
+  const baseFilters = [eq(tracks.isActive, true)]
+
+  if (input.round === 'round1') {
+    if (typeof input.communeId !== 'number') {
+      return []
+    }
+
+    baseFilters.push(eq(tracks.communeId, input.communeId))
+
+    return db
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(and(...baseFilters))
+  }
+
+  await maybeFinalizeRound1Winners(db)
+
+  return db
+    .select({ id: tracks.id })
+    .from(tracks)
+    .innerJoin(
+      round1CommuneWinners,
+      eq(round1CommuneWinners.winningTrackId, tracks.id),
+    )
+    .where(and(...baseFilters))
+}
+
+async function listEligibleCommunesForRound1(db: Db) {
+  const rows = await db
+    .select({
+      id: communes.id,
+      name: communes.name,
+      slug: communes.slug,
+      trackCount: sql<number>`count(${tracks.id})`,
+    })
+    .from(communes)
+    .innerJoin(tracks, eq(tracks.communeId, communes.id))
+    .where(eq(tracks.isActive, true))
+    .groupBy(communes.id, communes.name, communes.slug)
+    .having(sql`count(${tracks.id}) >= 2`)
+    .orderBy(asc(communes.name))
+
+  return rows
+}
+
+async function countEligibleTracks(
+  db: Db,
+  input: {
+    round: ElectionRound
+    communeId?: number | null
+  },
+) {
+  const rows = await listEligibleTrackIds(db, input)
+  return rows.length
+}
+
 export async function startVoteSession(input: {
   externalUserId: string
   username?: string | null
+  communeSlug?: string | null
 }) {
   const db = getDb()
+  const phase = await resolveElectionPhase(db)
+
+  if (phase === 'closed') {
+    return {
+      ok: false as const,
+      code: 'ELECTION_CLOSED' as const,
+      message: 'Le vote est termine.',
+    }
+  }
+
+  if (phase === 'round2') {
+    await maybeFinalizeRound1Winners(db)
+  }
+
   const user = await getOrCreateUser(db, {
     externalUserId: input.externalUserId,
     username: input.username,
   })
 
+  const commune =
+    phase === 'round1'
+      ? input.communeSlug
+        ? await getCommuneBySlug(db, input.communeSlug)
+        : null
+      : null
+
+  if (phase === 'round1' && !commune) {
+    return {
+      ok: false as const,
+      code: 'MISSING_COMMUNE' as const,
+      message: 'Choisis une commune pour commencer le premier tour.',
+    }
+  }
+
   const existingSessionRows = await db
-    .select({ id: voteSessions.id, status: voteSessions.status })
+    .select({
+      id: voteSessions.id,
+      status: voteSessions.status,
+      electionRound: voteSessions.electionRound,
+      communeId: voteSessions.communeId,
+    })
     .from(voteSessions)
     .where(
       and(
         eq(voteSessions.userId, user.id),
-        inArray(voteSessions.status, ['active', 'waiting']),
+        eq(voteSessions.electionRound, phase),
+        phase === 'round1'
+          ? eq(voteSessions.communeId, commune?.id ?? -1)
+          : sql`1 = 1`,
+        eq(voteSessions.status, 'active'),
       ),
     )
     .orderBy(desc(voteSessions.createdAt))
@@ -644,27 +908,32 @@ export async function startVoteSession(input: {
         resumed: true as const,
         sessionId: existingSession.id,
         userId: user.id,
+        electionRound: phase,
+        commune: commune
+          ? {
+              id: commune.id,
+              name: commune.name,
+              slug: commune.slug,
+            }
+          : null,
         duel: existingState.duel,
       }
     }
-
-    return {
-      ok: false as const,
-      code: 'SESSION_WAITING' as const,
-      message: 'Ta session est en attente de nouveaux sons.',
-    }
   }
 
-  const available = await db
-    .select({ id: tracks.id })
-    .from(tracks)
-    .where(eq(tracks.isActive, true))
+  const available = await listEligibleTrackIds(db, {
+    round: phase,
+    communeId: commune?.id,
+  })
 
   if (available.length < 2) {
     return {
       ok: false as const,
       code: 'NOT_ENOUGH_TRACKS' as const,
-      message: 'Ajoute au moins 2 sons pour demarrer les duels.',
+      message:
+        phase === 'round1'
+          ? 'Ajoute au moins 2 sons dans cette commune pour lancer les duels.'
+          : 'Le second tour n a pas assez de qualifies pour demarrer.',
     }
   }
 
@@ -687,12 +956,14 @@ export async function startVoteSession(input: {
   await db.insert(voteSessions).values({
     id: sessionId,
     userId: user.id,
+    electionRound: phase,
+    communeId: commune?.id ?? null,
     currentChampionTrackId: firstId,
     currentChallengerTrackId: secondId,
     seenTrackIds: JSON.stringify([firstId, secondId]),
   })
 
-  const startedTracks = await getTrackViewsByIds(db, [firstId, secondId])
+  const startedTracks = await getTrackViewsByIds(db, [firstId, secondId], phase)
   const leftTrack = startedTracks.at(0)
   const rightTrack = startedTracks.at(1)
 
@@ -705,6 +976,14 @@ export async function startVoteSession(input: {
     resumed: false as const,
     sessionId,
     userId: user.id,
+    electionRound: phase,
+    commune: commune
+      ? {
+          id: commune.id,
+          name: commune.name,
+          slug: commune.slug,
+        }
+      : null,
     duel: {
       leftTrack,
       rightTrack,
@@ -731,13 +1010,10 @@ export async function getSessionState(input: { sessionId: string }) {
 
   const currentSession = session[0]
   const seen = parseSeenTrackIds(currentSession.seenTrackIds)
-
-  const activeCount = await db
-    .select({ value: sql<number>`count(*)` })
-    .from(tracks)
-    .where(eq(tracks.isActive, true))
-
-  const totalActiveTracks = activeCount[0]?.value ?? 0
+  const totalEligibleTracks = await countEligibleTracks(db, {
+    round: currentSession.electionRound,
+    communeId: currentSession.communeId,
+  })
 
   if (currentSession.status === 'completed') {
     const summary = await getSessionSummary({ sessionId: currentSession.id })
@@ -747,75 +1023,11 @@ export async function getSessionState(input: { sessionId: string }) {
     }
   }
 
-  if (currentSession.status === 'waiting') {
-    const nextChallengerId = await pickRandomChallenger(db, Array.from(seen))
-
-    if (nextChallengerId) {
-      seen.add(nextChallengerId)
-
-      await db
-        .update(voteSessions)
-        .set({
-          status: 'active',
-          currentChallengerTrackId: nextChallengerId,
-          seenTrackIds: JSON.stringify(Array.from(seen)),
-        })
-        .where(eq(voteSessions.id, currentSession.id))
-
-      const waitingTracks = await getTrackViewsByIds(db, [
-        currentSession.currentChampionTrackId,
-        nextChallengerId,
-      ])
-      const leftTrack = waitingTracks.at(0)
-      const rightTrack = waitingTracks.at(1)
-
-      if (!leftTrack || !rightTrack) {
-        throw new Error('Unable to load waiting duel tracks')
-      }
-
-      return {
-        status: 'active' as const,
-        duel: {
-          leftTrack,
-          rightTrack,
-          roundsPlayed: currentSession.roundsPlayed,
-          progress: {
-            seen: seen.size,
-            total: totalActiveTracks,
-          },
-        },
-      }
-    }
-
-    const votingFinalizationAt = await resolveVotingFinalizationAt(db)
-    if (new Date() >= votingFinalizationAt) {
-      await db
-        .update(voteSessions)
-        .set({
-          status: 'completed',
-          completedAt: new Date().toISOString(),
-        })
-        .where(eq(voteSessions.id, currentSession.id))
-
-      const summary = await getSessionSummary({ sessionId: currentSession.id })
-      return {
-        status: 'completed' as const,
-        summary,
-      }
-    }
-
-    return {
-      status: 'waiting' as const,
-      waiting: {
-        message: 'Session en attente de nouveaux morceaux.',
-      },
-    }
-  }
-
-  const activeTracks = await getTrackViewsByIds(db, [
-    currentSession.currentChampionTrackId,
-    currentSession.currentChallengerTrackId,
-  ])
+  const activeTracks = await getTrackViewsByIds(
+    db,
+    [currentSession.currentChampionTrackId, currentSession.currentChallengerTrackId],
+    currentSession.electionRound,
+  )
   const leftTrack = activeTracks.at(0)
   const rightTrack = activeTracks.at(1)
 
@@ -825,13 +1037,15 @@ export async function getSessionState(input: { sessionId: string }) {
 
   return {
     status: 'active' as const,
+    electionRound: currentSession.electionRound,
+    communeId: currentSession.communeId,
     duel: {
       leftTrack,
       rightTrack,
       roundsPlayed: currentSession.roundsPlayed,
       progress: {
         seen: seen.size,
-        total: totalActiveTracks,
+        total: totalEligibleTracks,
       },
     },
   }
@@ -854,12 +1068,6 @@ export async function pickWinner(input: {
 
   const session = sessionRows.at(0)
 
-  const activeCount = await db
-    .select({ value: sql<number>`count(*)` })
-    .from(tracks)
-    .where(eq(tracks.isActive, true))
-  const totalActiveTracks = activeCount[0]?.value ?? 0
-
   if (!session) {
     return {
       ok: false as const,
@@ -867,6 +1075,11 @@ export async function pickWinner(input: {
       message: 'Session introuvable.',
     }
   }
+
+  const totalEligibleTracks = await countEligibleTracks(db, {
+    round: session.electionRound,
+    communeId: session.communeId,
+  })
 
   if (session.status === 'completed') {
     const summary = await getSessionSummary({ sessionId: session.id })
@@ -877,20 +1090,7 @@ export async function pickWinner(input: {
     }
   }
 
-  if (session.status === 'waiting') {
-    return {
-      ok: true as const,
-      status: 'waiting' as const,
-      waiting: {
-        message: 'Session en attente de nouveaux morceaux.',
-      },
-    }
-  }
-
-  const pairIds = [
-    session.currentChampionTrackId,
-    session.currentChallengerTrackId,
-  ]
+  const pairIds = [session.currentChampionTrackId, session.currentChallengerTrackId]
   if (
     !pairIds.includes(input.winnerTrackId) ||
     !pairIds.includes(input.loserTrackId) ||
@@ -903,10 +1103,11 @@ export async function pickWinner(input: {
     }
   }
 
-  const votedTracks = await getTrackViewsByIds(db, [
-    input.winnerTrackId,
-    input.loserTrackId,
-  ])
+  const votedTracks = await getTrackViewsByIds(
+    db,
+    [input.winnerTrackId, input.loserTrackId],
+    session.electionRound,
+  )
   const winnerTrack = votedTracks.at(0)
   const loserTrack = votedTracks.at(1)
 
@@ -930,6 +1131,8 @@ export async function pickWinner(input: {
   await db.transaction(async (tx) => {
     await tx.insert(votes).values({
       sessionId: session.id,
+      electionRound: session.electionRound,
+      communeId: session.communeId,
       roundNumber: session.roundsPlayed + 1,
       userId: session.userId,
       leftTrackId: input.leftTrackId,
@@ -938,57 +1141,63 @@ export async function pickWinner(input: {
       loserTrackId: input.loserTrackId,
     })
 
-    await tx
-      .update(tracks)
-      .set({
-        rating: nextWinnerRating,
-        wins: sql`${tracks.wins} + 1`,
-        appearances: sql`${tracks.appearances} + 1`,
-      })
-      .where(eq(tracks.id, input.winnerTrackId))
+    if (session.electionRound === 'round2') {
+      await tx
+        .update(tracks)
+        .set({
+          round2Rating: nextWinnerRating,
+          round2Wins: sql`${tracks.round2Wins} + 1`,
+          round2Appearances: sql`${tracks.round2Appearances} + 1`,
+        })
+        .where(eq(tracks.id, input.winnerTrackId))
 
-    await tx
-      .update(tracks)
-      .set({
-        rating: nextLoserRating,
-        losses: sql`${tracks.losses} + 1`,
-        appearances: sql`${tracks.appearances} + 1`,
-      })
-      .where(eq(tracks.id, input.loserTrackId))
+      await tx
+        .update(tracks)
+        .set({
+          round2Rating: nextLoserRating,
+          round2Losses: sql`${tracks.round2Losses} + 1`,
+          round2Appearances: sql`${tracks.round2Appearances} + 1`,
+        })
+        .where(eq(tracks.id, input.loserTrackId))
+    } else {
+      await tx
+        .update(tracks)
+        .set({
+          rating: nextWinnerRating,
+          wins: sql`${tracks.wins} + 1`,
+          appearances: sql`${tracks.appearances} + 1`,
+        })
+        .where(eq(tracks.id, input.winnerTrackId))
+
+      await tx
+        .update(tracks)
+        .set({
+          rating: nextLoserRating,
+          losses: sql`${tracks.losses} + 1`,
+          appearances: sql`${tracks.appearances} + 1`,
+        })
+        .where(eq(tracks.id, input.loserTrackId))
+    }
   })
 
-  const nextChallengerId = await pickRandomChallenger(db, Array.from(seen))
+  const nextChallengerId = await pickRandomChallenger(db, {
+    excludedTrackIds: Array.from(seen),
+    round: session.electionRound,
+    communeId: session.communeId,
+  })
 
   if (!nextChallengerId) {
-    const votingFinalizationAt = await resolveVotingFinalizationAt(db)
-    const shouldCompleteSession = new Date() >= votingFinalizationAt
-
     await db
       .update(voteSessions)
       .set({
-        status: shouldCompleteSession ? 'completed' : 'waiting',
+        status: 'completed',
         roundsPlayed: session.roundsPlayed + 1,
         currentChampionTrackId: input.winnerTrackId,
         currentChallengerTrackId: input.loserTrackId,
         seenTrackIds: JSON.stringify(Array.from(seen)),
-        completedAt: shouldCompleteSession ? new Date().toISOString() : null,
+        completedAt: new Date().toISOString(),
       })
       .where(eq(voteSessions.id, session.id))
-
-    if (!shouldCompleteSession) {
-      return {
-        ok: true as const,
-        status: 'waiting' as const,
-        waiting: {
-          message: 'Session en attente de nouveaux morceaux.',
-        },
-        roundsPlayed: session.roundsPlayed + 1,
-        progress: {
-          seen: seen.size,
-          total: totalActiveTracks,
-        },
-      }
-    }
 
     const summary = await getSessionSummary({ sessionId: session.id })
     return {
@@ -1010,7 +1219,11 @@ export async function pickWinner(input: {
     })
     .where(eq(voteSessions.id, session.id))
 
-  const nextChallenger = await getTrackViewById(db, nextChallengerId)
+  const nextChallenger = await getTrackViewById(
+    db,
+    nextChallengerId,
+    session.electionRound,
+  )
 
   return {
     ok: true as const,
@@ -1019,35 +1232,44 @@ export async function pickWinner(input: {
     roundsPlayed: session.roundsPlayed + 1,
     progress: {
       seen: seen.size,
-      total: totalActiveTracks,
+      total: totalEligibleTracks,
     },
   }
 }
 
 export async function getLeaderboard(input?: {
+  electionRound?: ElectionRound | null
   communeSlug?: string | null
   limit?: number
 }) {
   const db = getDb()
+  const phase = await resolveElectionPhase(db)
+  const electionRound = input?.electionRound ?? (phase === 'round1' ? 'round1' : 'round2')
   const limit = input?.limit ?? 20
   const filters = [eq(tracks.isActive, true)]
 
-  if (input?.communeSlug) {
+  if (electionRound === 'round2') {
+    await maybeFinalizeRound1Winners(db)
+  }
+
+  if (electionRound === 'round1' && input?.communeSlug) {
     filters.push(eq(communes.slug, input.communeSlug))
   }
 
-  const rows = await db
+  const baseQuery = db
     .select({
       id: tracks.id,
       title: tracks.title,
       slug: tracks.slug,
       streamUrl: tracks.streamUrl,
       r2Key: tracks.r2Key,
-      rating: tracks.rating,
-      wins: tracks.wins,
-      losses: tracks.losses,
-      appearances: tracks.appearances,
+      rating: electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
+      wins: electionRound === 'round2' ? tracks.round2Wins : tracks.wins,
+      losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
+      appearances:
+        electionRound === 'round2' ? tracks.round2Appearances : tracks.appearances,
       artistName: artists.name,
+      communeId: communes.id,
       communeName: communes.name,
       communeSlug: communes.slug,
       listName: electoralLists.name,
@@ -1057,14 +1279,58 @@ export async function getLeaderboard(input?: {
     .innerJoin(artists, eq(artists.id, tracks.artistId))
     .innerJoin(communes, eq(communes.id, tracks.communeId))
     .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
-    .where(and(...filters))
-    .orderBy(desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
-    .limit(limit)
+
+  const rows =
+    electionRound === 'round2'
+      ? await baseQuery
+          .innerJoin(
+            round1CommuneWinners,
+            eq(round1CommuneWinners.winningTrackId, tracks.id),
+          )
+          .where(and(...filters))
+          .orderBy(
+            desc(tracks.round2Rating),
+            desc(tracks.round2Wins),
+            desc(tracks.round2Appearances),
+          )
+          .limit(limit)
+      : await baseQuery
+          .where(and(...filters))
+          .orderBy(desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
+          .limit(limit)
 
   return rows.map((row, index) => ({
     rank: index + 1,
+    electionRound,
     ...row,
   }))
+}
+
+export async function getVotingStartOptions() {
+  const db = getDb()
+  const electionRound = await resolveElectionPhase(db)
+
+  if (electionRound === 'closed') {
+    return {
+      electionRound,
+      eligibleCommunes: [],
+    }
+  }
+
+  if (electionRound === 'round2') {
+    await maybeFinalizeRound1Winners(db)
+    return {
+      electionRound,
+      eligibleCommunes: [],
+    }
+  }
+
+  const eligibleCommunes = await listEligibleCommunesForRound1(db)
+
+  return {
+    electionRound,
+    eligibleCommunes,
+  }
 }
 
 export async function submitReport(input: {
@@ -1176,6 +1442,15 @@ export async function getSessionSummary(input: {
     throw new Error('Session not found')
   }
 
+  const commune =
+    typeof session.communeId === 'number'
+      ? await db
+          .select({ name: communes.name })
+          .from(communes)
+          .where(eq(communes.id, session.communeId))
+          .limit(1)
+      : []
+
   const sessionVotes = await db
     .select({ winnerTrackId: votes.winnerTrackId })
     .from(votes)
@@ -1201,6 +1476,8 @@ export async function getSessionSummary(input: {
     .sort((a, b) => b.points - a.points)
 
   return {
+    electionRound: session.electionRound,
+    communeName: commune.at(0)?.name ?? null,
     roundsPlayed: session.roundsPlayed,
     winnerTrackId: session.currentChampionTrackId,
     scoreboard,

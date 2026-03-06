@@ -105,7 +105,7 @@ export function SongCard({
           </div>
         </div>
 
-        <h3 className="font-display text-[1.95rem] font-bold leading-tight text-foreground break-words">
+        <h3 className="truncate font-display text-[1.95rem] font-bold leading-tight text-foreground">
           {track.title}
         </h3>
 
