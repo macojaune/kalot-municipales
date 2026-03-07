@@ -54,14 +54,9 @@ function ResultsPage() {
   const currentChampion = champion
 
   const title =
-    currentSummary.electionRound === 'round1' && currentSummary.communeName
-      ? `Ta chanson preferee pour ${currentSummary.communeName}`
-      : 'Ta chanson preferee'
+    'Ta chanson preferee'
 
-  const subtitle =
-    currentSummary.electionRound === 'round1' && currentSummary.communeName
-      ? `Le public a choisi son favori pour ${currentSummary.communeName}.`
-      : 'Voici le morceau que tu as propulse en tete de session.'
+  const subtitle = 'Voici le morceau que tu as propulse en tete de session.'
 
   async function handleCopyLink() {
     try {
@@ -155,11 +150,11 @@ function ResultsPage() {
           <h2 className="mt-2 break-words font-display text-4xl text-foreground md:text-5xl">
             {currentChampion.title}
           </h2>
-            {currentSummary.communeName ? (
-              <p className="mt-2 font-display text-xs tracking-widest text-secondary">
-                {currentSummary.communeName}
-              </p>
-            ) : null}
+          {currentSummary.communeName ? (
+            <p className="mt-2 font-display text-xs tracking-widest text-secondary">
+              {currentSummary.communeName}
+            </p>
+          ) : null}
           <p className="mt-3 text-sm tabular text-muted-foreground">
             Score session: {currentChampion.points} points
           </p>
@@ -213,7 +208,7 @@ function ResultsPage() {
           </NeonButton>
 
           <Link
-            to="/leaderboard"
+            to="/classement"
             className="inline-flex min-h-12 items-center justify-center rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
           >
             Classement general
@@ -324,7 +319,7 @@ function buildShareText(input: {
     .join(' | ')
 
   return input.communeName
-    ? `Ma chanson preferee pour ${input.communeName}: ${input.championTitle}. Top 3: ${podium}. Vote aussi sur KalotMunicipales.`
+    ? `Ma chanson preferee sur KalotMunicipales: ${input.championTitle}. Top 3: ${podium}. Vote aussi sur KalotMunicipales.`
     : `Ma chanson preferee sur KalotMunicipales: ${input.championTitle}. Top 3: ${podium}. Vote aussi sur KalotMunicipales.`
 }
 

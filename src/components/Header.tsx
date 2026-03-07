@@ -6,7 +6,7 @@ import { MegaphoneTwinIcon } from './brand-icons'
 const links = [
   { to: '/', label: 'Accueil' },
   { to: '/duel', label: 'Duel' },
-  { to: '/leaderboard', label: 'Classement' },
+  { to: '/classement', label: 'Classement' },
 ]
 
 export default function Header() {

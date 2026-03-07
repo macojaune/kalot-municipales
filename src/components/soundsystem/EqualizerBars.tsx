@@ -30,7 +30,7 @@ function getColorClass(color: 'green' | 'blue' | 'orange') {
 function getDimensions(variant: 'small' | 'large' | 'progress') {
   if (variant === 'large') {
     return {
-      widthClass: 'w-4.5 md:w-3',
+      widthClass: 'w-4.5 md:w-8',
       minHeight: 36,
       maxHeight: 132,
     }

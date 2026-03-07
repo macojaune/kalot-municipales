@@ -1,7 +1,8 @@
-import { useUser } from '@clerk/clerk-react'
+import { useClerk, useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { LogOut, User } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
 import { NeonButton } from '../components/soundsystem/NeonButton'
@@ -17,7 +18,6 @@ import type {
   ElectionRound,
   LeaderboardResponse,
   StartSessionResponse,
-  VotingStartOptionsResponse,
 } from '../lib/kalot-client'
 
 export const Route = createFileRoute('/')({
@@ -26,22 +26,44 @@ export const Route = createFileRoute('/')({
 
 function HomePage() {
   const navigate = useNavigate()
+  const { openSignIn, signOut } = useClerk()
   const { user } = useUser()
   const [feedback, setFeedback] = useState<string | null>(null)
-  const [isCommunePickerOpen, setIsCommunePickerOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement | null>(null)
 
   const externalUserId = getExternalUserId(user)
   const displayName = getDisplayName(user)
 
+  useEffect(() => {
+    if (!isUserMenuOpen) {
+      return
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!userMenuRef.current?.contains(event.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isUserMenuOpen])
+
   const leaderboardQuery = useQuery({
     queryKey: ['leaderboard', 'home-full'],
     queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=200'),
-    refetchInterval: 15000,
-  })
-
-  const votingOptionsQuery = useQuery({
-    queryKey: ['vote-options'],
-    queryFn: () => getJson<VotingStartOptionsResponse>('/api/vote/options'),
     refetchInterval: 15000,
   })
 
@@ -59,8 +81,7 @@ function HomePage() {
   )
 
   const electionRound: ElectionRound | 'closed' =
-    votingOptionsQuery.data?.electionRound ?? songs.at(0)?.electionRound ?? 'round1'
-  const eligibleCommunes = votingOptionsQuery.data?.eligibleCommunes ?? []
+    songs.at(0)?.electionRound ?? 'round1'
 
   const tickerItems = useMemo(
     () => topTracks.map((track) => `${track.title} - ${track.artistName}`),
@@ -68,7 +89,7 @@ function HomePage() {
   )
 
   const startSessionMutation = useMutation({
-    mutationFn: async (communeSlug?: string | null) => {
+    mutationFn: async () => {
       if (!externalUserId) {
         throw new Error('Utilisateur non connecte.')
       }
@@ -76,7 +97,6 @@ function HomePage() {
       return postJson<StartSessionResponse>('/api/vote/start', {
         externalUserId,
         username: displayName,
-        communeSlug: electionRound === 'round1' ? communeSlug ?? null : null,
       })
     },
     onSuccess: async (response) => {
@@ -87,7 +107,6 @@ function HomePage() {
 
       setActiveSessionId(response.sessionId)
       setFeedback(null)
-      setIsCommunePickerOpen(false)
       await navigate({ to: '/duel' })
     },
     onError: (error) => {
@@ -105,22 +124,15 @@ function HomePage() {
       return
     }
 
-    if (electionRound === 'round1') {
-      if (!eligibleCommunes.length) {
-        setFeedback('Aucune commune n a encore assez de sons pour un duel.')
-        return
-      }
-
-      setIsCommunePickerOpen(true)
+    if (!externalUserId) {
       setFeedback(null)
+      void openSignIn({
+        fallbackRedirectUrl: window.location.href,
+      })
       return
     }
 
-    void startSessionMutation.mutate(null)
-  }
-
-  function handleCommuneLaunch(communeSlug: string) {
-    void startSessionMutation.mutate(communeSlug)
+    void startSessionMutation.mutate()
   }
 
   return (
@@ -130,6 +142,45 @@ function HomePage() {
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.035),transparent_38%)]" />
         <div className="absolute inset-0 pointer-events-none opacity-[0.24] bg-[radial-gradient(circle_at_4px_4px,rgba(255,255,255,0.22)_1.5px,transparent_1.6px),radial-gradient(circle_at_14px_14px,rgba(255,255,255,0.18)_1.5px,transparent_1.6px)] bg-[length:20px_20px]" />
 
+        {user ? (
+          <div ref={userMenuRef} className="absolute left-4 top-4 z-30">
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen((current) => !current)}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-primary/35 bg-card/85 text-white shadow-[4px_4px_0_rgba(57,255,20,0.18)] transition-all hover:border-primary hover:text-primary"
+              aria-label="Ouvrir le menu utilisateur"
+              aria-expanded={isUserMenuOpen}
+            >
+              <User className="h-5 w-5" />
+            </button>
+
+            {isUserMenuOpen ? (
+              <div className="absolute left-0 top-14 w-52 rounded-xl border border-primary/35 bg-background/95 p-2 shadow-[6px_6px_0_rgba(0,0,0,0.45)] backdrop-blur-md">
+                <div className="border-b border-border px-3 py-2">
+                  <p className="truncate font-display text-sm font-bold text-white">
+                    {displayName}
+                  </p>
+                  <p className="text-xs font-body text-muted-foreground">
+                    Menu utilisateur
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false)
+                    void signOut({ redirectUrl: '/' })
+                  }}
+                  className="mt-2 flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-body text-sm text-white transition-colors hover:bg-primary/10 hover:text-primary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Deconnexion
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="z-10 mt-auto space-y-8 px-4 animate-fade-in md:pt-24 md:pb-10">
           <section className="space-y-6 text-center">
             <h1 className="text-6xl font-display font-bold leading-[0.9] text-foreground md:text-8xl">
@@ -138,9 +189,7 @@ function HomePage() {
               <span className="text-primary text-glow-green">MUNICIPALES</span>
             </h1>
             <p className="mx-auto max-w-[19rem] font-body text-base leading-relaxed text-white md:max-w-xl md:text-lg">
-              {electionRound === 'round1'
-                ? 'Premier tour: elisez le meilleur son de campagne dans votre commune.'
-                : 'Deuxieme tour: les gagnants des communes s affrontent pour la finale.'}
+              Vote pour la meilleure musique de campagne des municipales 2026.
             </p>
           </section>
 
@@ -154,12 +203,6 @@ function HomePage() {
               />
             </div>
 
-            {electionRound === 'round2' ? (
-              <p className="relative z-10 text-center font-display text-xs tracking-widest text-primary">
-                Finale des gagnants communaux
-              </p>
-            ) : null}
-
             <NeonButton
               color="green"
               size="lg"
@@ -170,13 +213,11 @@ function HomePage() {
             >
               {startSessionMutation.isPending
                 ? 'Lancement...'
-                : electionRound === 'round1'
-                  ? 'Lancer le vote'
-                  : 'Lancer la finale'}
+                : 'Lancer le vote'}
             </NeonButton>
 
             <Link
-              to="/leaderboard"
+              to="/classement"
               className="relative z-10 inline-flex min-h-14 w-full items-center justify-center whitespace-nowrap rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-[1.55rem] font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
             >
               Classement général
@@ -190,12 +231,12 @@ function HomePage() {
           ) : null}
 
           <p className="text-center text-xs font-body text-accent">
-            politisé avec <span className="mr-1">🫶</span> par{' '}
+            Politisé avec <span className="mr-1">🫶</span> par{' '}
             <a
               href="https://marvinl.com"
               className="font-semibold text-glow-white text-white"
             >
-              marvinl.com
+              Marvinl.com
             </a>
           </p>
         </div>
@@ -209,53 +250,6 @@ function HomePage() {
           <ScrollingTicker items={tickerItems} />
         </div>
 
-        {isCommunePickerOpen ? (
-          <div className="absolute inset-0 z-30 flex items-end bg-black/70 p-4 backdrop-blur-sm md:items-center md:justify-center">
-            <div className="neon-panel box-glow-green w-full max-w-2xl rounded-2xl border border-primary/45 bg-card/95 p-4 md:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-display text-xs tracking-[0.2em] text-primary">
-                    Premier tour
-                  </p>
-                  <h2 className="mt-2 font-display text-3xl text-glow-green text-primary">
-                    Choisis ta commune
-                  </h2>
-                  <p className="mt-2 max-w-md font-body text-sm text-muted-foreground">
-                    On ne te propose que les communes qui ont deja assez de sons
-                    pour lancer des duels.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCommunePickerOpen(false)}
-                  className="rounded-full border border-border px-3 py-1 font-display text-[11px] tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-                >
-                  Fermer
-                </button>
-              </div>
-
-              <div className="mt-5 grid max-h-[55vh] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-                {eligibleCommunes.map((commune) => (
-                  <button
-                    key={commune.id}
-                    type="button"
-                    onClick={() => handleCommuneLaunch(commune.slug)}
-                    disabled={startSessionMutation.isPending}
-                    className="group rounded-xl border border-border bg-background/80 px-4 py-4 text-left transition-all hover:border-primary hover:bg-primary/10 hover:box-glow-green disabled:opacity-60"
-                  >
-                    <p className="font-display text-xl text-foreground transition-colors group-hover:text-primary">
-                      {commune.name}
-                    </p>
-                    <p className="mt-1 font-body text-xs text-muted-foreground">
-                      {commune.trackCount} sons eligibles
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
     </Layout>
   )

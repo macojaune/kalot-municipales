@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -29,17 +29,28 @@ export const artists = sqliteTable('artists', {
     .$defaultFn(() => new Date().toISOString()),
 })
 
-export const electoralLists = sqliteTable('electoral_lists', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  candidateName: text('candidate_name'),
-  communeId: integer('commune_id')
-    .notNull()
-    .references(() => communes.id),
-  createdAt: text('created_at')
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()),
-})
+export const electoralLists = sqliteTable(
+  'electoral_lists',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    candidateName: text('candidate_name'),
+    photoUrl: text('photo_url'),
+    communeId: integer('commune_id')
+      .notNull()
+      .references(() => communes.id),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => ({
+    communeSlugUnique: uniqueIndex('electoral_lists_commune_slug_unique').on(
+      table.communeId,
+      table.slug,
+    ),
+  }),
+)
 
 export const tracks = sqliteTable('tracks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -47,9 +58,7 @@ export const tracks = sqliteTable('tracks', {
   slug: text('slug').notNull().unique(),
   r2Key: text('r2_key').notNull(),
   streamUrl: text('stream_url'),
-  artistId: integer('artist_id')
-    .notNull()
-    .references(() => artists.id),
+  artistId: integer('artist_id').references(() => artists.id),
   communeId: integer('commune_id')
     .notNull()
     .references(() => communes.id),

@@ -5,7 +5,7 @@ import { MegaphoneTwinIcon } from './brand-icons'
 const items = [
   { to: '/', label: 'Accueil', kind: 'home' as const },
   { to: '/duel', label: 'Duel', kind: 'duel' as const },
-  { to: '/leaderboard', label: 'Classement', kind: 'rank' as const },
+  { to: '/classement', label: 'Classement', kind: 'rank' as const },
 ]
 
 export default function MobileNav() {

@@ -1,29 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Trophy } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Layout } from '../components/Layout'
 import { getJson } from '../lib/kalot-client'
-import type { ElectionRound, LeaderboardResponse } from '../lib/kalot-client'
-import { COMMUNES } from '../types/song'
+import type { LeaderboardResponse } from '../lib/kalot-client'
+import clsx from 'clsx'
 
-export const Route = createFileRoute('/leaderboard')({
+export const Route = createFileRoute('/classement')({
   component: LeaderboardPage,
 })
 
-const FILTERS = ['Tous', ...COMMUNES.guadeloupe]
-
 function LeaderboardPage() {
-  const [activeFilter, setActiveFilter] = useState('Tous')
-
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'full-table', activeFilter],
-    queryFn: () =>
-      getJson<LeaderboardResponse>(
-        `/api/leaderboard?limit=500${
-          activeFilter !== 'Tous' ? `&commune=${encodeURIComponent(slugify(activeFilter))}` : ''
-        }`,
-      ),
+    queryKey: ['leaderboard', 'full-table'],
+    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=500'),
     refetchInterval: 15000,
   })
 
@@ -35,45 +26,19 @@ function LeaderboardPage() {
     [leaderboardQuery.data?.leaderboard],
   )
 
-  const electionRound: ElectionRound = songs.at(0)?.electionRound ?? 'round1'
-
   return (
     <Layout>
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8 space-y-5 animate-fade-in">
         <section className="rounded-2xl border border-secondary/35 bg-card/70 p-4 md:p-6">
           <h1 className="font-display text-3xl text-secondary text-glow-blue flex items-center gap-2">
             <Trophy className="w-7 h-7" />
-            {electionRound === 'round1' ? 'Classement communal' : 'Classement final'}
+            Classement general
           </h1>
-
-          {electionRound === 'round1' ? (
-            <div className="mt-4">
-              <label htmlFor="commune-filter" className="sr-only">
-                Filtrer par commune
-              </label>
-              <select
-                id="commune-filter"
-                value={activeFilter}
-                onChange={(event) => setActiveFilter(event.target.value)}
-                className="h-12 w-full rounded-md border border-border bg-background px-3 font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {FILTERS.map((filter) => (
-                  <option key={filter} value={filter}>
-                    {filter === 'Tous' ? 'Toutes les communes' : filter}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <p className="mt-4 font-body text-sm text-muted-foreground">
-              Second tour entre les sons arrives #1 dans chaque commune.
-            </p>
-          )}
         </section>
 
         {songs.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card/70 p-8 text-center text-muted-foreground">
-            Aucun son trouve pour ce filtre.
+            Pas de classement pour le moment.
           </div>
         ) : (
           <section className="space-y-3">
@@ -106,11 +71,13 @@ function LeaderboardPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-lg text-foreground truncate">
+                    <div className='flex flex-row gap-4'><p className="font-display text-xl font-semibold text-foreground truncate">
                       {song.title}
                     </p>
+                      <span className={clsx(["text-sm", medalColor])}>{song.communeName}</span>
+                    </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      {song.artistName} - {song.communeName}
+                      {song.listName}
                     </p>
                   </div>
 
@@ -130,13 +97,4 @@ function LeaderboardPage() {
       </div>
     </Layout>
   )
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
 }

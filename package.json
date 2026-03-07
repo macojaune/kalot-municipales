@@ -15,7 +15,8 @@
     "check": "prettier --write . && eslint --fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed:electoral-lists": "node scripts/seed-electoral-lists.mjs"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.49.0",

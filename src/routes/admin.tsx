@@ -2,19 +2,14 @@ import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Lock, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
-import { useRegion } from '../context/RegionContext'
 import {
   deleteJson,
   getExternalUserId,
   getJson,
   postJson,
 } from '../lib/kalot-client'
-import type { Region } from '../types/song'
-import { COMMUNES, REGION_LABELS } from '../types/song'
-
-const ADMIN_PASSWORD = 'kalot2026'
 
 type AdminTrackListResponse =
   | {
@@ -43,26 +38,43 @@ type AdminMutationResponse =
   | { ok: true }
   | { ok: false; code?: string; message: string }
 
+type AdminElectoralListResponse =
+  | {
+      ok: true
+      communes: Array<{
+        id: number
+        name: string
+        slug: string
+        lists: Array<{
+          id: number
+          name: string
+          slug: string
+          candidateName: string | null
+          photoUrl: string | null
+        }>
+      }>
+    }
+  | {
+      ok: false
+      code: string
+      message: string
+    }
+
 export const Route = createFileRoute('/admin')({
   component: AdminPage,
 })
 
 function AdminPage() {
   const { user } = useUser()
-  const { region } = useRegion()
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
 
-  const [authenticated, setAuthenticated] = useState(false)
-  const [password, setPassword] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '',
     artistName: '',
-    region: region ?? 'guadeloupe',
     communeName: '',
-    listName: '',
-    candidateName: '',
+    electoralListId: '',
     streamUrl: '',
   })
 
@@ -74,8 +86,41 @@ function AdminPage() {
           externalUserId ?? '',
         )}`,
       ),
-    enabled: authenticated && Boolean(externalUserId),
+    enabled: Boolean(externalUserId),
   })
+
+  const electoralListsQuery = useQuery({
+    queryKey: ['admin-electoral-lists'],
+    queryFn: () =>
+      getJson<AdminElectoralListResponse>(
+        `/api/admin/electoral-lists?externalUserId=${encodeURIComponent(
+          externalUserId ?? '',
+        )}`,
+      ),
+    enabled: Boolean(externalUserId),
+  })
+
+  const electoralCommunes = useMemo(
+    () =>
+      electoralListsQuery.data?.ok && Array.isArray(electoralListsQuery.data.communes)
+        ? electoralListsQuery.data.communes
+        : [],
+    [electoralListsQuery.data],
+  )
+
+  const selectedCommune = useMemo(
+    () =>
+      electoralCommunes.find((commune) => commune.name === form.communeName) ?? null,
+    [electoralCommunes, form.communeName],
+  )
+
+  const selectedElectoralList = useMemo(
+    () =>
+      selectedCommune?.lists.find(
+        (list) => String(list.id) === form.electoralListId,
+      ) ?? null,
+    [form.electoralListId, selectedCommune],
+  )
 
   const createTrackMutation = useMutation({
     mutationFn: () =>
@@ -83,11 +128,11 @@ function AdminPage() {
         '/api/admin/track',
         {
           externalUserId,
+          electoralListId: form.electoralListId
+            ? Number(form.electoralListId)
+            : null,
           title: form.title,
-          artistName: form.artistName,
-          communeName: form.communeName,
-          listName: form.listName || null,
-          candidateName: form.candidateName || null,
+          artistName: form.artistName || null,
           streamUrl: form.streamUrl || null,
         },
       ),
@@ -103,8 +148,7 @@ function AdminPage() {
         title: '',
         artistName: '',
         communeName: '',
-        listName: '',
-        candidateName: '',
+        electoralListId: '',
         streamUrl: '',
       }))
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
@@ -139,7 +183,12 @@ function AdminPage() {
       postJson<{
         ok: true
         communes: { inserted: number; totalTarget: number }
-        tracks: { created: number; total: number }
+        electoralLists: {
+          created: number
+          updated: number
+          total: number
+          totalCommunes: number
+        }
       } | {
         ok: false
         message: string
@@ -151,17 +200,21 @@ function AdminPage() {
       }
 
       setFeedback(
-        `${response.communes.inserted} communes ajoutees, ${response.tracks.created} sons demo injectes !`,
+        `${response.communes.inserted} communes ajoutees, ${response.electoralLists.created} listes creees, ${response.electoralLists.updated} mises a jour.`,
       )
+      await queryClient.invalidateQueries({ queryKey: ['admin-electoral-lists'] })
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
     onError: () => {
-      setFeedback("Impossible d'injecter les donnees demo.")
+      setFeedback("Impossible d'importer les listes electorales.")
     },
   })
 
   const adminAccessError =
-    tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null
+    (tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null) ||
+    (electoralListsQuery.data && !electoralListsQuery.data.ok
+      ? electoralListsQuery.data
+      : null)
 
   const adminTracks =
     tracksQuery.data?.ok && Array.isArray(tracksQuery.data.tracks)
@@ -179,56 +232,6 @@ function AdminPage() {
           <p className="text-xs text-muted-foreground font-body text-center">
             Connexion requise pour acceder a l'administration.
           </p>
-        </div>
-      </Layout>
-    )
-  }
-
-  if (!authenticated) {
-    return (
-      <Layout>
-        <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
-          <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-primary" />
-            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
-          </div>
-          <input
-            type="password"
-            name="adminPassword"
-            autoComplete="current-password"
-            aria-label="Mot de passe"
-            placeholder="Mot de passe admin…"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && password === ADMIN_PASSWORD) {
-                setAuthenticated(true)
-              }
-            }}
-            className="w-full p-3 rounded-xl bg-card/80 border border-border font-body min-h-[44px]"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (password === ADMIN_PASSWORD) {
-                setFeedback(null)
-                setAuthenticated(true)
-                return
-              }
-              setFeedback('Mot de passe incorrect.')
-            }}
-            className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
-          >
-            Entrer
-          </button>
-          {feedback ? (
-            <p
-              aria-live="polite"
-              className="text-xs text-muted-foreground font-body text-center"
-            >
-              {feedback}
-            </p>
-          ) : null}
         </div>
       </Layout>
     )
@@ -266,7 +269,7 @@ function AdminPage() {
                 title: event.target.value,
               }))
             }
-            placeholder="Titre (ex: Mairie an nou)…"
+            placeholder="Titre optionnel (sinon nom de liste / candidat)…"
             className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
@@ -277,29 +280,7 @@ function AdminPage() {
                 artistName: event.target.value,
               }))
             }
-            placeholder="Artiste (ex: DJ Kalot)…"
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            value={form.listName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                listName: event.target.value,
-              }))
-            }
-            placeholder="Liste electorale…"
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            value={form.candidateName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                candidateName: event.target.value,
-              }))
-            }
-            placeholder="Candidat…"
+            placeholder="Artiste connu (optionnel)…"
             className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
@@ -317,45 +298,66 @@ function AdminPage() {
           />
 
           <select
-            value={form.region}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                region: event.target.value as Region,
-                communeName: '',
-              }))
-            }
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          >
-            {(Object.keys(REGION_LABELS) as Region[]).map((entryRegion) => (
-              <option key={entryRegion} value={entryRegion}>
-                {REGION_LABELS[entryRegion]}
-              </option>
-            ))}
-          </select>
-
-          <select
             value={form.communeName}
             onChange={(event) =>
               setForm((previous) => ({
                 ...previous,
                 communeName: event.target.value,
+                electoralListId: '',
               }))
             }
             className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           >
             <option value="">Commune</option>
-            {COMMUNES[form.region].map((communeName) => (
-              <option key={communeName} value={communeName}>
-                {communeName}
+            {electoralCommunes.map((commune) => (
+              <option key={commune.id} value={commune.name}>
+                {commune.name}
               </option>
             ))}
           </select>
 
+          <select
+            value={form.electoralListId}
+            onChange={(event) =>
+              setForm((previous) => ({
+                ...previous,
+                electoralListId: event.target.value,
+              }))
+            }
+            disabled={!selectedCommune}
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
+          >
+            <option value="">Tete de liste</option>
+            {selectedCommune?.lists.map((electoralList) => (
+              <option key={electoralList.id} value={String(electoralList.id)}>
+                {electoralList.candidateName || electoralList.name}
+              </option>
+            ))}
+          </select>
+
+          {selectedElectoralList ? (
+            <div className="rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground space-y-1">
+              <p>
+                <span className="text-foreground">Liste:</span>{' '}
+                {selectedElectoralList.name}
+              </p>
+              <p>
+                <span className="text-foreground">Tete de liste:</span>{' '}
+                {selectedElectoralList.candidateName || 'Non renseignee'}
+              </p>
+              {selectedElectoralList.photoUrl ? (
+                <p className="truncate">
+                  <span className="text-foreground">Photo:</span>{' '}
+                  {selectedElectoralList.photoUrl}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           <button
             type="button"
             onClick={() => void createTrackMutation.mutate()}
-            disabled={createTrackMutation.isPending}
+            disabled={createTrackMutation.isPending || !form.electoralListId}
             className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold flex items-center justify-center gap-2 min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -369,8 +371,14 @@ function AdminPage() {
           disabled={seedMutation.isPending}
           className="w-full py-3 rounded-xl border border-secondary/45 bg-secondary/10 text-secondary font-display font-medium min-h-[44px] hover:bg-secondary hover:text-background hover:box-glow-blue transition-all"
         >
-          {seedMutation.isPending ? 'Injection…' : 'Injecter sons demo'}
+          {seedMutation.isPending ? 'Import…' : 'Importer listes electorales'}
         </button>
+
+        {electoralCommunes.length === 0 ? (
+          <p className="text-xs text-muted-foreground font-body text-center">
+            Importe d'abord le referentiel electoral pour activer le formulaire dynamique.
+          </p>
+        ) : null}
 
         <div className="space-y-2">
           <h2 className="font-display font-bold text-sm">
@@ -386,7 +394,9 @@ function AdminPage() {
                   {song.title}
                 </p>
                 <p className="text-xs text-muted-foreground font-body truncate">
-                  {song.artistName} · {song.communeName} · Elo{' '}
+                  {song.artistName ? `${song.artistName} · ` : ''}
+                  {song.communeName}
+                  {song.candidateName ? ` · ${song.candidateName}` : ''} · Elo{' '}
                   <span className="tabular">{Math.round(song.rating)}</span>
                 </p>
               </div>

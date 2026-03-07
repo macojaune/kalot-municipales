@@ -37,8 +37,9 @@ export const Route = createFileRoute('/api/admin/track')({
       POST: async ({ request }) => {
         const body = (await request.json()) as {
           externalUserId?: string | null
+          electoralListId?: number | null
           title?: string
-          artistName?: string
+          artistName?: string | null
           communeName?: string
           listName?: string | null
           candidateName?: string | null
@@ -53,18 +54,22 @@ export const Route = createFileRoute('/api/admin/track')({
           return json(access, { status: 403 })
         }
 
-        if (!body.title || !body.artistName || !body.communeName) {
+        if (
+          typeof body.electoralListId !== 'number' &&
+          !body.communeName
+        ) {
           return json(
             {
               ok: false,
               code: 'INVALID_BODY',
-              message: 'title, artistName et communeName sont requis.',
+              message: 'electoralListId ou communeName est requis.',
             },
             { status: 400 },
           )
         }
 
         const track = await createTrack({
+          electoralListId: body.electoralListId,
           title: body.title,
           artistName: body.artistName,
           communeName: body.communeName,

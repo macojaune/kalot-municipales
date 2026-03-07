@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultsRouteImport } from './routes/results'
-import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as DuelRouteImport } from './routes/duel'
+import { Route as ClassementRouteImport } from './routes/classement'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,20 +23,21 @@ import { Route as ApiVotePickRouteImport } from './routes/api.vote.pick'
 import { Route as ApiVoteOptionsRouteImport } from './routes/api.vote.options'
 import { Route as ApiAdminTrackRouteImport } from './routes/api.admin.track'
 import { Route as ApiAdminSeedRouteImport } from './routes/api.admin.seed'
+import { Route as ApiAdminElectoralListsRouteImport } from './routes/api.admin.electoral-lists'
 
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LeaderboardRoute = LeaderboardRouteImport.update({
-  id: '/leaderboard',
-  path: '/leaderboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DuelRoute = DuelRouteImport.update({
   id: '/duel',
   path: '/duel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClassementRoute = ClassementRouteImport.update({
+  id: '/classement',
+  path: '/classement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -94,16 +95,22 @@ const ApiAdminSeedRoute = ApiAdminSeedRouteImport.update({
   path: '/api/admin/seed',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminElectoralListsRoute = ApiAdminElectoralListsRouteImport.update({
+  id: '/api/admin/electoral-lists',
+  path: '/api/admin/electoral-lists',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
-  '/leaderboard': typeof LeaderboardRoute
   '/results': typeof ResultsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
+  '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
@@ -115,11 +122,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
-  '/leaderboard': typeof LeaderboardRoute
   '/results': typeof ResultsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
+  '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
@@ -132,11 +140,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
-  '/leaderboard': typeof LeaderboardRoute
   '/results': typeof ResultsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
+  '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
@@ -150,11 +159,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/classement'
     | '/duel'
-    | '/leaderboard'
     | '/results'
     | '/api/leaderboard'
     | '/api/report'
+    | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
     | '/api/vote/options'
@@ -166,11 +176,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/classement'
     | '/duel'
-    | '/leaderboard'
     | '/results'
     | '/api/leaderboard'
     | '/api/report'
+    | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
     | '/api/vote/options'
@@ -182,11 +193,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/classement'
     | '/duel'
-    | '/leaderboard'
     | '/results'
     | '/api/leaderboard'
     | '/api/report'
+    | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
     | '/api/vote/options'
@@ -199,11 +211,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  ClassementRoute: typeof ClassementRoute
   DuelRoute: typeof DuelRoute
-  LeaderboardRoute: typeof LeaderboardRoute
   ResultsRoute: typeof ResultsRoute
   ApiLeaderboardRoute: typeof ApiLeaderboardRoute
   ApiReportRoute: typeof ApiReportRoute
+  ApiAdminElectoralListsRoute: typeof ApiAdminElectoralListsRoute
   ApiAdminSeedRoute: typeof ApiAdminSeedRoute
   ApiAdminTrackRoute: typeof ApiAdminTrackRoute
   ApiVoteOptionsRoute: typeof ApiVoteOptionsRoute
@@ -221,18 +234,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/leaderboard': {
-      id: '/leaderboard'
-      path: '/leaderboard'
-      fullPath: '/leaderboard'
-      preLoaderRoute: typeof LeaderboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/duel': {
       id: '/duel'
       path: '/duel'
       fullPath: '/duel'
       preLoaderRoute: typeof DuelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/classement': {
+      id: '/classement'
+      path: '/classement'
+      fullPath: '/classement'
+      preLoaderRoute: typeof ClassementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -312,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminSeedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/electoral-lists': {
+      id: '/api/admin/electoral-lists'
+      path: '/api/admin/electoral-lists'
+      fullPath: '/api/admin/electoral-lists'
+      preLoaderRoute: typeof ApiAdminElectoralListsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -319,11 +339,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  ClassementRoute: ClassementRoute,
   DuelRoute: DuelRoute,
-  LeaderboardRoute: LeaderboardRoute,
   ResultsRoute: ResultsRoute,
   ApiLeaderboardRoute: ApiLeaderboardRoute,
   ApiReportRoute: ApiReportRoute,
+  ApiAdminElectoralListsRoute: ApiAdminElectoralListsRoute,
   ApiAdminSeedRoute: ApiAdminSeedRoute,
   ApiAdminTrackRoute: ApiAdminTrackRoute,
   ApiVoteOptionsRoute: ApiVoteOptionsRoute,

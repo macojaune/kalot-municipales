@@ -374,7 +374,7 @@ function DuelPage() {
       headerRight={
         <button
           type="button"
-          onClick={() => void navigate({ to: '/leaderboard' })}
+          onClick={() => void navigate({ to: '/classement' })}
           className="inline-flex min-h-9 items-center rounded-full border border-border px-3 text-[11px] font-display tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
         >
           Quitter

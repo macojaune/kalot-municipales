@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
@@ -27,15 +28,15 @@ const GUADELOUPE_COMMUNES = [
   'Baillif',
   'Basse-Terre',
   'Bouillante',
-  'Capesterre-Belle-Eau',
-  'Capesterre-de-Marie-Galante',
+  'Capesterre Belle-Eau',
+  'Capesterre de Marie-Galante',
   'Deshaies',
   'Gourbeyre',
   'Goyave',
   'Grand-Bourg',
   'La Desirade',
   'Le Gosier',
-  'Le Lamentin',
+  'Lamentin',
   'Le Moule',
   'Les Abymes',
   "Morne-a-l'Eau",
@@ -55,6 +56,30 @@ const GUADELOUPE_COMMUNES = [
   'Vieux-Fort',
   'Vieux-Habitants',
 ] as const
+
+const ELECTORAL_SOURCE_URL = new URL(
+  '../../../tmp/flourish-electoral-lists/municipales-guadeloupe-2026.json',
+  import.meta.url,
+)
+
+const COMMUNE_ALIASES: Record<string, string> = {
+  'capesterre-belle-eau': 'Capesterre Belle-Eau',
+  'capesterre belle eau': 'Capesterre Belle-Eau',
+  'capesterre-de-marie-galante': 'Capesterre de Marie-Galante',
+  'capesterre de marie galante': 'Capesterre de Marie-Galante',
+  'la desirade': 'La Desirade',
+  'la-desirade': 'La Desirade',
+  'le lamentin': 'Lamentin',
+  lamentin: 'Lamentin',
+  "morne-a-l'eau": "Morne-a-l'Eau",
+  "morne a l'eau": "Morne-a-l'Eau",
+  'pointe-a-pitre': 'Pointe-a-Pitre',
+  'pointe a pitre': 'Pointe-a-Pitre',
+  'saint-francois': 'Saint-Francois',
+  'saint francois': 'Saint-Francois',
+  'trois-rivieres': 'Trois-Rivieres',
+  'trois rivieres': 'Trois-Rivieres',
+}
 
 type Db = ReturnType<typeof getDb>
 
@@ -79,6 +104,23 @@ type TrackView = {
   candidateName: string | null
 }
 
+type ElectoralListReference = {
+  id: number
+  communeId: number
+  communeName: string
+  communeSlug: string
+  listName: string
+  candidateName: string | null
+  photoUrl: string | null
+}
+
+type ElectoralImportRow = {
+  communeName: string
+  listName: string
+  candidateName: string
+  photoUrl: string | null
+}
+
 type SessionSummary = {
   electionRound: ElectionRound
   communeName: string | null
@@ -99,6 +141,92 @@ function slugify(input: string) {
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+}
+
+function normalizeLooseText(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function canonicalizeCommuneName(input: string) {
+  const normalized = normalizeLooseText(input)
+  const canonical = COMMUNE_ALIASES[normalized]
+
+  if (canonical) {
+    return canonical
+  }
+
+  return input.trim()
+}
+
+function getCommuneSlugCandidates(input: string) {
+  const canonicalName = canonicalizeCommuneName(input)
+  const slugCandidates = new Set<string>([slugify(canonicalName), slugify(input)])
+
+  for (const [alias, candidate] of Object.entries(COMMUNE_ALIASES)) {
+    if (candidate === canonicalName) {
+      slugCandidates.add(slugify(alias))
+    }
+  }
+
+  return {
+    canonicalName,
+    slugCandidates: Array.from(slugCandidates),
+  }
+}
+
+function getElectoralListSlug(input: {
+  candidateName?: string | null
+  listName: string
+}) {
+  return slugify(input.candidateName?.trim() || input.listName.trim())
+}
+
+async function loadElectoralImportRows() {
+  const raw = await readFile(ELECTORAL_SOURCE_URL, 'utf8')
+  const parsed = JSON.parse(raw) as {
+    communes?: Array<{
+      commune?: string
+      listes?: Array<{
+        nom?: string
+        nom_liste?: string
+        photo?: string
+      }>
+    }>
+  }
+
+  const rows: ElectoralImportRow[] = []
+
+  for (const communeEntry of parsed.communes ?? []) {
+    const communeName = canonicalizeCommuneName(communeEntry.commune ?? '')
+
+    for (const listEntry of communeEntry.listes ?? []) {
+      const candidateName = listEntry.nom?.trim() ?? ''
+      const listName = listEntry.nom_liste?.trim() ?? ''
+
+      if (!communeName || !candidateName || !listName) {
+        continue
+      }
+
+      rows.push({
+        communeName,
+        listName,
+        candidateName,
+        photoUrl: listEntry.photo?.trim() || null,
+      })
+    }
+  }
+
+  return rows.sort(
+    (left, right) =>
+      left.communeName.localeCompare(right.communeName, 'fr', { sensitivity: 'base' }) ||
+      left.candidateName.localeCompare(right.candidateName, 'fr', { sensitivity: 'base' }),
+  )
 }
 
 function randomInt(maxExclusive: number) {
@@ -305,14 +433,14 @@ async function getTrackViewsByIds(
       losses: round === 'round2' ? tracks.round2Losses : tracks.losses,
       appearances: round === 'round2' ? tracks.round2Appearances : tracks.appearances,
       communeId: communes.id,
-      artistName: artists.name,
+      artistName: sql<string>`coalesce(${artists.name}, '')`,
       communeName: communes.name,
       communeSlug: communes.slug,
       listName: electoralLists.name,
       candidateName: electoralLists.candidateName,
     })
     .from(tracks)
-    .innerJoin(artists, eq(artists.id, tracks.artistId))
+    .leftJoin(artists, eq(artists.id, tracks.artistId))
     .innerJoin(communes, eq(communes.id, tracks.communeId))
     .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
     .where(inArray(tracks.id, ids))
@@ -424,19 +552,36 @@ async function getOrCreateUser(
 }
 
 async function ensureCommune(db: Db, communeName: string) {
-  const slug = slugify(communeName)
+  const { canonicalName, slugCandidates } = getCommuneSlugCandidates(communeName)
+  const slug = slugify(canonicalName)
   const existing = await db
     .select()
     .from(communes)
-    .where(eq(communes.slug, slug))
+    .where(inArray(communes.slug, slugCandidates))
     .limit(1)
 
   if (existing[0]) {
+    if (existing[0].name !== canonicalName || existing[0].slug !== slug) {
+      await db
+        .update(communes)
+        .set({
+          name: canonicalName,
+          slug,
+        })
+        .where(eq(communes.id, existing[0].id))
+
+      return {
+        ...existing[0],
+        name: canonicalName,
+        slug,
+      }
+    }
+
     return existing[0]
   }
 
   await db.insert(communes).values({
-    name: communeName,
+    name: canonicalName,
     slug,
   })
 
@@ -487,27 +632,58 @@ async function ensureElectoralList(
     communeId: number
     listName: string
     candidateName?: string | null
+    photoUrl?: string | null
   },
 ) {
+  const slug = getElectoralListSlug({
+    candidateName: params.candidateName,
+    listName: params.listName,
+  })
+
   const existing = await db
     .select()
     .from(electoralLists)
     .where(
       and(
         eq(electoralLists.communeId, params.communeId),
-        eq(electoralLists.name, params.listName),
+        eq(electoralLists.slug, slug),
       ),
     )
     .limit(1)
 
   if (existing[0]) {
+    const shouldUpdate =
+      existing[0].name !== params.listName ||
+      existing[0].candidateName !== (params.candidateName ?? null) ||
+      existing[0].photoUrl !== (params.photoUrl ?? null)
+
+    if (shouldUpdate) {
+      await db
+        .update(electoralLists)
+        .set({
+          name: params.listName,
+          candidateName: params.candidateName ?? null,
+          photoUrl: params.photoUrl ?? null,
+        })
+        .where(eq(electoralLists.id, existing[0].id))
+
+      return {
+        ...existing[0],
+        name: params.listName,
+        candidateName: params.candidateName ?? null,
+        photoUrl: params.photoUrl ?? null,
+      }
+    }
+
     return existing[0]
   }
 
   await db.insert(electoralLists).values({
     communeId: params.communeId,
     name: params.listName,
+    slug,
     candidateName: params.candidateName ?? null,
+    photoUrl: params.photoUrl ?? null,
   })
 
   const created = await db
@@ -516,7 +692,7 @@ async function ensureElectoralList(
     .where(
       and(
         eq(electoralLists.communeId, params.communeId),
-        eq(electoralLists.name, params.listName),
+        eq(electoralLists.slug, slug),
       ),
     )
     .limit(1)
@@ -550,10 +726,33 @@ async function getUniqueTrackSlug(db: Db, baseTitle: string) {
   }
 }
 
+async function getElectoralListReferenceById(
+  db: Db,
+  electoralListId: number,
+): Promise<ElectoralListReference | null> {
+  const rows = await db
+    .select({
+      id: electoralLists.id,
+      communeId: communes.id,
+      communeName: communes.name,
+      communeSlug: communes.slug,
+      listName: electoralLists.name,
+      candidateName: electoralLists.candidateName,
+      photoUrl: electoralLists.photoUrl,
+    })
+    .from(electoralLists)
+    .innerJoin(communes, eq(communes.id, electoralLists.communeId))
+    .where(eq(electoralLists.id, electoralListId))
+    .limit(1)
+
+  return rows[0] ?? null
+}
+
 export async function createTrack(input: {
-  title: string
-  artistName: string
-  communeName: string
+  electoralListId?: number | null
+  title?: string | null
+  artistName?: string | null
+  communeName?: string
   listName?: string | null
   candidateName?: string | null
   streamUrl?: string | null
@@ -562,27 +761,69 @@ export async function createTrack(input: {
 }) {
   const db = getDb()
 
-  const artist = await ensureArtist(db, input.artistName)
-  const commune = await ensureCommune(db, input.communeName)
-  const electoralList =
-    input.listName && input.listName.trim().length > 0
-      ? await ensureElectoralList(db, {
-          communeId: commune.id,
-          listName: input.listName,
-          candidateName: input.candidateName,
-        })
-      : null
+  const trimmedArtistName = input.artistName?.trim() || null
+  const artist = trimmedArtistName ? await ensureArtist(db, trimmedArtistName) : null
 
-  const slug = await getUniqueTrackSlug(db, input.title)
+  let resolvedCommuneId: number | null = null
+  let resolvedCommuneName: string | null = null
+  let electoralListId: number | null = null
+  let resolvedListName: string | null = null
+  let resolvedCandidateName: string | null = null
+
+  if (typeof input.electoralListId === 'number') {
+    const electoralList = await getElectoralListReferenceById(db, input.electoralListId)
+
+    if (!electoralList) {
+      throw new Error('Electoral list not found')
+    }
+
+    resolvedCommuneId = electoralList.communeId
+    resolvedCommuneName = electoralList.communeName
+    electoralListId = electoralList.id
+    resolvedListName = electoralList.listName
+    resolvedCandidateName = electoralList.candidateName
+  } else {
+    if (!input.communeName?.trim()) {
+      throw new Error('Commune name is required')
+    }
+
+    const commune = await ensureCommune(db, input.communeName)
+    resolvedCommuneId = commune.id
+    resolvedCommuneName = commune.name
+
+    const electoralList =
+      input.listName && input.listName.trim().length > 0
+        ? await ensureElectoralList(db, {
+            communeId: commune.id,
+            listName: input.listName,
+            candidateName: input.candidateName,
+          })
+        : null
+
+    electoralListId = electoralList?.id ?? null
+    resolvedListName = electoralList?.name ?? input.listName?.trim() ?? null
+    resolvedCandidateName = electoralList?.candidateName ?? input.candidateName?.trim() ?? null
+  }
+
+  const resolvedTitle =
+    input.title?.trim() ||
+    resolvedCandidateName ||
+    resolvedListName ||
+    (trimmedArtistName && resolvedCommuneName
+      ? `${trimmedArtistName} - ${resolvedCommuneName}`
+      : resolvedCommuneName ||
+        'Son de campagne')
+
+  const slug = await getUniqueTrackSlug(db, resolvedTitle)
 
   await db.insert(tracks).values({
-    title: input.title,
+    title: resolvedTitle,
     slug,
     r2Key: input.r2Key ?? `manual/${slug}.mp3`,
     streamUrl: input.streamUrl ?? null,
-    artistId: artist.id,
-    communeId: commune.id,
-    electoralListId: electoralList?.id ?? null,
+    artistId: artist?.id ?? null,
+    communeId: resolvedCommuneId,
+    electoralListId,
     rating: STARTING_RATING,
     isSeed: input.isSeed ?? false,
   })
@@ -730,6 +971,143 @@ export async function seedGuadeloupeCommunes() {
   }
 }
 
+export async function seedElectoralLists() {
+  const db = getDb()
+  const importedRows = await loadElectoralImportRows()
+
+  let created = 0
+  let updated = 0
+
+  for (const row of importedRows) {
+    const commune = await ensureCommune(db, row.communeName)
+    const slug = getElectoralListSlug({
+      candidateName: row.candidateName,
+      listName: row.listName,
+    })
+
+    const existingRows = await db
+      .select({
+        id: electoralLists.id,
+        name: electoralLists.name,
+        candidateName: electoralLists.candidateName,
+        photoUrl: electoralLists.photoUrl,
+      })
+      .from(electoralLists)
+      .where(
+        and(
+          eq(electoralLists.communeId, commune.id),
+          eq(electoralLists.slug, slug),
+        ),
+      )
+      .limit(1)
+
+    const existing = existingRows[0]
+
+    if (!existing) {
+      await db.insert(electoralLists).values({
+        communeId: commune.id,
+        name: row.listName,
+        slug,
+        candidateName: row.candidateName,
+        photoUrl: row.photoUrl,
+      })
+      created += 1
+      continue
+    }
+
+    if (
+      existing.name !== row.listName ||
+      existing.candidateName !== row.candidateName ||
+      existing.photoUrl !== row.photoUrl
+    ) {
+      await db
+        .update(electoralLists)
+        .set({
+          name: row.listName,
+          candidateName: row.candidateName,
+          photoUrl: row.photoUrl,
+        })
+        .where(eq(electoralLists.id, existing.id))
+      updated += 1
+    }
+  }
+
+  return {
+    created,
+    updated,
+    total: importedRows.length,
+    totalCommunes: new Set(importedRows.map((row) => row.communeName)).size,
+  }
+}
+
+export async function listElectoralListsForAdmin(input?: { communeName?: string | null }) {
+  const db = getDb()
+  const communeName = input?.communeName?.trim()
+
+  const rows = await db
+    .select({
+      id: electoralLists.id,
+      name: electoralLists.name,
+      slug: electoralLists.slug,
+      candidateName: electoralLists.candidateName,
+      photoUrl: electoralLists.photoUrl,
+      communeId: communes.id,
+      communeName: communes.name,
+      communeSlug: communes.slug,
+    })
+    .from(electoralLists)
+    .innerJoin(communes, eq(communes.id, electoralLists.communeId))
+    .where(communeName ? eq(communes.name, canonicalizeCommuneName(communeName)) : undefined)
+    .orderBy(asc(communes.name), asc(electoralLists.candidateName), asc(electoralLists.name))
+
+  const communesMap = new Map<
+    string,
+    {
+      id: number
+      name: string
+      slug: string
+      lists: Array<{
+        id: number
+        name: string
+        slug: string
+        candidateName: string | null
+        photoUrl: string | null
+      }>
+    }
+  >()
+
+  for (const row of rows) {
+    const existingCommune = communesMap.get(row.communeName)
+    if (existingCommune) {
+      existingCommune.lists.push({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        candidateName: row.candidateName,
+        photoUrl: row.photoUrl,
+      })
+      continue
+    }
+
+    communesMap.set(row.communeName, {
+      id: row.communeId,
+      name: row.communeName,
+      slug: row.communeSlug,
+      lists: [
+        {
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          candidateName: row.candidateName,
+          photoUrl: row.photoUrl,
+        },
+      ],
+    })
+  }
+
+  return Array.from(communesMap.values())
+}
+
 export async function assertAdminAccess(input: {
   externalUserId?: string | null
 }) {
@@ -742,6 +1120,21 @@ export async function assertAdminAccess(input: {
   }
 
   const db = getDb()
+  const configuredAdminUserId = process.env.ADMIN_EXTERNAL_USER_ID?.trim() || null
+
+  if (configuredAdminUserId) {
+    if (input.externalUserId !== configuredAdminUserId) {
+      return {
+        ok: false as const,
+        code: 'FORBIDDEN',
+        message: 'Seul le compte admin autorise peut acceder a cette route.',
+      }
+    }
+
+    return {
+      ok: true as const,
+    }
+  }
 
   const existing = await db
     .select({ id: users.id })
@@ -764,16 +1157,6 @@ export async function assertAdminAccess(input: {
   }
 }
 
-async function getCommuneBySlug(db: Db, communeSlug: string) {
-  const rows = await db
-    .select({ id: communes.id, name: communes.name, slug: communes.slug })
-    .from(communes)
-    .where(eq(communes.slug, communeSlug))
-    .limit(1)
-
-  return rows.at(0) ?? null
-}
-
 async function listEligibleTrackIds(
   db: Db,
   input: {
@@ -784,12 +1167,6 @@ async function listEligibleTrackIds(
   const baseFilters = [eq(tracks.isActive, true)]
 
   if (input.round === 'round1') {
-    if (typeof input.communeId !== 'number') {
-      return []
-    }
-
-    baseFilters.push(eq(tracks.communeId, input.communeId))
-
     return db
       .select({ id: tracks.id })
       .from(tracks)
@@ -862,21 +1239,6 @@ export async function startVoteSession(input: {
     username: input.username,
   })
 
-  const commune =
-    phase === 'round1'
-      ? input.communeSlug
-        ? await getCommuneBySlug(db, input.communeSlug)
-        : null
-      : null
-
-  if (phase === 'round1' && !commune) {
-    return {
-      ok: false as const,
-      code: 'MISSING_COMMUNE' as const,
-      message: 'Choisis une commune pour commencer le premier tour.',
-    }
-  }
-
   const existingSessionRows = await db
     .select({
       id: voteSessions.id,
@@ -889,9 +1251,6 @@ export async function startVoteSession(input: {
       and(
         eq(voteSessions.userId, user.id),
         eq(voteSessions.electionRound, phase),
-        phase === 'round1'
-          ? eq(voteSessions.communeId, commune?.id ?? -1)
-          : sql`1 = 1`,
         eq(voteSessions.status, 'active'),
       ),
     )
@@ -909,13 +1268,7 @@ export async function startVoteSession(input: {
         sessionId: existingSession.id,
         userId: user.id,
         electionRound: phase,
-        commune: commune
-          ? {
-              id: commune.id,
-              name: commune.name,
-              slug: commune.slug,
-            }
-          : null,
+        commune: null,
         duel: existingState.duel,
       }
     }
@@ -923,7 +1276,7 @@ export async function startVoteSession(input: {
 
   const available = await listEligibleTrackIds(db, {
     round: phase,
-    communeId: commune?.id,
+    communeId: null,
   })
 
   if (available.length < 2) {
@@ -932,7 +1285,7 @@ export async function startVoteSession(input: {
       code: 'NOT_ENOUGH_TRACKS' as const,
       message:
         phase === 'round1'
-          ? 'Ajoute au moins 2 sons dans cette commune pour lancer les duels.'
+          ? 'Ajoute au moins 2 sons pour lancer les duels.'
           : 'Le second tour n a pas assez de qualifies pour demarrer.',
     }
   }
@@ -957,7 +1310,7 @@ export async function startVoteSession(input: {
     id: sessionId,
     userId: user.id,
     electionRound: phase,
-    communeId: commune?.id ?? null,
+    communeId: null,
     currentChampionTrackId: firstId,
     currentChallengerTrackId: secondId,
     seenTrackIds: JSON.stringify([firstId, secondId]),
@@ -977,13 +1330,7 @@ export async function startVoteSession(input: {
     sessionId,
     userId: user.id,
     electionRound: phase,
-    commune: commune
-      ? {
-          id: commune.id,
-          name: commune.name,
-          slug: commune.slug,
-        }
-      : null,
+    commune: null,
     duel: {
       leftTrack,
       rightTrack,
@@ -1268,7 +1615,7 @@ export async function getLeaderboard(input?: {
       losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
       appearances:
         electionRound === 'round2' ? tracks.round2Appearances : tracks.appearances,
-      artistName: artists.name,
+      artistName: sql<string>`coalesce(${artists.name}, '')`,
       communeId: communes.id,
       communeName: communes.name,
       communeSlug: communes.slug,
@@ -1276,7 +1623,7 @@ export async function getLeaderboard(input?: {
       candidateName: electoralLists.candidateName,
     })
     .from(tracks)
-    .innerJoin(artists, eq(artists.id, tracks.artistId))
+    .leftJoin(artists, eq(artists.id, tracks.artistId))
     .innerJoin(communes, eq(communes.id, tracks.communeId))
     .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
 
@@ -1381,13 +1728,13 @@ export async function listTracksForAdmin(input?: {
       losses: tracks.losses,
       isActive: tracks.isActive,
       createdAt: tracks.createdAt,
-      artistName: artists.name,
+      artistName: sql<string>`coalesce(${artists.name}, '')`,
       communeName: communes.name,
       listName: electoralLists.name,
       candidateName: electoralLists.candidateName,
     })
     .from(tracks)
-    .innerJoin(artists, eq(artists.id, tracks.artistId))
+    .leftJoin(artists, eq(artists.id, tracks.artistId))
     .innerJoin(communes, eq(communes.id, tracks.communeId))
     .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
     .where(filters.length ? and(...filters) : undefined)

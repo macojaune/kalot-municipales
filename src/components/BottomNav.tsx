@@ -7,7 +7,7 @@ const tabs = [
   { to: '/', label: 'Accueil', icon: <DoubleMegaphone className="w-6 h-6" /> },
   { to: '/duel', label: 'Duel', icon: <MusicNoteIcon className="w-6 h-6" /> },
   {
-    to: '/leaderboard',
+    to: '/classement',
     label: 'Classement',
     icon: <Trophy className="w-6 h-6" />,
   },
@@ -29,11 +29,10 @@ export function BottomNav() {
             <Link
               key={tab.to}
               to={tab.to}
-              className={`mx-1 flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-md border transition-all ${
-                active
+              className={`mx-1 flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-md border transition-all ${active
                   ? 'text-primary border-primary/65 bg-primary/10 box-glow-green'
                   : 'text-muted-foreground border-transparent bg-transparent'
-              }`}
+                }`}
             >
               {tab.icon}
               <span className="text-[10px] font-display leading-none tracking-wider">
