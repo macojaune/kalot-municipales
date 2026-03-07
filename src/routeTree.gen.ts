@@ -17,6 +17,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiReportRouteImport } from './routes/api.report'
+import { Route as ApiOgRouteImport } from './routes/api.og'
 import { Route as ApiLeaderboardRouteImport } from './routes/api.leaderboard'
 import { Route as ApiElectoralListsRouteImport } from './routes/api.electoral-lists'
 import { Route as ApiVoteStateRouteImport } from './routes/api.vote.state'
@@ -66,6 +67,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiReportRoute = ApiReportRouteImport.update({
   id: '/api/report',
   path: '/api/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOgRoute = ApiOgRouteImport.update({
+  id: '/api/og',
+  path: '/api/og',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLeaderboardRoute = ApiLeaderboardRouteImport.update({
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/results': typeof ResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/results': typeof ResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
+  '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
+    | '/api/og'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
@@ -212,6 +222,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
+    | '/api/og'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
+    | '/api/og'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
@@ -253,6 +265,7 @@ export interface RootRouteChildren {
   ResultsRoute: typeof ResultsRoute
   ApiElectoralListsRoute: typeof ApiElectoralListsRoute
   ApiLeaderboardRoute: typeof ApiLeaderboardRoute
+  ApiOgRoute: typeof ApiOgRoute
   ApiReportRoute: typeof ApiReportRoute
   ApiAdminElectoralListsRoute: typeof ApiAdminElectoralListsRoute
   ApiAdminSeedRoute: typeof ApiAdminSeedRoute
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/api/report'
       fullPath: '/api/report'
       preLoaderRoute: typeof ApiReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/og': {
+      id: '/api/og'
+      path: '/api/og'
+      fullPath: '/api/og'
+      preLoaderRoute: typeof ApiOgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/leaderboard': {
@@ -405,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResultsRoute: ResultsRoute,
   ApiElectoralListsRoute: ApiElectoralListsRoute,
   ApiLeaderboardRoute: ApiLeaderboardRoute,
+  ApiOgRoute: ApiOgRoute,
   ApiReportRoute: ApiReportRoute,
   ApiAdminElectoralListsRoute: ApiAdminElectoralListsRoute,
   ApiAdminSeedRoute: ApiAdminSeedRoute,

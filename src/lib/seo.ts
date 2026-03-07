@@ -5,7 +5,6 @@ export const SITE_URL = (rawSiteUrl || 'https://kalotmunicipales.fr').replace(
   /\/+$/,
   '',
 )
-export const DEFAULT_OG_IMAGE_PATH = '/logo512.png'
 export const DEFAULT_DESCRIPTION =
   'Vote pour les meilleures musiques de campagne des municipales 2026 en Guadeloupe, consulte le classement en direct et propose un son.'
 
@@ -27,11 +26,25 @@ export function toAbsoluteUrl(path = '/') {
   return `${SITE_URL}${normalizedPath}`
 }
 
+export function buildOgImagePath(input: { title: string; subtitle?: string }) {
+  const params = new URLSearchParams()
+  params.set('title', input.title)
+
+  if (input.subtitle) {
+    params.set('subtitle', input.subtitle)
+  }
+
+  return `/api/og?${params.toString()}`
+}
+
 export function buildSeo({
   title,
   description = DEFAULT_DESCRIPTION,
   path = '/',
-  imagePath = DEFAULT_OG_IMAGE_PATH,
+  imagePath = buildOgImagePath({
+    title,
+    subtitle: description,
+  }),
   robots = 'index,follow',
   type = 'website',
 }: SeoOptions) {
@@ -53,8 +66,8 @@ export function buildSeo({
       { property: 'og:url', content: canonicalUrl },
       { property: 'og:image', content: imageUrl },
       { property: 'og:image:alt', content: 'Visuel KalotMunicipales' },
-      { property: 'og:image:width', content: '512' },
-      { property: 'og:image:height', content: '512' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
       { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:title', content: resolvedTitle },
       { name: 'twitter:description', content: description },
