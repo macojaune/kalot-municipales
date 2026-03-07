@@ -42,6 +42,7 @@
     "tw-animate-css": "^1.3.6"
   },
   "devDependencies": {
+    "@netlify/vite-plugin-tanstack-start": "^1.2.18",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "^0.3.11",
     "@tanstack/eslint-config": "^0.3.0",
