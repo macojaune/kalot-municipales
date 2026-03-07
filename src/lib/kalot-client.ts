@@ -23,6 +23,8 @@ export type DuelTrack = {
   candidateName: string | null
 }
 
+export type ElectionRound = 'round1' | 'round2'
+
 export type SessionDuel = {
   leftTrack: DuelTrack
   rightTrack: DuelTrack
@@ -34,6 +36,8 @@ export type SessionDuel = {
 }
 
 export type SessionSummary = {
+  electionRound: ElectionRound
+  communeName: string | null
   roundsPlayed: number
   winnerTrackId: number
   scoreboard: Array<{
@@ -52,6 +56,13 @@ export type ApiError = {
 export type StartSessionResponse =
   | {
       ok: true
+      resumed: boolean
+      electionRound: ElectionRound
+      commune: {
+        id: number
+        name: string
+        slug: string
+      } | null
       sessionId: string
       userId: number
       duel: SessionDuel
@@ -92,6 +103,8 @@ export type SessionStateResponse =
   | {
       ok: true
       status: 'active'
+      electionRound: ElectionRound
+      communeId: number | null
       duel: SessionDuel
     }
   | {
@@ -113,9 +126,22 @@ export type LeaderboardResponse = {
   leaderboard: Array<
     DuelTrack & {
       rank: number
+      electionRound: ElectionRound
+      communeId: number
       communeSlug: string
     }
   >
+}
+
+export type VotingStartOptionsResponse = {
+  ok: true
+  electionRound: ElectionRound | 'closed'
+  eligibleCommunes: Array<{
+    id: number
+    name: string
+    slug: string
+    trackCount: number
+  }>
 }
 
 const ACTIVE_SESSION_KEY = 'kalot-active-session-id'
@@ -217,6 +243,15 @@ export async function postJson<TResponse>(url: string, body: unknown) {
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
+  })
+
+  return (await response.json()) as TResponse
+}
+
+export async function postFormData<TResponse>(url: string, body: FormData) {
+  const response = await fetch(url, {
+    method: 'POST',
+    body,
   })
 
   return (await response.json()) as TResponse

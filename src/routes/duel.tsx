@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { CrownIcon } from '../components/icons/CrownIcon'
-import { DoubleMegaphone } from '../components/icons/DoubleMegaphone'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
+import { CrownIcon } from '../components/icons/CrownIcon'
+import { trackEvent } from '../lib/analytics'
 import {
   clearActiveSessionId,
   getActiveSessionId,
@@ -18,6 +18,24 @@ import type {
   SessionStateResponse,
 } from '../lib/kalot-client'
 
+type DuelStage = 'duel' | 'interlude'
+
+type InterludeState = {
+  winnerTrack: DuelTrack
+  loserTrack: DuelTrack
+  nextChallenger: DuelTrack
+  roundsPlayed: number
+  progress?: {
+    seen: number
+    total: number
+  }
+}
+
+type PlaybackInfo = {
+  currentTime: number
+  duration: number
+}
+
 export const Route = createFileRoute('/duel')({
   component: DuelPage,
 })
@@ -30,41 +48,123 @@ function DuelPage() {
   const [challenger, setChallenger] = useState<DuelTrack | null>(null)
   const [duelIndex, setDuelIndex] = useState(1)
   const [totalDuels, setTotalDuels] = useState(2)
-  const [championAnim, setChampionAnim] = useState('')
-  const [challengerAnim, setChallengerAnim] = useState('animate-slide-in-up')
-  const [isTransitioning, setIsTransitioning] = useState(false)
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [waitingMessage, setWaitingMessage] = useState<string | null>(null)
+  const [stage, setStage] = useState<DuelStage>('duel')
+  const [interlude, setInterlude] = useState<InterludeState | null>(null)
+  const [playbackByTrackId, setPlaybackByTrackId] = useState<
+    Partial<Record<number, PlaybackInfo>>
+  >({})
+
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const loadedTrackIdRef = useRef<number | null>(null)
+  const pendingSeekTimeRef = useRef<number>(0)
   const transitionTimeoutRef = useRef<number | null>(null)
-  const pulseTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     const audio = new Audio()
     audioRef.current = audio
 
-    const handleEnded = () => {
-      setPlayingTrackId(null)
+    const updatePlaybackState = () => {
+      const trackId = loadedTrackIdRef.current
+      if (!trackId) {
+        return
+      }
+
+      const duration = Number.isFinite(audio.duration) ? audio.duration : 0
+      setPlaybackByTrackId((previous) => ({
+        ...previous,
+        [trackId]: {
+          currentTime: audio.currentTime,
+          duration,
+        },
+      }))
     }
 
+    const handleLoadedMetadata = () => {
+      const trackId = loadedTrackIdRef.current
+      if (!trackId) {
+        return
+      }
+
+      const duration = Number.isFinite(audio.duration) ? audio.duration : 0
+      const seekTarget = Math.max(0, Math.min(pendingSeekTimeRef.current, duration))
+
+      if (seekTarget > 0) {
+        audio.currentTime = seekTarget
+      }
+      pendingSeekTimeRef.current = 0
+
+      setPlaybackByTrackId((previous) => ({
+        ...previous,
+        [trackId]: {
+          currentTime: audio.currentTime,
+          duration,
+        },
+      }))
+    }
+
+    const handleEnded = () => {
+      setPlayingTrackId(null)
+      updatePlaybackState()
+    }
+
+    const handlePause = () => {
+      setPlayingTrackId((previous) => {
+        if (previous === loadedTrackIdRef.current) {
+          return null
+        }
+        return previous
+      })
+      updatePlaybackState()
+    }
+
+    const handlePlay = () => {
+      if (loadedTrackIdRef.current) {
+        setPlayingTrackId(loadedTrackIdRef.current)
+      }
+    }
+
+    audio.addEventListener('timeupdate', updatePlaybackState)
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('ended', handleEnded)
+    audio.addEventListener('pause', handlePause)
+    audio.addEventListener('play', handlePlay)
 
     return () => {
-      audio.removeEventListener('ended', handleEnded)
-      audio.pause()
       if (transitionTimeoutRef.current) {
         window.clearTimeout(transitionTimeoutRef.current)
       }
-      if (pulseTimeoutRef.current) {
-        window.clearTimeout(pulseTimeoutRef.current)
-      }
+      audio.removeEventListener('timeupdate', updatePlaybackState)
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('ended', handleEnded)
+      audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('play', handlePlay)
+      audio.pause()
     }
   }, [])
 
   useEffect(() => {
     setSessionId(getActiveSessionId())
   }, [])
+
+  useEffect(() => {
+    if (!champion || !challenger) {
+      return
+    }
+
+    const loadedTrackId = loadedTrackIdRef.current
+    if (!loadedTrackId) {
+      return
+    }
+
+    if (loadedTrackId !== champion.id && loadedTrackId !== challenger.id) {
+      audioRef.current?.pause()
+      loadedTrackIdRef.current = null
+      setPlayingTrackId(null)
+    }
+  }, [champion, challenger])
 
   const stateQuery = useQuery({
     queryKey: ['duel-state', sessionId],
@@ -89,9 +189,15 @@ function DuelPage() {
     }
 
     if (payload.status === 'waiting') {
+      setStage('duel')
+      setInterlude(null)
       setChampion(null)
       setChallenger(null)
       setWaitingMessage(payload.waiting.message)
+      return
+    }
+
+    if (stage === 'interlude') {
       return
     }
 
@@ -100,7 +206,7 @@ function DuelPage() {
     setChallenger(payload.duel.rightTrack)
     setDuelIndex(payload.duel.roundsPlayed + 1)
     setTotalDuels(Math.max(payload.duel.progress?.total ?? 2, 2))
-  }, [navigate, stateQuery.data])
+  }, [navigate, stage, stateQuery.data])
 
   const voteMutation = useMutation({
     mutationFn: async (winnerSide: 'left' | 'right') => {
@@ -111,9 +217,17 @@ function DuelPage() {
       const winnerTrack = winnerSide === 'left' ? champion : challenger
       const loserTrack = winnerSide === 'left' ? challenger : champion
 
+      trackEvent('duel_vote_pick', {
+        side: winnerSide,
+        winnerTrackId: winnerTrack.id,
+        loserTrackId: loserTrack.id,
+        duelIndex,
+        totalDuels,
+      })
+
       return {
-        winnerSide,
         winnerTrack,
+        loserTrack,
         response: await postJson<PickVoteResponse>('/api/vote/pick', {
           sessionId,
           winnerTrackId: winnerTrack.id,
@@ -123,7 +237,7 @@ function DuelPage() {
         }),
       }
     },
-    onSuccess: ({ winnerSide, winnerTrack, response }) => {
+    onSuccess: ({ winnerTrack, loserTrack, response }) => {
       audioRef.current?.pause()
       setPlayingTrackId(null)
 
@@ -138,52 +252,16 @@ function DuelPage() {
           return
         }
 
-        if (transitionTimeoutRef.current) {
-          window.clearTimeout(transitionTimeoutRef.current)
-        }
-
-        if (pulseTimeoutRef.current) {
-          window.clearTimeout(pulseTimeoutRef.current)
-        }
-
-        setIsTransitioning(true)
+        setFeedback(null)
         setWaitingMessage(null)
-
-        if (winnerSide === 'right') {
-          setChampionAnim('animate-card-fade-out')
-          setChallengerAnim('animate-card-promote')
-
-          transitionTimeoutRef.current = window.setTimeout(() => {
-            setChampion(winnerTrack)
-            setChallenger(response.nextChallenger)
-            setDuelIndex(response.roundsPlayed + 1)
-            setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
-            setChampionAnim('animate-champion-selected')
-            setChallengerAnim('animate-slide-in-up')
-            setIsTransitioning(false)
-
-            pulseTimeoutRef.current = window.setTimeout(() => {
-              setChampionAnim('')
-            }, 200)
-          }, 320)
-        } else {
-          setChampionAnim('animate-champion-selected')
-          setChallengerAnim('animate-card-out')
-
-          transitionTimeoutRef.current = window.setTimeout(() => {
-            setChampion(winnerTrack)
-            setChallenger(response.nextChallenger)
-            setDuelIndex(response.roundsPlayed + 1)
-            setTotalDuels(Math.max(response.progress?.total ?? totalDuels, 2))
-            setChallengerAnim('animate-slide-in-up')
-            setIsTransitioning(false)
-
-            pulseTimeoutRef.current = window.setTimeout(() => {
-              setChampionAnim('')
-            }, 180)
-          }, 260)
-        }
-
+        setStage('interlude')
+        setInterlude({
+          winnerTrack,
+          loserTrack,
+          nextChallenger: response.nextChallenger,
+          roundsPlayed: response.roundsPlayed,
+          progress: response.progress,
+        })
         return
       }
 
@@ -194,6 +272,8 @@ function DuelPage() {
         return
       }
 
+      setStage('duel')
+      setInterlude(null)
       setChampion(null)
       setChallenger(null)
       setWaitingMessage(response.waiting.message)
@@ -219,45 +299,159 @@ function DuelPage() {
       return
     }
 
-    if (playingTrackId === track.id) {
-      audio.pause()
-      setPlayingTrackId(null)
+    if (loadedTrackIdRef.current === track.id) {
+      if (playingTrackId === track.id) {
+        audio.pause()
+      } else {
+        void audio.play().catch(() => {
+          setFeedback('Lecture audio indisponible.')
+        })
+      }
       return
     }
 
     audio.pause()
-    audio.currentTime = 0
+    const resumeTime = playbackByTrackId[track.id]?.currentTime ?? 0
+    pendingSeekTimeRef.current = resumeTime
+    loadedTrackIdRef.current = track.id
     audio.src = track.streamUrl
+    audio.load()
     void audio.play().catch(() => {
       setFeedback('Lecture audio indisponible.')
     })
-    setPlayingTrackId(track.id)
   }
 
-  const voteLocked = voteMutation.isPending || isTransitioning
+  function seekTrack(trackId: number, ratio: number) {
+    const normalizedRatio = Math.max(0, Math.min(ratio, 1))
+    const knownDuration = playbackByTrackId[trackId]?.duration ?? 0
+
+    if (knownDuration <= 0) {
+      return
+    }
+
+    const nextTime = knownDuration * normalizedRatio
+
+    setPlaybackByTrackId((previous) => ({
+      ...previous,
+      [trackId]: {
+        currentTime: nextTime,
+        duration: knownDuration,
+      },
+    }))
+
+    if (loadedTrackIdRef.current === trackId && audioRef.current) {
+      audioRef.current.currentTime = nextTime
+    } else if (loadedTrackIdRef.current !== trackId) {
+      pendingSeekTimeRef.current = nextTime
+    }
+  }
+
+  const handleContinueToNextRound = useCallback(() => {
+    if (!interlude) {
+      return
+    }
+
+    setChampion(interlude.winnerTrack)
+    setChallenger(interlude.nextChallenger)
+    setDuelIndex(interlude.roundsPlayed + 1)
+    setTotalDuels(Math.max(interlude.progress?.total ?? totalDuels, 2))
+    setStage('duel')
+    setInterlude(null)
+  }, [interlude, totalDuels])
+
+  useEffect(() => {
+    if (stage !== 'interlude' || !interlude) {
+      return
+    }
+
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      handleContinueToNextRound()
+    }, 850)
+
+    return () => {
+      if (transitionTimeoutRef.current) {
+        window.clearTimeout(transitionTimeoutRef.current)
+      }
+    }
+  }, [handleContinueToNextRound, interlude, stage])
+
+  const voteLocked = voteMutation.isPending || stage === 'interlude'
 
   return (
-    <Layout>
-      <div className="max-w-lg md:max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-5 space-y-4">
-        <div className="flex justify-between text-xs md:text-sm font-body text-muted-foreground">
-          <span>En duel</span>
-          <span className="tabular">
-            {Math.min(duelIndex, totalDuels)}/{totalDuels}
-          </span>
+    <Layout
+      backTo={null}
+      headerRight={
+        <button
+          type="button"
+          onClick={() => {
+            trackEvent('duel_quit_click')
+            void navigate({ to: '/classement' })
+          }}
+          className="inline-flex min-h-9 items-center rounded-full border border-border px-3 text-[11px] font-display tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+        >
+          Quitter
+        </button>
+      }
+    >
+      <div className="mx-auto max-w-6xl space-y-3 px-4 py-3 md:px-6 md:py-4">
+        <div className="text-center">
+          <p className="inline-flex rounded-full border border-border bg-card/70 px-4 py-1.5 font-display text-xs tracking-widest text-primary">
+            Duels {Math.min(duelIndex, totalDuels)}/{totalDuels}
+          </p>
         </div>
 
-        {champion && challenger ? (
-          <>
-            <div className="hidden md:grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-6">
-              <div className="min-w-0 w-full max-w-[540px] mx-auto space-y-2.5">
-                <span className="inline-flex items-center gap-1 bg-primary/15 text-foreground text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
-                  <CrownIcon className="w-4 h-4" /> Champion
+        {stage === 'interlude' && interlude ? (
+          <section className="relative rounded-2xl border border-primary/30 bg-card/70 p-3 md:p-4">
+            <div className="mx-auto max-w-xl space-y-2.5 animate-fade-in">
+              <div className="text-center">
+                <p className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1 font-display text-[11px] tracking-widest text-primary">
+                  <CrownIcon className="h-4 w-4" />
+                  Vainqueur
+                </p>
+              </div>
+
+              <SongCard
+                track={interlude.winnerTrack}
+                isChampion
+                isPlaying={false}
+                onPlay={() => {}}
+                onVote={() => {}}
+                onSeek={() => {}}
+                playbackCurrentTime={0}
+                playbackDuration={0}
+                disabled
+                className="animate-[fade-in_220ms_ease-out]"
+              />
+
+              <div className="pt-1 text-center font-display text-[11px] tracking-widest text-secondary animate-fade-in">
+                Nouveau challenger
+              </div>
+
+              <SongCard
+                track={interlude.nextChallenger}
+                isPlaying={false}
+                onPlay={() => {}}
+                onVote={() => {}}
+                onSeek={() => {}}
+                playbackCurrentTime={0}
+                playbackDuration={0}
+                disabled
+                className="opacity-80 animate-[fade-in_300ms_ease-out]"
+              />
+            </div>
+          </section>
+        ) : champion && challenger ? (
+          <section className="relative rounded-2xl border border-border bg-card/75 p-3 md:p-4">
+            <div className="hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-6 md:grid">
+              <div className="mx-auto w-full max-w-[520px] min-w-0 animate-slide-in-up space-y-1.5">
+                <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-1 font-display text-xs text-primary">
+                  Champion
                 </span>
                 <div className="aspect-square">
                   <SongCard
                     track={champion}
                     isChampion
-                    className={`h-full ${championAnim}`}
+                    className="h-full"
                     isPlaying={playingTrackId === champion.id}
                     onPlay={() => playTrack(champion)}
                     onVote={() => {
@@ -265,16 +459,23 @@ function DuelPage() {
                         void voteMutation.mutate('left')
                       }
                     }}
+                    onSeek={(ratio) => seekTrack(champion.id, ratio)}
+                    playbackCurrentTime={
+                      playbackByTrackId[champion.id]?.currentTime ?? 0
+                    }
+                    playbackDuration={playbackByTrackId[champion.id]?.duration ?? 0}
                     disabled={voteLocked}
                   />
                 </div>
               </div>
-              <span className="font-display font-black text-4xl  text-accent">
+
+              <span className="self-center font-display text-5xl font-black text-accent text-glow-orange">
                 VS
               </span>
-              <div className="min-w-0 w-full mx-auto space-y-2.5 text-right">
-                <span className="inline-flex items-center gap-1 bg-accent/15 text-accent text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
-                  <DoubleMegaphone className="w-4 h-4" /> Challenger
+
+              <div className="mx-auto w-full min-w-0 animate-slide-in-up space-y-1.5">
+                <span className="inline-flex items-center rounded-full bg-secondary/15 px-2.5 py-1 font-display text-xs text-secondary">
+                  Challenger
                 </span>
                 <div className="aspect-square">
                   <SongCard
@@ -287,62 +488,64 @@ function DuelPage() {
                         void voteMutation.mutate('right')
                       }
                     }}
-                    animationClass={challengerAnim}
+                    onSeek={(ratio) => seekTrack(challenger.id, ratio)}
+                    playbackCurrentTime={
+                      playbackByTrackId[challenger.id]?.currentTime ?? 0
+                    }
+                    playbackDuration={
+                      playbackByTrackId[challenger.id]?.duration ?? 0
+                    }
                     disabled={voteLocked}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="md:hidden space-y-2.5 py-4">
-              <div className="space-y-2">
-                <span className="inline-flex items-center gap-1 bg-primary/15 text-foreground text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
-                  <CrownIcon className="w-4 h-4" /> Champion
-                </span>
-                <div>
-                  <SongCard
-                    track={champion}
-                    isChampion
-                    className={`${championAnim}`}
-                    isPlaying={playingTrackId === champion.id}
-                    onPlay={() => playTrack(champion)}
-                    onVote={() => {
-                      if (!voteLocked) {
-                        void voteMutation.mutate('left')
-                      }
-                    }}
-                    disabled={voteLocked}
-                  />
-                </div>
-              </div>
+            <div className="space-y-2 py-0.5 md:hidden">
+              <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-1 font-display text-xs text-primary">
+                Champion
+              </span>
+              <SongCard
+                track={champion}
+                isChampion
+                isPlaying={playingTrackId === champion.id}
+                onPlay={() => playTrack(champion)}
+                onVote={() => {
+                  if (!voteLocked) {
+                    void voteMutation.mutate('left')
+                  }
+                }}
+                onSeek={(ratio) => seekTrack(champion.id, ratio)}
+                playbackCurrentTime={playbackByTrackId[champion.id]?.currentTime ?? 0}
+                playbackDuration={playbackByTrackId[champion.id]?.duration ?? 0}
+                disabled={voteLocked}
+              />
 
-              <div className="text-center font-display font-black text-3xl pt-4 text-accent">
+              <div className="py-0.5 text-center font-display text-4xl text-accent text-glow-orange">
                 VS
               </div>
 
-              <div className="space-y-2 text-right">
-                <span className="inline-flex items-center gap-1 bg-accent/15 text-accent text-xs font-display font-bold px-2.5 py-1 rounded-full animate-badge-bounce">
-                  <DoubleMegaphone className="w-4 h-4" /> Challenger
-                </span>
-                <div>
-                  <SongCard
-                    track={challenger}
-                    isPlaying={playingTrackId === challenger.id}
-                    onPlay={() => playTrack(challenger)}
-                    onVote={() => {
-                      if (!voteLocked) {
-                        void voteMutation.mutate('right')
-                      }
-                    }}
-                    animationClass={challengerAnim}
-                    disabled={voteLocked}
-                  />
-                </div>
-              </div>
+              <span className="inline-flex items-center rounded-full bg-secondary/15 px-2.5 py-1 font-display text-xs text-secondary">
+                Challenger
+              </span>
+              <SongCard
+                track={challenger}
+                isPlaying={playingTrackId === challenger.id}
+                onPlay={() => playTrack(challenger)}
+                onVote={() => {
+                  if (!voteLocked) {
+                    void voteMutation.mutate('right')
+                  }
+                }}
+                onSeek={(ratio) => seekTrack(challenger.id, ratio)}
+                playbackCurrentTime={playbackByTrackId[challenger.id]?.currentTime ?? 0}
+                playbackDuration={playbackByTrackId[challenger.id]?.duration ?? 0}
+                disabled={voteLocked}
+              />
             </div>
-          </>
+          </section>
         ) : (
-          <div className="space-y-4 rounded-xl bg-card border border-border p-4">
+          <div className="rounded-xl border border-border bg-card/75 p-4">
             <p className="text-sm font-body text-muted-foreground">
               {waitingMessage ?? 'Aucun duel actif pour le moment.'}
             </p>
@@ -350,10 +553,7 @@ function DuelPage() {
         )}
 
         {feedback ? (
-          <p
-            aria-live="polite"
-            className="text-sm font-body text-muted-foreground"
-          >
+          <p aria-live="polite" className="text-sm font-body text-accent">
             {feedback}
           </p>
         ) : null}

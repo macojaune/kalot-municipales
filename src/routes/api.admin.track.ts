@@ -6,6 +6,73 @@ import {
   createTrack,
   listTracksForAdmin,
 } from '../lib/vote-engine'
+import { deleteAudioFromR2, uploadAudioToR2 } from '../lib/r2'
+
+type CreateTrackPayload = {
+  externalUserId?: string | null
+  electoralListId?: number | null
+  title?: string
+  artistName?: string | null
+  communeName?: string
+  listName?: string | null
+  candidateName?: string | null
+  streamUrl?: string | null
+  r2Key?: string | null
+  audioFile?: File | null
+}
+
+function parseOptionalNumber(value: FormDataEntryValue | null) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return null
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+async function parseCreateTrackPayload(request: Request): Promise<CreateTrackPayload> {
+  const contentType = request.headers.get('content-type') ?? ''
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await request.formData()
+    const audioCandidate = formData.get('audio')
+
+    return {
+      externalUserId:
+        typeof formData.get('externalUserId') === 'string'
+          ? formData.get('externalUserId')
+          : null,
+      electoralListId: parseOptionalNumber(formData.get('electoralListId')),
+      title:
+        typeof formData.get('title') === 'string' ? formData.get('title') : '',
+      artistName:
+        typeof formData.get('artistName') === 'string'
+          ? formData.get('artistName')
+          : null,
+      communeName:
+        typeof formData.get('communeName') === 'string'
+          ? formData.get('communeName')
+          : undefined,
+      listName:
+        typeof formData.get('listName') === 'string'
+          ? formData.get('listName')
+          : null,
+      candidateName:
+        typeof formData.get('candidateName') === 'string'
+          ? formData.get('candidateName')
+          : null,
+      streamUrl:
+        typeof formData.get('streamUrl') === 'string'
+          ? formData.get('streamUrl')
+          : null,
+      r2Key:
+        typeof formData.get('r2Key') === 'string' ? formData.get('r2Key') : null,
+      audioFile: audioCandidate instanceof File ? audioCandidate : null,
+    }
+  }
+
+  return (await request.json()) as CreateTrackPayload
+}
 
 export const Route = createFileRoute('/api/admin/track')({
   server: {
@@ -35,16 +102,7 @@ export const Route = createFileRoute('/api/admin/track')({
         })
       },
       POST: async ({ request }) => {
-        const body = (await request.json()) as {
-          externalUserId?: string | null
-          title?: string
-          artistName?: string
-          communeName?: string
-          listName?: string | null
-          candidateName?: string | null
-          streamUrl?: string | null
-          r2Key?: string | null
-        }
+        const body = await parseCreateTrackPayload(request)
 
         const access = await assertAdminAccess({
           externalUserId: body.externalUserId,
@@ -53,28 +111,69 @@ export const Route = createFileRoute('/api/admin/track')({
           return json(access, { status: 403 })
         }
 
-        if (!body.title || !body.artistName || !body.communeName) {
+        if (
+          typeof body.electoralListId !== 'number' &&
+          !body.communeName
+        ) {
           return json(
             {
               ok: false,
               code: 'INVALID_BODY',
-              message: 'title, artistName et communeName sont requis.',
+              message: 'electoralListId ou communeName est requis.',
             },
             { status: 400 },
           )
         }
 
-        const track = await createTrack({
-          title: body.title,
-          artistName: body.artistName,
-          communeName: body.communeName,
-          listName: body.listName,
-          candidateName: body.candidateName,
-          streamUrl: body.streamUrl,
-          r2Key: body.r2Key,
-        })
+        const trimmedStreamUrl = body.streamUrl?.trim() || null
 
-        return json({ ok: true, track })
+        if (!body.audioFile && !trimmedStreamUrl) {
+          return json(
+            {
+              ok: false,
+              code: 'INVALID_BODY',
+              message: 'Un fichier audio ou une streamUrl est requis.',
+            },
+            { status: 400 },
+          )
+        }
+
+        let uploaded: { key: string; url: string } | null = null
+
+        try {
+          if (body.audioFile) {
+            uploaded = await uploadAudioToR2(body.audioFile)
+          }
+
+          const track = await createTrack({
+            electoralListId: body.electoralListId,
+            title: body.title,
+            artistName: body.artistName,
+            communeName: body.communeName,
+            listName: body.listName,
+            candidateName: body.candidateName,
+            streamUrl: uploaded?.url ?? trimmedStreamUrl,
+            r2Key: uploaded?.key ?? body.r2Key,
+          })
+
+          return json({ ok: true, track })
+        } catch (error) {
+          if (uploaded?.key) {
+            await deleteAudioFromR2(uploaded.key).catch(() => undefined)
+          }
+
+          return json(
+            {
+              ok: false,
+              code: 'TRACK_CREATE_FAILED',
+              message:
+                error instanceof Error
+                  ? error.message
+                  : 'Impossible d ajouter le son.',
+            },
+            { status: 400 },
+          )
+        }
       },
       DELETE: async ({ request }) => {
         const body = (await request.json()) as {

@@ -6,7 +6,7 @@ import { REGION_LABELS } from '../types/song'
 const navItems = [
   { to: '/', label: 'Accueil' },
   { to: '/duel', label: 'Duel' },
-  { to: '/leaderboard', label: 'Classement' },
+  { to: '/classement', label: 'Classement' },
 ]
 
 export function TopNav() {
@@ -33,11 +33,10 @@ export function TopNav() {
           <Link
             key={item.to}
             to={item.to}
-            className={`px-4 py-2 rounded-lg font-body font-medium text-sm transition-colors ${
-              pathname === item.to
+            className={`px-4 py-2 rounded-lg font-body font-medium text-sm transition-colors ${pathname === item.to
                 ? 'bg-primary text-primary-foreground'
                 : 'hover:bg-secondary/80 text-secondary-foreground/80'
-            }`}
+              }`}
           >
             {item.label}
           </Link>

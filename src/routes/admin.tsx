@@ -1,20 +1,16 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Lock, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Lock, Plus, Trash2, Upload } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
-import { useRegion } from '../context/RegionContext'
 import {
   deleteJson,
   getExternalUserId,
   getJson,
+  postFormData,
   postJson,
 } from '../lib/kalot-client'
-import type { Region } from '../types/song'
-import { COMMUNES, REGION_LABELS } from '../types/song'
-
-const ADMIN_PASSWORD = 'kalot2026'
 
 type AdminTrackListResponse =
   | {
@@ -43,27 +39,45 @@ type AdminMutationResponse =
   | { ok: true }
   | { ok: false; code?: string; message: string }
 
+type AdminElectoralListResponse =
+  | {
+      ok: true
+      communes: Array<{
+        id: number
+        name: string
+        slug: string
+        lists: Array<{
+          id: number
+          name: string
+          slug: string
+          candidateName: string | null
+          photoUrl: string | null
+        }>
+      }>
+    }
+  | {
+      ok: false
+      code: string
+      message: string
+    }
+
 export const Route = createFileRoute('/admin')({
   component: AdminPage,
 })
 
 function AdminPage() {
   const { user } = useUser()
-  const { region } = useRegion()
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
+  const audioInputRef = useRef<HTMLInputElement | null>(null)
 
-  const [authenticated, setAuthenticated] = useState(false)
-  const [password, setPassword] = useState('')
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
   const [form, setForm] = useState({
     title: '',
     artistName: '',
-    region: region ?? 'guadeloupe',
     communeName: '',
-    listName: '',
-    candidateName: '',
-    streamUrl: '',
+    electoralListId: '',
   })
 
   const tracksQuery = useQuery({
@@ -74,23 +88,60 @@ function AdminPage() {
           externalUserId ?? '',
         )}`,
       ),
-    enabled: authenticated && Boolean(externalUserId),
+    enabled: Boolean(externalUserId),
   })
 
-  const createTrackMutation = useMutation({
-    mutationFn: () =>
-      postJson<AdminMutationResponse>(
-        '/api/admin/track',
-        {
-          externalUserId,
-          title: form.title,
-          artistName: form.artistName,
-          communeName: form.communeName,
-          listName: form.listName || null,
-          candidateName: form.candidateName || null,
-          streamUrl: form.streamUrl || null,
-        },
+  const electoralListsQuery = useQuery({
+    queryKey: ['admin-electoral-lists'],
+    queryFn: () =>
+      getJson<AdminElectoralListResponse>(
+        `/api/admin/electoral-lists?externalUserId=${encodeURIComponent(
+          externalUserId ?? '',
+        )}`,
       ),
+    enabled: Boolean(externalUserId),
+  })
+
+  const electoralCommunes = useMemo(
+    () =>
+      electoralListsQuery.data?.ok && Array.isArray(electoralListsQuery.data.communes)
+        ? electoralListsQuery.data.communes
+        : [],
+    [electoralListsQuery.data],
+  )
+
+  const selectedCommune = useMemo(
+    () =>
+      electoralCommunes.find((commune) => commune.name === form.communeName) ?? null,
+    [electoralCommunes, form.communeName],
+  )
+
+  const selectedElectoralList = useMemo(
+    () =>
+      selectedCommune?.lists.find(
+        (list) => String(list.id) === form.electoralListId,
+      ) ?? null,
+    [form.electoralListId, selectedCommune],
+  )
+
+  const createTrackMutation = useMutation({
+    mutationFn: () => {
+      const payload = new FormData()
+      payload.set('externalUserId', externalUserId ?? '')
+      payload.set('electoralListId', form.electoralListId)
+      payload.set('title', form.title)
+      payload.set('artistName', form.artistName)
+
+      if (form.communeName) {
+        payload.set('communeName', form.communeName)
+      }
+
+      if (audioFile) {
+        payload.set('audio', audioFile)
+      }
+
+      return postFormData<AdminMutationResponse>('/api/admin/track', payload)
+    },
     onSuccess: async (response) => {
       if (!response.ok) {
         setFeedback(response.message)
@@ -103,10 +154,12 @@ function AdminPage() {
         title: '',
         artistName: '',
         communeName: '',
-        listName: '',
-        candidateName: '',
-        streamUrl: '',
+        electoralListId: '',
       }))
+      setAudioFile(null)
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
     onError: () => {
@@ -139,7 +192,12 @@ function AdminPage() {
       postJson<{
         ok: true
         communes: { inserted: number; totalTarget: number }
-        tracks: { created: number; total: number }
+        electoralLists: {
+          created: number
+          updated: number
+          total: number
+          totalCommunes: number
+        }
       } | {
         ok: false
         message: string
@@ -151,17 +209,21 @@ function AdminPage() {
       }
 
       setFeedback(
-        `${response.communes.inserted} communes ajoutees, ${response.tracks.created} sons demo injectes !`,
+        `${response.communes.inserted} communes ajoutees, ${response.electoralLists.created} listes creees, ${response.electoralLists.updated} mises a jour.`,
       )
+      await queryClient.invalidateQueries({ queryKey: ['admin-electoral-lists'] })
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
     onError: () => {
-      setFeedback("Impossible d'injecter les donnees demo.")
+      setFeedback("Impossible d'importer les listes electorales.")
     },
   })
 
   const adminAccessError =
-    tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null
+    (tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null) ||
+    (electoralListsQuery.data && !electoralListsQuery.data.ok
+      ? electoralListsQuery.data
+      : null)
 
   const adminTracks =
     tracksQuery.data?.ok && Array.isArray(tracksQuery.data.tracks)
@@ -173,62 +235,12 @@ function AdminPage() {
       <Layout>
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
+            <Lock className="w-10 h-10 mx-auto text-primary" />
+            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             Connexion requise pour acceder a l'administration.
           </p>
-        </div>
-      </Layout>
-    )
-  }
-
-  if (!authenticated) {
-    return (
-      <Layout>
-        <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
-          <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
-          </div>
-          <input
-            type="password"
-            name="adminPassword"
-            autoComplete="current-password"
-            aria-label="Mot de passe"
-            placeholder="Mot de passe admin…"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && password === ADMIN_PASSWORD) {
-                setAuthenticated(true)
-              }
-            }}
-            className="w-full p-3 rounded-xl bg-card border border-border font-body min-h-[44px]"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (password === ADMIN_PASSWORD) {
-                setFeedback(null)
-                setAuthenticated(true)
-                return
-              }
-              setFeedback('Mot de passe incorrect.')
-            }}
-            className="w-full py-3 rounded-xl bg-secondary text-secondary-foreground font-display font-bold min-h-[44px]"
-          >
-            Entrer
-          </button>
-          {feedback ? (
-            <p
-              aria-live="polite"
-              className="text-xs text-muted-foreground font-body text-center"
-            >
-              {feedback}
-            </p>
-          ) : null}
         </div>
       </Layout>
     )
@@ -239,8 +251,8 @@ function AdminPage() {
       <Layout>
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
-            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-            <h1 className="font-display font-bold text-xl">Admin</h1>
+            <Lock className="w-10 h-10 mx-auto text-primary" />
+            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             {adminAccessError.message}
@@ -253,10 +265,75 @@ function AdminPage() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-fade-in">
-        <h1 className="font-display font-black text-2xl">Admin</h1>
+        <h1 className="font-display font-black text-3xl text-primary text-glow-green">Admin</h1>
 
-        <div className="space-y-3 p-4 rounded-xl bg-card border border-border">
-          <h2 className="font-display font-bold text-sm">Ajouter un son</h2>
+        <div className="space-y-3 p-4 rounded-xl bg-card/80 border border-primary/35 neon-panel">
+          <h2 className="font-display font-bold text-sm text-primary">Ajouter un son</h2>
+          <p className="text-xs font-body text-muted-foreground">
+            Choisis la commune, la tete de liste et un fichier audio. Le son sera
+            envoye vers ton bucket Cloudflare R2 puis lie automatiquement a la base.
+          </p>
+
+          <select
+            value={form.communeName}
+            onChange={(event) =>
+              setForm((previous) => ({
+                ...previous,
+                communeName: event.target.value,
+                electoralListId: '',
+              }))
+            }
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
+          >
+            <option value="">Commune</option>
+            {electoralCommunes.map((commune) => (
+              <option key={commune.id} value={commune.name}>
+                {commune.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={form.electoralListId}
+            onChange={(event) =>
+              setForm((previous) => ({
+                ...previous,
+                electoralListId: event.target.value,
+              }))
+            }
+            disabled={!selectedCommune}
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
+          >
+            <option value="">Tete de liste</option>
+            {selectedCommune?.lists.map((electoralList) => (
+              <option key={electoralList.id} value={String(electoralList.id)}>
+                {electoralList.candidateName || electoralList.name}
+              </option>
+            ))}
+          </select>
+
+          <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/45 bg-background/65 px-4 py-4 transition-all hover:border-primary hover:bg-primary/5 hover:box-glow-green">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-transform group-hover:scale-105">
+              <Upload className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm text-foreground">
+                {audioFile ? audioFile.name : 'Selectionner le fichier audio'}
+              </p>
+              <p className="mt-1 text-xs font-body text-muted-foreground">
+                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. 25 Mo max.
+              </p>
+            </div>
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
+              className="sr-only"
+              onChange={(event) => {
+                setAudioFile(event.target.files?.[0] ?? null)
+              }}
+            />
+          </label>
 
           <input
             value={form.title}
@@ -266,8 +343,8 @@ function AdminPage() {
                 title: event.target.value,
               }))
             }
-            placeholder="Titre (ex: Mairie an nou)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            placeholder="Titre optionnel (sinon nom de liste / candidat)…"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
           <input
             value={form.artistName}
@@ -277,89 +354,41 @@ function AdminPage() {
                 artistName: event.target.value,
               }))
             }
-            placeholder="Artiste (ex: DJ Kalot)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            value={form.listName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                listName: event.target.value,
-              }))
-            }
-            placeholder="Liste electorale…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            value={form.candidateName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                candidateName: event.target.value,
-              }))
-            }
-            placeholder="Candidat…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            type="url"
-            inputMode="url"
-            value={form.streamUrl}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                streamUrl: event.target.value,
-              }))
-            }
-            placeholder="URL audio (ex: https://cdn.exemple.com/track.mp3)…"
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
+            placeholder="Artiste connu (optionnel)…"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
 
-          <select
-            value={form.region}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                region: event.target.value as Region,
-                communeName: '',
-              }))
-            }
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
-          >
-            {(Object.keys(REGION_LABELS) as Region[]).map((entryRegion) => (
-              <option key={entryRegion} value={entryRegion}>
-                {REGION_LABELS[entryRegion]}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={form.communeName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                communeName: event.target.value,
-              }))
-            }
-            className="w-full p-3 rounded-lg bg-background border border-border font-body text-sm min-h-[44px]"
-          >
-            <option value="">Commune</option>
-            {COMMUNES[form.region].map((communeName) => (
-              <option key={communeName} value={communeName}>
-                {communeName}
-              </option>
-            ))}
-          </select>
+          {selectedElectoralList ? (
+            <div className="rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground space-y-1">
+              <p>
+                <span className="text-foreground">Liste:</span>{' '}
+                {selectedElectoralList.name}
+              </p>
+              <p>
+                <span className="text-foreground">Tete de liste:</span>{' '}
+                {selectedElectoralList.candidateName || 'Non renseignee'}
+              </p>
+              {selectedElectoralList.photoUrl ? (
+                <p className="truncate">
+                  <span className="text-foreground">Photo:</span>{' '}
+                  {selectedElectoralList.photoUrl}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <button
             type="button"
             onClick={() => void createTrackMutation.mutate()}
-            disabled={createTrackMutation.isPending}
-            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-display font-bold flex items-center justify-center gap-2 min-h-[44px]"
+            disabled={
+              createTrackMutation.isPending ||
+              !form.electoralListId ||
+              !audioFile
+            }
+            className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold flex items-center justify-center gap-2 min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             <Plus className="w-4 h-4" />
-            {createTrackMutation.isPending ? 'Ajout…' : 'Ajouter'}
+            {createTrackMutation.isPending ? 'Upload en cours…' : 'Ajouter le son'}
           </button>
         </div>
 
@@ -367,10 +396,16 @@ function AdminPage() {
           type="button"
           onClick={() => void seedMutation.mutate()}
           disabled={seedMutation.isPending}
-          className="w-full py-3 rounded-xl bg-muted text-foreground font-body font-medium min-h-[44px]"
+          className="w-full py-3 rounded-xl border border-secondary/45 bg-secondary/10 text-secondary font-display font-medium min-h-[44px] hover:bg-secondary hover:text-background hover:box-glow-blue transition-all"
         >
-          {seedMutation.isPending ? 'Injection…' : 'Injecter sons demo'}
+          {seedMutation.isPending ? 'Import…' : 'Importer listes electorales'}
         </button>
+
+        {electoralCommunes.length === 0 ? (
+          <p className="text-xs text-muted-foreground font-body text-center">
+            Importe d'abord le referentiel electoral pour activer le formulaire dynamique.
+          </p>
+        ) : null}
 
         <div className="space-y-2">
           <h2 className="font-display font-bold text-sm">
@@ -379,14 +414,16 @@ function AdminPage() {
           {adminTracks.map((song) => (
             <div
               key={song.id}
-              className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border"
+              className="flex items-center gap-3 p-3 rounded-lg bg-card/80 border border-border neon-panel"
             >
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-sm truncate">
                   {song.title}
                 </p>
                 <p className="text-xs text-muted-foreground font-body truncate">
-                  {song.artistName} · {song.communeName} · Elo{' '}
+                  {song.artistName ? `${song.artistName} · ` : ''}
+                  {song.communeName}
+                  {song.candidateName ? ` · ${song.candidateName}` : ''} · Elo{' '}
                   <span className="tabular">{Math.round(song.rating)}</span>
                 </p>
               </div>

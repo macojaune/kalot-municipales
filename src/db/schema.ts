@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -29,17 +29,28 @@ export const artists = sqliteTable('artists', {
     .$defaultFn(() => new Date().toISOString()),
 })
 
-export const electoralLists = sqliteTable('electoral_lists', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  candidateName: text('candidate_name'),
-  communeId: integer('commune_id')
-    .notNull()
-    .references(() => communes.id),
-  createdAt: text('created_at')
-    .notNull()
-    .$defaultFn(() => new Date().toISOString()),
-})
+export const electoralLists = sqliteTable(
+  'electoral_lists',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    candidateName: text('candidate_name'),
+    photoUrl: text('photo_url'),
+    communeId: integer('commune_id')
+      .notNull()
+      .references(() => communes.id),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => ({
+    communeSlugUnique: uniqueIndex('electoral_lists_commune_slug_unique').on(
+      table.communeId,
+      table.slug,
+    ),
+  }),
+)
 
 export const tracks = sqliteTable('tracks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -47,9 +58,7 @@ export const tracks = sqliteTable('tracks', {
   slug: text('slug').notNull().unique(),
   r2Key: text('r2_key').notNull(),
   streamUrl: text('stream_url'),
-  artistId: integer('artist_id')
-    .notNull()
-    .references(() => artists.id),
+  artistId: integer('artist_id').references(() => artists.id),
   communeId: integer('commune_id')
     .notNull()
     .references(() => communes.id),
@@ -60,6 +69,10 @@ export const tracks = sqliteTable('tracks', {
   wins: integer('wins').notNull().default(0),
   losses: integer('losses').notNull().default(0),
   appearances: integer('appearances').notNull().default(0),
+  round2Rating: real('round2_rating').notNull().default(1200),
+  round2Wins: integer('round2_wins').notNull().default(0),
+  round2Losses: integer('round2_losses').notNull().default(0),
+  round2Appearances: integer('round2_appearances').notNull().default(0),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   isSeed: integer('is_seed', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at')
@@ -72,6 +85,10 @@ export const voteSessions = sqliteTable('vote_sessions', {
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
+  electionRound: text('election_round', { enum: ['round1', 'round2'] })
+    .notNull()
+    .default('round1'),
+  communeId: integer('commune_id').references(() => communes.id),
   status: text('status', { enum: ['active', 'waiting', 'completed'] })
     .notNull()
     .default('active'),
@@ -105,6 +122,10 @@ export const votes = sqliteTable('votes', {
   sessionId: text('session_id')
     .notNull()
     .references(() => voteSessions.id),
+  electionRound: text('election_round', { enum: ['round1', 'round2'] })
+    .notNull()
+    .default('round1'),
+  communeId: integer('commune_id').references(() => communes.id),
   roundNumber: integer('round_number').notNull(),
   userId: integer('user_id')
     .notNull()
@@ -122,6 +143,19 @@ export const votes = sqliteTable('votes', {
     .notNull()
     .references(() => tracks.id),
   createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+})
+
+export const round1CommuneWinners = sqliteTable('round1_commune_winners', {
+  communeId: integer('commune_id')
+    .primaryKey()
+    .references(() => communes.id),
+  winningTrackId: integer('winning_track_id')
+    .notNull()
+    .references(() => tracks.id),
+  winningRating: real('winning_rating').notNull(),
+  finalizedAt: text('finalized_at')
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 })

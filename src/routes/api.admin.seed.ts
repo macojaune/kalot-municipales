@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import {
   assertAdminAccess,
-  seedDemoTracks,
+  seedElectoralLists,
   seedGuadeloupeCommunes,
 } from '../lib/vote-engine'
 
@@ -22,15 +22,15 @@ export const Route = createFileRoute('/api/admin/seed')({
           return json(access, { status: 403 })
         }
 
-        const [communesResult, tracksResult] = await Promise.all([
+        const [communesResult, electoralListsResult] = await Promise.all([
           seedGuadeloupeCommunes(),
-          seedDemoTracks(),
+          seedElectoralLists(),
         ])
 
         return json({
           ok: true,
           communes: communesResult,
-          tracks: tracksResult,
+          electoralLists: electoralListsResult,
         })
       },
     },

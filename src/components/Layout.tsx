@@ -1,20 +1,55 @@
+import { ChevronLeft } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { BottomNav } from './BottomNav'
-import { DoubleMegaphone } from './icons/DoubleMegaphone'
+import { SpeakerGrillPattern } from './soundsystem/SpeakerGrillPattern'
 
-export function Layout({ children }: { children: ReactNode }) {
+type LayoutProps = {
+  children: ReactNode
+  hideHeader?: boolean
+  backTo?: string | null
+  backLabel?: string
+  headerRight?: ReactNode
+}
+
+export function Layout({
+  children,
+  hideHeader = false,
+  backTo = '/',
+  backLabel = 'Retour',
+  headerRight,
+}: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground text-grain">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-start gap-2">
-          <DoubleMegaphone className="w-6 h-6" />
-          <p className="font-display text-lg font-black tracking-wide">
-            Kalot&apos;Municipales
-          </p>
-        </div>
-      </header>
-      <main className="pb-20 md:pb-0">{children}</main>
-      <BottomNav />
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground text-grain">
+      <SpeakerGrillPattern />
+
+      {hideHeader ? null : (
+        <header className="sticky top-0 z-40 border-b border-primary/25 bg-background/90 backdrop-blur-md">
+          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+            <div className="flex min-w-0 items-center gap-3">
+              {backTo ? (
+                <a
+                  href={backTo}
+                  className="inline-flex items-center gap-1 text-xs font-display tracking-wider text-muted-foreground transition-colors hover:text-primary"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  {backLabel}
+                </a>
+              ) : null}
+
+              <a
+                href="/"
+                className="font-display text-2xl font-bold tracking-tight whitespace-nowrap"
+              >
+                <span className="text-foreground text-glow-white">KALOT</span>
+                <span className="text-primary text-glow-green">MUNICIPALES</span>
+              </a>
+            </div>
+
+            <div className="flex items-center justify-end">{headerRight}</div>
+          </div>
+        </header>
+      )}
+
+      <main className="relative z-10">{children}</main>
     </div>
   )
 }
