@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
 import { CrownIcon } from '../components/icons/CrownIcon'
+import { trackEvent } from '../lib/analytics'
 import {
   clearActiveSessionId,
   getActiveSessionId,
@@ -216,6 +217,14 @@ function DuelPage() {
       const winnerTrack = winnerSide === 'left' ? champion : challenger
       const loserTrack = winnerSide === 'left' ? challenger : champion
 
+      trackEvent('duel_vote_pick', {
+        side: winnerSide,
+        winnerTrackId: winnerTrack.id,
+        loserTrackId: loserTrack.id,
+        duelIndex,
+        totalDuels,
+      })
+
       return {
         winnerTrack,
         loserTrack,
@@ -374,7 +383,10 @@ function DuelPage() {
       headerRight={
         <button
           type="button"
-          onClick={() => void navigate({ to: '/classement' })}
+          onClick={() => {
+            trackEvent('duel_quit_click')
+            void navigate({ to: '/classement' })
+          }}
           className="inline-flex min-h-9 items-center rounded-full border border-border px-3 text-[11px] font-display tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
         >
           Quitter

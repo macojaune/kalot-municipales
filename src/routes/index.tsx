@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout'
 import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
 import { NeonButton } from '../components/soundsystem/NeonButton'
 import { ScrollingTicker } from '../components/soundsystem/ScrollingTicker'
+import { trackEvent } from '../lib/analytics'
 import {
   getDisplayName,
   getExternalUserId,
@@ -119,12 +120,20 @@ function HomePage() {
   })
 
   function handleStart() {
+    trackEvent('home_start_vote_click', {
+      electionRound,
+      isAuthenticated: Boolean(externalUserId),
+    })
+
     if (electionRound === 'closed') {
       setFeedback('Le vote est termine.')
       return
     }
 
     if (!externalUserId) {
+      trackEvent('home_vote_requires_signin', {
+        electionRound,
+      })
       setFeedback(null)
       void openSignIn({
         fallbackRedirectUrl: window.location.href,
@@ -218,10 +227,25 @@ function HomePage() {
 
             <Link
               to="/classement"
+              onClick={() => {
+                trackEvent('home_classement_click')
+              }}
               className="relative z-10 inline-flex min-h-14 w-full items-center justify-center whitespace-nowrap rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-[1.55rem] font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
             >
               Classement général
             </Link>
+
+            <div className="text-center">
+              <Link
+                to="/ajouter-son"
+                onClick={() => {
+                  trackEvent('home_add_track_click')
+                }}
+                className="relative z-10 inline-flex text-sm font-display tracking-[0.12em] text-muted-foreground underline decoration-primary/50 underline-offset-4 transition-colors hover:text-primary"
+              >
+                Ajouter un son de campagne
+              </Link>
+            </div>
           </section>
 
           {feedback ? (

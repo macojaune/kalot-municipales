@@ -12,15 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as DuelRouteImport } from './routes/duel'
 import { Route as ClassementRouteImport } from './routes/classement'
+import { Route as AjouterSonRouteImport } from './routes/ajouter-son'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiReportRouteImport } from './routes/api.report'
 import { Route as ApiLeaderboardRouteImport } from './routes/api.leaderboard'
+import { Route as ApiElectoralListsRouteImport } from './routes/api.electoral-lists'
 import { Route as ApiVoteStateRouteImport } from './routes/api.vote.state'
 import { Route as ApiVoteStartRouteImport } from './routes/api.vote.start'
 import { Route as ApiVotePickRouteImport } from './routes/api.vote.pick'
 import { Route as ApiVoteOptionsRouteImport } from './routes/api.vote.options'
+import { Route as ApiTrackSubmitRouteImport } from './routes/api.track.submit'
 import { Route as ApiAdminTrackRouteImport } from './routes/api.admin.track'
 import { Route as ApiAdminSeedRouteImport } from './routes/api.admin.seed'
 import { Route as ApiAdminElectoralListsRouteImport } from './routes/api.admin.electoral-lists'
@@ -38,6 +41,11 @@ const DuelRoute = DuelRouteImport.update({
 const ClassementRoute = ClassementRouteImport.update({
   id: '/classement',
   path: '/classement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AjouterSonRoute = AjouterSonRouteImport.update({
+  id: '/ajouter-son',
+  path: '/ajouter-son',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -65,6 +73,11 @@ const ApiLeaderboardRoute = ApiLeaderboardRouteImport.update({
   path: '/api/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiElectoralListsRoute = ApiElectoralListsRouteImport.update({
+  id: '/api/electoral-lists',
+  path: '/api/electoral-lists',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVoteStateRoute = ApiVoteStateRouteImport.update({
   id: '/api/vote/state',
   path: '/api/vote/state',
@@ -83,6 +96,11 @@ const ApiVotePickRoute = ApiVotePickRouteImport.update({
 const ApiVoteOptionsRoute = ApiVoteOptionsRouteImport.update({
   id: '/api/vote/options',
   path: '/api/vote/options',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTrackSubmitRoute = ApiTrackSubmitRouteImport.update({
+  id: '/api/track/submit',
+  path: '/api/track/submit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminTrackRoute = ApiAdminTrackRouteImport.update({
@@ -105,14 +123,17 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/ajouter-son': typeof AjouterSonRoute
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
@@ -122,14 +143,17 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/ajouter-son': typeof AjouterSonRoute
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
@@ -140,14 +164,17 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/ajouter-son': typeof AjouterSonRoute
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/report': typeof ApiReportRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
   '/api/vote/start': typeof ApiVoteStartRoute
@@ -159,14 +186,17 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/ajouter-son'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
@@ -176,14 +206,17 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/ajouter-son'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
@@ -193,14 +226,17 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/ajouter-son'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/report'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
     | '/api/vote/start'
@@ -211,14 +247,17 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  AjouterSonRoute: typeof AjouterSonRoute
   ClassementRoute: typeof ClassementRoute
   DuelRoute: typeof DuelRoute
   ResultsRoute: typeof ResultsRoute
+  ApiElectoralListsRoute: typeof ApiElectoralListsRoute
   ApiLeaderboardRoute: typeof ApiLeaderboardRoute
   ApiReportRoute: typeof ApiReportRoute
   ApiAdminElectoralListsRoute: typeof ApiAdminElectoralListsRoute
   ApiAdminSeedRoute: typeof ApiAdminSeedRoute
   ApiAdminTrackRoute: typeof ApiAdminTrackRoute
+  ApiTrackSubmitRoute: typeof ApiTrackSubmitRoute
   ApiVoteOptionsRoute: typeof ApiVoteOptionsRoute
   ApiVotePickRoute: typeof ApiVotePickRoute
   ApiVoteStartRoute: typeof ApiVoteStartRoute
@@ -246,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/classement'
       fullPath: '/classement'
       preLoaderRoute: typeof ClassementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ajouter-son': {
+      id: '/ajouter-son'
+      path: '/ajouter-son'
+      fullPath: '/ajouter-son'
+      preLoaderRoute: typeof AjouterSonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -283,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/electoral-lists': {
+      id: '/api/electoral-lists'
+      path: '/api/electoral-lists'
+      fullPath: '/api/electoral-lists'
+      preLoaderRoute: typeof ApiElectoralListsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/vote/state': {
       id: '/api/vote/state'
       path: '/api/vote/state'
@@ -309,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/api/vote/options'
       fullPath: '/api/vote/options'
       preLoaderRoute: typeof ApiVoteOptionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/track/submit': {
+      id: '/api/track/submit'
+      path: '/api/track/submit'
+      fullPath: '/api/track/submit'
+      preLoaderRoute: typeof ApiTrackSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/track': {
@@ -339,14 +399,17 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  AjouterSonRoute: AjouterSonRoute,
   ClassementRoute: ClassementRoute,
   DuelRoute: DuelRoute,
   ResultsRoute: ResultsRoute,
+  ApiElectoralListsRoute: ApiElectoralListsRoute,
   ApiLeaderboardRoute: ApiLeaderboardRoute,
   ApiReportRoute: ApiReportRoute,
   ApiAdminElectoralListsRoute: ApiAdminElectoralListsRoute,
   ApiAdminSeedRoute: ApiAdminSeedRoute,
   ApiAdminTrackRoute: ApiAdminTrackRoute,
+  ApiTrackSubmitRoute: ApiTrackSubmitRoute,
   ApiVoteOptionsRoute: ApiVoteOptionsRoute,
   ApiVotePickRoute: ApiVotePickRoute,
   ApiVoteStartRoute: ApiVoteStartRoute,

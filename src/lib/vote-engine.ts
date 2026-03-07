@@ -760,6 +760,11 @@ export async function createTrack(input: {
   isSeed?: boolean
 }) {
   const db = getDb()
+  const trimmedStreamUrl = input.streamUrl?.trim() || null
+
+  if (!trimmedStreamUrl) {
+    throw new Error('Stream URL is required')
+  }
 
   const trimmedArtistName = input.artistName?.trim() || null
   const artist = trimmedArtistName ? await ensureArtist(db, trimmedArtistName) : null
@@ -819,8 +824,8 @@ export async function createTrack(input: {
   await db.insert(tracks).values({
     title: resolvedTitle,
     slug,
-    r2Key: input.r2Key ?? `manual/${slug}.mp3`,
-    streamUrl: input.streamUrl ?? null,
+    r2Key: input.r2Key?.trim() || `manual/${slug}.mp3`,
+    streamUrl: trimmedStreamUrl,
     artistId: artist?.id ?? null,
     communeId: resolvedCommuneId,
     electoralListId,
@@ -1001,7 +1006,7 @@ export async function seedElectoralLists() {
       )
       .limit(1)
 
-    const existing = existingRows[0]
+    const existing = existingRows.at(0)
 
     if (!existing) {
       await db.insert(electoralLists).values({

@@ -248,6 +248,15 @@ export async function postJson<TResponse>(url: string, body: unknown) {
   return (await response.json()) as TResponse
 }
 
+export async function postFormData<TResponse>(url: string, body: FormData) {
+  const response = await fetch(url, {
+    method: 'POST',
+    body,
+  })
+
+  return (await response.json()) as TResponse
+}
+
 export async function deleteJson<TResponse>(url: string, body: unknown) {
   const response = await fetch(url, {
     method: 'DELETE',

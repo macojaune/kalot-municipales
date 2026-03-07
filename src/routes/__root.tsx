@@ -67,6 +67,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="fr" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          defer
+          src="https://analytics.macojaune.com/script.js"
+          data-website-id="384c7f3d-3516-4f1b-b858-bae98db99ee5"
+        />
         <HeadContent />
       </head>
       <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(57,255,20,0.24)]">

@@ -1,13 +1,14 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Lock, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Lock, Plus, Trash2, Upload } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import {
   deleteJson,
   getExternalUserId,
   getJson,
+  postFormData,
   postJson,
 } from '../lib/kalot-client'
 
@@ -68,14 +69,15 @@ function AdminPage() {
   const { user } = useUser()
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
+  const audioInputRef = useRef<HTMLInputElement | null>(null)
 
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [audioFile, setAudioFile] = useState<File | null>(null)
   const [form, setForm] = useState({
     title: '',
     artistName: '',
     communeName: '',
     electoralListId: '',
-    streamUrl: '',
   })
 
   const tracksQuery = useQuery({
@@ -123,19 +125,23 @@ function AdminPage() {
   )
 
   const createTrackMutation = useMutation({
-    mutationFn: () =>
-      postJson<AdminMutationResponse>(
-        '/api/admin/track',
-        {
-          externalUserId,
-          electoralListId: form.electoralListId
-            ? Number(form.electoralListId)
-            : null,
-          title: form.title,
-          artistName: form.artistName || null,
-          streamUrl: form.streamUrl || null,
-        },
-      ),
+    mutationFn: () => {
+      const payload = new FormData()
+      payload.set('externalUserId', externalUserId ?? '')
+      payload.set('electoralListId', form.electoralListId)
+      payload.set('title', form.title)
+      payload.set('artistName', form.artistName)
+
+      if (form.communeName) {
+        payload.set('communeName', form.communeName)
+      }
+
+      if (audioFile) {
+        payload.set('audio', audioFile)
+      }
+
+      return postFormData<AdminMutationResponse>('/api/admin/track', payload)
+    },
     onSuccess: async (response) => {
       if (!response.ok) {
         setFeedback(response.message)
@@ -149,8 +155,11 @@ function AdminPage() {
         artistName: '',
         communeName: '',
         electoralListId: '',
-        streamUrl: '',
       }))
+      setAudioFile(null)
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
     onError: () => {
@@ -260,42 +269,10 @@ function AdminPage() {
 
         <div className="space-y-3 p-4 rounded-xl bg-card/80 border border-primary/35 neon-panel">
           <h2 className="font-display font-bold text-sm text-primary">Ajouter un son</h2>
-
-          <input
-            value={form.title}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                title: event.target.value,
-              }))
-            }
-            placeholder="Titre optionnel (sinon nom de liste / candidat)…"
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            value={form.artistName}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                artistName: event.target.value,
-              }))
-            }
-            placeholder="Artiste connu (optionnel)…"
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          />
-          <input
-            type="url"
-            inputMode="url"
-            value={form.streamUrl}
-            onChange={(event) =>
-              setForm((previous) => ({
-                ...previous,
-                streamUrl: event.target.value,
-              }))
-            }
-            placeholder="URL audio (ex: https://cdn.exemple.com/track.mp3)…"
-            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
-          />
+          <p className="text-xs font-body text-muted-foreground">
+            Choisis la commune, la tete de liste et un fichier audio. Le son sera
+            envoye vers ton bucket Cloudflare R2 puis lie automatiquement a la base.
+          </p>
 
           <select
             value={form.communeName}
@@ -335,6 +312,52 @@ function AdminPage() {
             ))}
           </select>
 
+          <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/45 bg-background/65 px-4 py-4 transition-all hover:border-primary hover:bg-primary/5 hover:box-glow-green">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-transform group-hover:scale-105">
+              <Upload className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-sm text-foreground">
+                {audioFile ? audioFile.name : 'Selectionner le fichier audio'}
+              </p>
+              <p className="mt-1 text-xs font-body text-muted-foreground">
+                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. 25 Mo max.
+              </p>
+            </div>
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
+              className="sr-only"
+              onChange={(event) => {
+                setAudioFile(event.target.files?.[0] ?? null)
+              }}
+            />
+          </label>
+
+          <input
+            value={form.title}
+            onChange={(event) =>
+              setForm((previous) => ({
+                ...previous,
+                title: event.target.value,
+              }))
+            }
+            placeholder="Titre optionnel (sinon nom de liste / candidat)…"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
+          />
+          <input
+            value={form.artistName}
+            onChange={(event) =>
+              setForm((previous) => ({
+                ...previous,
+                artistName: event.target.value,
+              }))
+            }
+            placeholder="Artiste connu (optionnel)…"
+            className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
+          />
+
           {selectedElectoralList ? (
             <div className="rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground space-y-1">
               <p>
@@ -357,11 +380,15 @@ function AdminPage() {
           <button
             type="button"
             onClick={() => void createTrackMutation.mutate()}
-            disabled={createTrackMutation.isPending || !form.electoralListId}
+            disabled={
+              createTrackMutation.isPending ||
+              !form.electoralListId ||
+              !audioFile
+            }
             className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold flex items-center justify-center gap-2 min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             <Plus className="w-4 h-4" />
-            {createTrackMutation.isPending ? 'Ajout…' : 'Ajouter'}
+            {createTrackMutation.isPending ? 'Upload en cours…' : 'Ajouter le son'}
           </button>
         </div>
 

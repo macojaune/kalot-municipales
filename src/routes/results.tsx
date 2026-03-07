@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { CrownIcon } from '../components/icons/CrownIcon'
 import { NeonButton } from '../components/soundsystem/NeonButton'
+import { trackEvent } from '../lib/analytics'
 import { getLastSummary } from '../lib/kalot-client'
 
 export const Route = createFileRoute('/results')({
@@ -59,6 +60,7 @@ function ResultsPage() {
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(siteUrl)
+      trackEvent('results_copy_link')
       setFeedback('Lien copie.')
       setIsShareOpen(false)
     } catch {
@@ -67,6 +69,7 @@ function ResultsPage() {
   }
 
   function handleTwitterShare() {
+    trackEvent('results_share_x')
     const text = buildShareText({
       championTitle: currentChampion.title,
       communeName: currentSummary.communeName,
@@ -79,6 +82,7 @@ function ResultsPage() {
   }
 
   function handleWhatsAppShare() {
+    trackEvent('results_share_whatsapp')
     const text = `${buildShareText({
       championTitle: currentChampion.title,
       communeName: currentSummary.communeName,
@@ -92,6 +96,7 @@ function ResultsPage() {
 
   async function handleStoryImage() {
     try {
+      trackEvent('results_share_story')
       const file = await createStoryImage({
         championTitle: currentChampion.title,
         communeName: currentSummary.communeName,
@@ -203,12 +208,23 @@ function ResultsPage() {
         <section className="relative z-10 flex flex-col gap-3">
           <Link
             to="/classement"
+            onClick={() => {
+              trackEvent('results_classement_click')
+            }}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
           >
             Classement general
           </Link>
 
-          <NeonButton color="orange" size="md" fullWidth onClick={() => setIsShareOpen(true)}>
+          <NeonButton
+            color="orange"
+            size="md"
+            fullWidth
+            onClick={() => {
+              trackEvent('results_share_open')
+              setIsShareOpen(true)
+            }}
+          >
             <Share2 className="h-5 w-5" />
             Partager
           </NeonButton>
