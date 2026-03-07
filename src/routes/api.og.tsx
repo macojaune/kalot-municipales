@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 import { createFileRoute } from '@tanstack/react-router'
 import { ImageResponse } from '@vercel/og'
 
@@ -8,25 +7,6 @@ const DEFAULT_TITLE = 'KALOT MUNICIPALES'
 const DEFAULT_SUBTITLE =
   'Vote pour les meilleures musiques de campagne des municipales 2026.'
 
-const oswald700Path = new URL(
-  '../../node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff',
-  import.meta.url,
-)
-const inter400Path = new URL(
-  '../../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff',
-  import.meta.url,
-)
-const inter700Path = new URL(
-  '../../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff',
-  import.meta.url,
-)
-
-const fontDataPromise = Promise.all([
-  readFile(oswald700Path),
-  readFile(inter400Path),
-  readFile(inter700Path),
-])
-
 function normalizeCopy(value: string | null, fallback: string, maxLength: number) {
   const normalized = value?.trim().replace(/\s+/g, ' ')
 
@@ -35,6 +15,48 @@ function normalizeCopy(value: string | null, fallback: string, maxLength: number
   }
 
   return normalized.slice(0, maxLength)
+}
+
+async function loadOgFonts(requestUrl: string) {
+  const baseUrl = new URL(requestUrl)
+  const fontEntries = await Promise.allSettled([
+    fetch(new URL('/fonts/oswald-700.woff', baseUrl)).then((response) =>
+      response.arrayBuffer(),
+    ),
+    fetch(new URL('/fonts/inter-400.woff', baseUrl)).then((response) =>
+      response.arrayBuffer(),
+    ),
+    fetch(new URL('/fonts/inter-700.woff', baseUrl)).then((response) =>
+      response.arrayBuffer(),
+    ),
+  ])
+
+  return [
+    fontEntries[0].status === 'fulfilled'
+      ? {
+          name: 'Oswald',
+          data: fontEntries[0].value,
+          weight: 700 as const,
+          style: 'normal' as const,
+        }
+      : null,
+    fontEntries[1].status === 'fulfilled'
+      ? {
+          name: 'Inter',
+          data: fontEntries[1].value,
+          weight: 400 as const,
+          style: 'normal' as const,
+        }
+      : null,
+    fontEntries[2].status === 'fulfilled'
+      ? {
+          name: 'Inter',
+          data: fontEntries[2].value,
+          weight: 700 as const,
+          style: 'normal' as const,
+        }
+      : null,
+  ].filter(Boolean)
 }
 
 export const Route = createFileRoute('/api/og')({
@@ -48,7 +70,7 @@ export const Route = createFileRoute('/api/og')({
           DEFAULT_SUBTITLE,
           160,
         )
-        const [oswald700, inter400, inter700] = await fontDataPromise
+        const fonts = await loadOgFonts(request.url)
 
         return new ImageResponse(
           (
@@ -261,26 +283,7 @@ export const Route = createFileRoute('/api/og')({
           {
             width: IMAGE_WIDTH,
             height: IMAGE_HEIGHT,
-            fonts: [
-              {
-                name: 'Oswald',
-                data: oswald700,
-                weight: 700,
-                style: 'normal',
-              },
-              {
-                name: 'Inter',
-                data: inter400,
-                weight: 400,
-                style: 'normal',
-              },
-              {
-                name: 'Inter',
-                data: inter700,
-                weight: 700,
-                style: 'normal',
-              },
-            ],
+            fonts,
           },
         )
       },
