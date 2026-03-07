@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Image, Link2, Share2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
@@ -11,23 +11,21 @@ export const Route = createFileRoute('/results')({
 })
 
 function ResultsPage() {
-  const navigate = useNavigate()
   const summary = getLastSummary()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isShareOpen, setIsShareOpen] = useState(false)
 
-  const champion = useMemo(() => {
+  const top3 = useMemo(() => {
     if (!summary?.scoreboard.length) {
-      return null
+      return []
     }
 
-    return [...summary.scoreboard].sort((a, b) => b.points - a.points)[0] ?? null
+    return [...summary.scoreboard]
+      .sort((a, b) => b.points - a.points)
+      .slice(0, 3)
   }, [summary])
 
-  const runnerUps = useMemo(
-    () => (summary ? summary.scoreboard.slice(1, 3) : []),
-    [summary],
-  )
+  const runnerUps = top3.slice(1)
 
   const siteUrl = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -37,7 +35,7 @@ function ResultsPage() {
     return window.location.origin
   }, [])
 
-  if (!summary || !champion) {
+  if (top3.length === 0) {
     return (
       <Layout>
         <div className="mx-auto max-w-lg space-y-4 px-4 py-20 text-center animate-fade-in">
@@ -51,7 +49,7 @@ function ResultsPage() {
   }
 
   const currentSummary = summary
-  const currentChampion = champion
+  const currentChampion = top3[0]
 
   const title =
     'Ta chanson preferee'
@@ -72,7 +70,7 @@ function ResultsPage() {
     const text = buildShareText({
       championTitle: currentChampion.title,
       communeName: currentSummary.communeName,
-      top3: currentSummary.scoreboard.slice(0, 3),
+      top3,
     })
 
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(siteUrl)}`
@@ -84,7 +82,7 @@ function ResultsPage() {
     const text = `${buildShareText({
       championTitle: currentChampion.title,
       communeName: currentSummary.communeName,
-      top3: currentSummary.scoreboard.slice(0, 3),
+      top3,
     })} ${siteUrl}`
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
@@ -97,7 +95,7 @@ function ResultsPage() {
       const file = await createStoryImage({
         championTitle: currentChampion.title,
         communeName: currentSummary.communeName,
-        top3: currentSummary.scoreboard.slice(0, 3),
+        top3,
       })
 
       const shareWithFiles =
@@ -163,10 +161,10 @@ function ResultsPage() {
           </p>
         </section>
 
-        {runnerUps.length > 0 ? (
+        {top3.length > 1 ? (
           <section className="relative z-10 space-y-2">
             <h3 className="font-display text-secondary text-glow-blue">
-              Autres favoris de ta session
+              Top 3 de ta session
             </h3>
             {runnerUps.map((song, index) => {
               const rank = index + 2
@@ -202,14 +200,10 @@ function ResultsPage() {
           </section>
         ) : null}
 
-        <section className="relative z-10 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <NeonButton color="blue" size="md" fullWidth onClick={() => void navigate({ to: '/' })}>
-            Voter pour une autre commune
-          </NeonButton>
-
+        <section className="relative z-10 flex flex-col gap-3">
           <Link
             to="/classement"
-            className="inline-flex min-h-12 items-center justify-center rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
           >
             Classement general
           </Link>
