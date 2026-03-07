@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Trophy } from 'lucide-react'
-import { useMemo } from 'react'
+import { Pause, Play, Trophy } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { getJson } from '../lib/kalot-client'
 import type { LeaderboardResponse } from '../lib/kalot-client'
@@ -20,6 +20,47 @@ export const Route = createFileRoute('/classement')({
 })
 
 function LeaderboardPage() {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const loadedTrackIdRef = useRef<number | null>(null)
+  const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const audio = new Audio()
+    audioRef.current = audio
+
+    const handlePause = () => {
+      setPlayingTrackId((previous) => {
+        if (previous === loadedTrackIdRef.current) {
+          return null
+        }
+
+        return previous
+      })
+    }
+
+    const handlePlay = () => {
+      if (loadedTrackIdRef.current) {
+        setPlayingTrackId(loadedTrackIdRef.current)
+      }
+    }
+
+    const handleEnded = () => {
+      setPlayingTrackId(null)
+    }
+
+    audio.addEventListener('pause', handlePause)
+    audio.addEventListener('play', handlePlay)
+    audio.addEventListener('ended', handleEnded)
+
+    return () => {
+      audio.pause()
+      audio.src = ''
+      audio.removeEventListener('pause', handlePause)
+      audio.removeEventListener('play', handlePlay)
+      audio.removeEventListener('ended', handleEnded)
+    }
+  }, [])
+
   const leaderboardQuery = useQuery({
     queryKey: ['leaderboard', 'full-table'],
     queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=500'),
@@ -41,11 +82,60 @@ function LeaderboardPage() {
   }
 
   const getTrackLabel = (song: (typeof songs)[number]) => {
-    if (song.title && song.candidateName) {
+    const normalizedTitle = song.title.trim().toLowerCase()
+    const normalizedCandidateName = song.candidateName?.trim().toLowerCase()
+    const normalizedListName = song.listName?.trim().toLowerCase()
+    const normalizedCommuneName = song.communeName.trim().toLowerCase()
+    const generatedArtistTitle =
+      song.artistName.trim() && song.communeName.trim()
+        ? `${song.artistName.trim()} - ${song.communeName.trim()}`.toLowerCase()
+        : null
+
+    const hasCustomTrackTitle =
+      normalizedTitle.length > 0 &&
+      normalizedTitle !== normalizedCandidateName &&
+      normalizedTitle !== normalizedListName &&
+      normalizedTitle !== normalizedCommuneName &&
+      normalizedTitle !== 'son de campagne' &&
+      normalizedTitle !== generatedArtistTitle
+
+    if (hasCustomTrackTitle && song.candidateName) {
       return `${song.title} - ${song.candidateName}`
     }
 
+    if (song.candidateName) {
+      return song.candidateName
+    }
+
     return song.title
+  }
+
+  function toggleTrack(song: (typeof songs)[number]) {
+    if (!song.streamUrl) {
+      return
+    }
+
+    const audio = audioRef.current
+    if (!audio) {
+      return
+    }
+
+    if (loadedTrackIdRef.current === song.id) {
+      if (playingTrackId === song.id) {
+        audio.pause()
+      } else {
+        void audio.play()
+      }
+      return
+    }
+
+    audio.pause()
+    audio.src = song.streamUrl
+    loadedTrackIdRef.current = song.id
+    setPlayingTrackId(song.id)
+    void audio.play().catch(() => {
+      setPlayingTrackId(null)
+    })
   }
 
   return (
@@ -93,15 +183,42 @@ function LeaderboardPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className='flex flex-row gap-4'><p className="font-display text-xl font-semibold text-foreground truncate">
-                      {getTrackLabel(song)}
-                    </p>
+                    <div className="flex flex-row gap-4">
+                      <p className="font-display text-xl font-semibold text-foreground truncate">
+                        {getTrackLabel(song)}
+                      </p>
                       <span className={clsx(["text-sm", medalColor])}>{song.communeName}</span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {getListLabel(song)}
                     </p>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleTrack(song)}
+                    aria-label={
+                      playingTrackId === song.id ? 'Mettre en pause' : 'Ecouter le morceau'
+                    }
+                    disabled={!song.streamUrl}
+                    className={`play-orb inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-background transition-all active:scale-95 ${
+                      index === 0
+                        ? 'border-primary bg-primary shadow-[0_0_14px_rgba(57,255,20,0.38)]'
+                        : index === 1
+                          ? 'border-secondary bg-secondary shadow-[0_0_14px_rgba(0,180,216,0.34)]'
+                          : index === 2
+                            ? 'border-accent bg-accent shadow-[0_0_14px_rgba(255,107,53,0.34)]'
+                            : 'border-border bg-muted text-foreground'
+                    } ${playingTrackId === song.id ? 'is-playing' : ''} ${
+                      !song.streamUrl ? 'cursor-not-allowed opacity-40' : ''
+                    }`}
+                  >
+                    {playingTrackId === song.id ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4 translate-x-0.5" />
+                    )}
+                  </button>
 
                   <div className="text-right shrink-0">
                     <p className="tabular font-display text-xl text-foreground">
