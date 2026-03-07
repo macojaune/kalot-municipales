@@ -8,7 +8,10 @@ export const Route = createFileRoute('/api/electoral-lists')({
       GET: async ({ request }) => {
         const url = new URL(request.url)
         const communeName = url.searchParams.get('communeName')
-        const communes = await listElectoralListsForAdmin({ communeName })
+        const communes = await listElectoralListsForAdmin({
+          communeName,
+          excludeListsWithActiveTracks: true,
+        })
 
         return json({
           ok: true,

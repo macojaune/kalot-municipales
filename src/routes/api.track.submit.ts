@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
-import { createTrack } from '../lib/vote-engine'
+import { createTrack, electoralListHasActiveTrack } from '../lib/vote-engine'
 import { deleteAudioFromR2, uploadAudioToR2 } from '../lib/r2'
 
 function parseOptionalNumber(value: FormDataEntryValue | null) {
@@ -60,6 +60,17 @@ export const Route = createFileRoute('/api/track/submit')({
               message: 'Le fichier audio est requis.',
             },
             { status: 400 },
+          )
+        }
+
+        if (await electoralListHasActiveTrack(electoralListId)) {
+          return json(
+            {
+              ok: false,
+              code: 'TRACK_ALREADY_EXISTS',
+              message: 'Cette tete de liste a deja un son publie.',
+            },
+            { status: 409 },
           )
         }
 

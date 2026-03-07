@@ -1056,10 +1056,14 @@ export async function seedElectoralLists() {
   }
 }
 
-export async function listElectoralListsForAdmin(input?: { communeName?: string | null }) {
+export async function listElectoralListsForAdmin(input?: {
+  communeName?: string | null
+  excludeListsWithActiveTracks?: boolean
+}) {
   const db = getDb()
   const communeName = input?.communeName?.trim()
-  const cacheKey = `electoral-lists:${communeName ? canonicalizeCommuneName(communeName) : 'all'}`
+  const excludeListsWithActiveTracks = input?.excludeListsWithActiveTracks ?? false
+  const cacheKey = `electoral-lists:${communeName ? canonicalizeCommuneName(communeName) : 'all'}:${excludeListsWithActiveTracks ? 'available-only' : 'all'}`
 
   return getOrSetServerCache(cacheKey, ELECTORAL_LISTS_CACHE_TTL_MS, async () => {
     const rows = await db
@@ -1072,11 +1076,29 @@ export async function listElectoralListsForAdmin(input?: { communeName?: string 
         communeId: communes.id,
         communeName: communes.name,
         communeSlug: communes.slug,
+        activeTrackCount: sql<number>`count(${tracks.id})`,
       })
       .from(electoralLists)
       .innerJoin(communes, eq(communes.id, electoralLists.communeId))
+      .leftJoin(
+        tracks,
+        and(
+          eq(tracks.electoralListId, electoralLists.id),
+          eq(tracks.isActive, true),
+        ),
+      )
       .where(
         communeName ? eq(communes.name, canonicalizeCommuneName(communeName)) : undefined,
+      )
+      .groupBy(
+        electoralLists.id,
+        electoralLists.name,
+        electoralLists.slug,
+        electoralLists.candidateName,
+        electoralLists.photoUrl,
+        communes.id,
+        communes.name,
+        communes.slug,
       )
       .orderBy(
         asc(communes.name),
@@ -1101,6 +1123,10 @@ export async function listElectoralListsForAdmin(input?: { communeName?: string 
     >()
 
     for (const row of rows) {
+      if (excludeListsWithActiveTracks && Number(row.activeTrackCount) > 0) {
+        continue
+      }
+
       const existingCommune = communesMap.get(row.communeName)
       if (existingCommune) {
         existingCommune.lists.push({
@@ -1131,6 +1157,19 @@ export async function listElectoralListsForAdmin(input?: { communeName?: string 
 
     return Array.from(communesMap.values())
   })
+}
+
+export async function electoralListHasActiveTrack(electoralListId: number) {
+  const db = getDb()
+  const rows = await db
+    .select({ id: tracks.id })
+    .from(tracks)
+    .where(
+      and(eq(tracks.electoralListId, electoralListId), eq(tracks.isActive, true)),
+    )
+    .limit(1)
+
+  return Boolean(rows[0])
 }
 
 export async function assertAdminAccess(input: {

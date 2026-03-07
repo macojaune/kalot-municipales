@@ -144,6 +144,7 @@ function SubmitTrackPageContent({
       ) ?? null,
     [form.electoralListId, selectedCommune],
   )
+  const hasAvailableLists = (selectedCommune?.lists.length ?? 0) > 0
 
   const submitTrackMutation = useMutation({
     mutationFn: () => {
@@ -348,6 +349,13 @@ function SubmitTrackPageContent({
               </option>
             ))}
           </select>
+
+          {selectedCommune && !hasAvailableLists ? (
+            <p className="rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground">
+              Toutes les tetes de liste de cette commune ont deja un son. Si tu
+              penses qu il manque un morceau, contacte l admin.
+            </p>
+          ) : null}
 
           <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/45 bg-background/65 px-4 py-4 transition-all hover:border-primary hover:bg-primary/5 hover:box-glow-green">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary transition-transform group-hover:scale-105">
