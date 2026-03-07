@@ -1,10 +1,16 @@
+import { useClerk, useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Music4, Upload } from 'lucide-react'
+import { Lock, Music4, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { trackEvent } from '../lib/analytics'
-import { getJson, postFormData } from '../lib/kalot-client'
+import {
+  getDisplayName,
+  getExternalUserId,
+  getJson,
+  postFormData,
+} from '../lib/kalot-client'
 import { buildSeo } from '../lib/seo'
 
 type ElectoralListsResponse =
@@ -33,6 +39,8 @@ type SubmitTrackResponse =
   | { ok: true }
   | { ok: false; code?: string; message: string }
 
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
 export const Route = createFileRoute('/ajouter-son')({
   head: () =>
     buildSeo({
@@ -45,6 +53,55 @@ export const Route = createFileRoute('/ajouter-son')({
 })
 
 function SubmitTrackPage() {
+  if (!clerkEnabled) {
+    return (
+      <Layout>
+        <div className="mx-auto flex max-w-lg flex-col gap-5 px-4 py-8 animate-fade-in">
+          <section className="space-y-3 rounded-xl border border-primary/35 bg-card/80 p-6 text-center neon-panel">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary box-glow-green">
+              <Lock className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-4xl font-black text-primary text-glow-green">
+              Connexion requise
+            </h1>
+            <p className="font-body text-sm text-muted-foreground">
+              L ajout de son est indisponible tant que Clerk n est pas configure sur
+              cet environnement.
+            </p>
+          </section>
+        </div>
+      </Layout>
+    )
+  }
+
+  return <AuthenticatedSubmitTrackPage />
+}
+
+function AuthenticatedSubmitTrackPage() {
+  const { openSignIn } = useClerk()
+  const { user } = useUser()
+
+  return (
+    <SubmitTrackPageContent
+      user={user}
+      onOpenSignIn={() =>
+        openSignIn({
+          fallbackRedirectUrl: window.location.href,
+        })
+      }
+    />
+  )
+}
+
+type SubmitTrackPageContentProps = {
+  user?: ReturnType<typeof useUser>['user'] | null
+  onOpenSignIn?: () => void
+}
+
+function SubmitTrackPageContent({
+  user = null,
+  onOpenSignIn,
+}: SubmitTrackPageContentProps) {
   const audioInputRef = useRef<HTMLInputElement | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -55,6 +112,8 @@ function SubmitTrackPage() {
     communeName: '',
     electoralListId: '',
   })
+  const externalUserId = getExternalUserId(user)
+  const displayName = getDisplayName(user)
 
   const electoralListsQuery = useQuery({
     queryKey: ['public-electoral-lists'],
@@ -93,7 +152,14 @@ function SubmitTrackPage() {
         hasArtistName: Boolean(form.artistName.trim()),
         communeName: form.communeName || null,
       })
+
+      if (!externalUserId) {
+        throw new Error('Connexion requise.')
+      }
+
       const payload = new FormData()
+      payload.set('externalUserId', externalUserId)
+      payload.set('username', displayName)
       payload.set('electoralListId', form.electoralListId)
       payload.set('title', form.title)
       payload.set('artistName', form.artistName)
@@ -126,10 +192,46 @@ function SubmitTrackPage() {
         electoralListId: '',
       })
     },
-    onError: () => {
-      setFeedback("Impossible d'ajouter le son.")
+    onError: (error) => {
+      setFeedback(
+        error instanceof Error ? error.message : "Impossible d'ajouter le son.",
+      )
     },
   })
+
+  if (!externalUserId) {
+    return (
+      <Layout>
+        <div className="mx-auto flex max-w-lg flex-col gap-5 px-4 py-8 animate-fade-in">
+          <section className="space-y-3 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-primary/35 bg-primary/10 text-primary box-glow-green">
+              <Lock className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-4xl font-black text-primary text-glow-green">
+              Connecte-toi pour ajouter un son
+            </h1>
+            <p className="font-body text-sm text-muted-foreground">
+              L envoi d un morceau est reserve aux utilisateurs connectes.
+            </p>
+          </section>
+
+          <section className="space-y-3 rounded-xl border border-primary/35 bg-card/80 p-4 neon-panel">
+            <button
+              type="button"
+              onClick={() => {
+                trackEvent('submit_track_requires_signin')
+                onOpenSignIn?.()
+              }}
+              className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border-2 border-primary bg-transparent py-3 font-display font-bold text-primary transition-all hover:bg-primary hover:text-background hover:box-glow-green"
+            >
+              <Lock className="h-4 w-4" />
+              Se connecter
+            </button>
+          </section>
+        </div>
+      </Layout>
+    )
+  }
 
   if (isSubmitted) {
     return (

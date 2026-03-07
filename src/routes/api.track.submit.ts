@@ -17,6 +17,10 @@ export const Route = createFileRoute('/api/track/submit')({
     handlers: {
       POST: async ({ request }) => {
         const formData = await request.formData()
+        const externalUserId =
+          typeof formData.get('externalUserId') === 'string'
+            ? formData.get('externalUserId')?.trim()
+            : ''
         const electoralListId = parseOptionalNumber(formData.get('electoralListId'))
         const title =
           typeof formData.get('title') === 'string' ? formData.get('title') : ''
@@ -25,6 +29,17 @@ export const Route = createFileRoute('/api/track/submit')({
             ? formData.get('artistName')
             : null
         const audioFile = formData.get('audio')
+
+        if (!externalUserId) {
+          return json(
+            {
+              ok: false,
+              code: 'UNAUTHORIZED',
+              message: 'Connexion requise.',
+            },
+            { status: 401 },
+          )
+        }
 
         if (typeof electoralListId !== 'number') {
           return json(
