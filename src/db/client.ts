@@ -1,4 +1,5 @@
-import { drizzle } from 'drizzle-orm/libsql'
+import { createClient } from '@libsql/client/http'
+import { drizzle } from 'drizzle-orm/libsql/http'
 import * as schema from './schema'
 
 let dbInstance: ReturnType<typeof drizzle> | null = null
@@ -20,13 +21,12 @@ export function getDb() {
       throw new Error('Missing TURSO_DATABASE_URL in your environment')
     }
 
-    dbInstance = drizzle({
-      connection: {
-        url,
-        authToken: process.env.TURSO_AUTH_TOKEN,
-      },
-      schema,
+    const client = createClient({
+      url,
+      authToken: process.env.TURSO_AUTH_TOKEN,
     })
+
+    dbInstance = drizzle(client, { schema })
   }
 
   return dbInstance
