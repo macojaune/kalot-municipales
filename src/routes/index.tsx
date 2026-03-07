@@ -21,14 +21,52 @@ import type {
   StartSessionResponse,
 } from '../lib/kalot-client'
 
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
 function HomePage() {
+  if (!clerkEnabled) {
+    return <HomePageContent />
+  }
+
+  return <AuthenticatedHomePage />
+}
+
+function AuthenticatedHomePage() {
   const navigate = useNavigate()
   const { openSignIn, signOut } = useClerk()
   const { user } = useUser()
+  return (
+    <HomePageContent
+      user={user}
+      onOpenSignIn={() =>
+        openSignIn({
+          fallbackRedirectUrl: window.location.href,
+        })
+      }
+      onSignOut={() => signOut({ redirectUrl: '/' })}
+      navigate={navigate}
+    />
+  )
+}
+
+type HomePageContentProps = {
+  user?: ReturnType<typeof useUser>['user'] | null
+  onOpenSignIn?: () => void
+  onSignOut?: () => void
+  navigate?: ReturnType<typeof useNavigate>
+}
+
+function HomePageContent({
+  user = null,
+  onOpenSignIn,
+  onSignOut,
+  navigate,
+}: HomePageContentProps = {}) {
+  const safeNavigate = useNavigate()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement | null>(null)
@@ -108,7 +146,7 @@ function HomePage() {
 
       setActiveSessionId(response.sessionId)
       setFeedback(null)
-      await navigate({ to: '/duel' })
+      await (navigate ?? safeNavigate)({ to: '/duel' })
     },
     onError: (error) => {
       setFeedback(
@@ -134,10 +172,12 @@ function HomePage() {
       trackEvent('home_vote_requires_signin', {
         electionRound,
       })
-      setFeedback(null)
-      void openSignIn({
-        fallbackRedirectUrl: window.location.href,
-      })
+      if (onOpenSignIn) {
+        setFeedback(null)
+        onOpenSignIn()
+      } else {
+        setFeedback('Connexion indisponible pour le moment.')
+      }
       return
     }
 
@@ -178,7 +218,7 @@ function HomePage() {
                   type="button"
                   onClick={() => {
                     setIsUserMenuOpen(false)
-                    void signOut({ redirectUrl: '/' })
+                    onSignOut?.()
                   }}
                   className="mt-2 flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-left font-body text-sm text-white transition-colors hover:bg-primary/10 hover:text-primary"
                 >

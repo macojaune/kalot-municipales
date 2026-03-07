@@ -61,11 +61,35 @@ type AdminElectoralListResponse =
       message: string
     }
 
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+
 export const Route = createFileRoute('/admin')({
   component: AdminPage,
 })
 
 function AdminPage() {
+  if (!clerkEnabled) {
+    return (
+      <Layout>
+        <section className="mx-auto flex min-h-[60vh] w-full max-w-2xl items-center justify-center px-4 py-16">
+          <div className="w-full rounded-3xl border border-primary/30 bg-card/85 p-8 text-center shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_28px_80px_rgba(0,0,0,0.35)] backdrop-blur-md">
+            <Lock className="mx-auto mb-4 h-8 w-8 text-primary" />
+            <h1 className="font-display text-3xl font-bold text-white">
+              Admin indisponible
+            </h1>
+            <p className="mt-3 font-body text-sm text-muted-foreground">
+              La configuration Clerk est absente sur cet environnement.
+            </p>
+          </div>
+        </section>
+      </Layout>
+    )
+  }
+
+  return <AdminPageContent />
+}
+
+function AdminPageContent() {
   const { user } = useUser()
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
