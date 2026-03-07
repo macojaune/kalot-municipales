@@ -36,6 +36,18 @@ function LeaderboardPage() {
     [leaderboardQuery.data?.leaderboard],
   )
 
+  const getListLabel = (song: (typeof songs)[number]) => {
+    return song.listName || null
+  }
+
+  const getTrackLabel = (song: (typeof songs)[number]) => {
+    if (song.title && song.candidateName) {
+      return `${song.title} - ${song.candidateName}`
+    }
+
+    return song.title
+  }
+
   return (
     <Layout>
       <div className="mx-auto max-w-4xl px-4 py-6 md:py-8 space-y-5 animate-fade-in">
@@ -82,12 +94,12 @@ function LeaderboardPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className='flex flex-row gap-4'><p className="font-display text-xl font-semibold text-foreground truncate">
-                      {song.title}
+                      {getTrackLabel(song)}
                     </p>
                       <span className={clsx(["text-sm", medalColor])}>{song.communeName}</span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      {song.listName}
+                      {getListLabel(song)}
                     </p>
                   </div>
 
