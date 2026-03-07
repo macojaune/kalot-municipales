@@ -13,6 +13,11 @@ export const Route = createFileRoute('/api/electoral-lists')({
         return json({
           ok: true,
           communes,
+        }, {
+          headers: {
+            'Cache-Control':
+              'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+          },
         })
       },
     },

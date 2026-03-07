@@ -24,6 +24,10 @@ export const Route = createFileRoute('/api/leaderboard')({
         return json({
           ok: true,
           leaderboard,
+        }, {
+          headers: {
+            'Cache-Control': 'public, max-age=0, s-maxage=15, stale-while-revalidate=60',
+          },
         })
       },
     },

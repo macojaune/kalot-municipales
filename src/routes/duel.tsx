@@ -180,7 +180,8 @@ function DuelPage() {
     queryFn: () =>
       getJson<SessionStateResponse>(`/api/vote/state?sessionId=${sessionId}`),
     enabled: Boolean(sessionId),
-    refetchInterval: 15000,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   })
 
   useEffect(() => {

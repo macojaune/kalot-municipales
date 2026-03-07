@@ -23,7 +23,9 @@ function LeaderboardPage() {
   const leaderboardQuery = useQuery({
     queryKey: ['leaderboard', 'full-table'],
     queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=500'),
-    refetchInterval: 15000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
   })
 
   const songs = useMemo(

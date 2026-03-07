@@ -110,8 +110,10 @@ function HomePageContent({
 
   const leaderboardQuery = useQuery({
     queryKey: ['leaderboard', 'home-full'],
-    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=200'),
-    refetchInterval: 15000,
+    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=20'),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
   })
 
   const songs = useMemo(

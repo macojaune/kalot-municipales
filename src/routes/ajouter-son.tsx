@@ -59,6 +59,9 @@ function SubmitTrackPage() {
   const electoralListsQuery = useQuery({
     queryKey: ['public-electoral-lists'],
     queryFn: () => getJson<ElectoralListsResponse>('/api/electoral-lists'),
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+    refetchOnWindowFocus: false,
   })
 
   const electoralCommunes = useMemo(

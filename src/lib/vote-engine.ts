@@ -13,6 +13,7 @@ import {
   voteSessions,
   votes,
 } from '../db/schema'
+import { getOrSetServerCache, invalidateServerCache } from './server-cache'
 
 const STARTING_RATING = 1200
 const K_FACTOR = 24
@@ -21,6 +22,9 @@ const ROUND2_FINALIZATION_SETTING_KEY = 'round2_finalization_at'
 const ROUND1_WINNERS_FINALIZED_AT_SETTING_KEY = 'round1_winners_finalized_at'
 const DEFAULT_ROUND1_FINALIZATION_AT = '2026-03-16T03:59:59.000Z'
 const DEFAULT_ROUND2_FINALIZATION_AT = '2026-03-23T03:59:59.000Z'
+const ELECTION_PHASE_CACHE_TTL_MS = 60_000
+const LEADERBOARD_CACHE_TTL_MS = 15_000
+const ELECTORAL_LISTS_CACHE_TTL_MS = 30 * 60_000
 
 const GUADELOUPE_COMMUNES = [
   'Anse-Bertrand',
@@ -330,21 +334,23 @@ async function resolveRound2FinalizationAt(db: Db) {
 }
 
 async function resolveElectionPhase(db: Db): Promise<ElectionPhase> {
-  const [round1FinalizationAt, round2FinalizationAt] = await Promise.all([
-    resolveRound1FinalizationAt(db),
-    resolveRound2FinalizationAt(db),
-  ])
+  return getOrSetServerCache('election:phase', ELECTION_PHASE_CACHE_TTL_MS, async () => {
+    const [round1FinalizationAt, round2FinalizationAt] = await Promise.all([
+      resolveRound1FinalizationAt(db),
+      resolveRound2FinalizationAt(db),
+    ])
 
-  const now = new Date()
-  if (now < round1FinalizationAt) {
-    return 'round1'
-  }
+    const now = new Date()
+    if (now < round1FinalizationAt) {
+      return 'round1'
+    }
 
-  if (now < round2FinalizationAt) {
-    return 'round2'
-  }
+    if (now < round2FinalizationAt) {
+      return 'round2'
+    }
 
-  return 'closed'
+    return 'closed'
+  })
 }
 
 async function maybeFinalizeRound1Winners(db: Db) {
@@ -848,6 +854,9 @@ export async function createTrack(input: {
     throw new Error('Unable to load created track')
   }
 
+  invalidateServerCache('leaderboard:')
+  invalidateServerCache('electoral-lists:')
+
   return createdTrack
 }
 
@@ -1037,6 +1046,8 @@ export async function seedElectoralLists() {
     }
   }
 
+  invalidateServerCache('electoral-lists:')
+
   return {
     created,
     updated,
@@ -1048,69 +1059,78 @@ export async function seedElectoralLists() {
 export async function listElectoralListsForAdmin(input?: { communeName?: string | null }) {
   const db = getDb()
   const communeName = input?.communeName?.trim()
+  const cacheKey = `electoral-lists:${communeName ? canonicalizeCommuneName(communeName) : 'all'}`
 
-  const rows = await db
-    .select({
-      id: electoralLists.id,
-      name: electoralLists.name,
-      slug: electoralLists.slug,
-      candidateName: electoralLists.candidateName,
-      photoUrl: electoralLists.photoUrl,
-      communeId: communes.id,
-      communeName: communes.name,
-      communeSlug: communes.slug,
-    })
-    .from(electoralLists)
-    .innerJoin(communes, eq(communes.id, electoralLists.communeId))
-    .where(communeName ? eq(communes.name, canonicalizeCommuneName(communeName)) : undefined)
-    .orderBy(asc(communes.name), asc(electoralLists.candidateName), asc(electoralLists.name))
+  return getOrSetServerCache(cacheKey, ELECTORAL_LISTS_CACHE_TTL_MS, async () => {
+    const rows = await db
+      .select({
+        id: electoralLists.id,
+        name: electoralLists.name,
+        slug: electoralLists.slug,
+        candidateName: electoralLists.candidateName,
+        photoUrl: electoralLists.photoUrl,
+        communeId: communes.id,
+        communeName: communes.name,
+        communeSlug: communes.slug,
+      })
+      .from(electoralLists)
+      .innerJoin(communes, eq(communes.id, electoralLists.communeId))
+      .where(
+        communeName ? eq(communes.name, canonicalizeCommuneName(communeName)) : undefined,
+      )
+      .orderBy(
+        asc(communes.name),
+        asc(electoralLists.candidateName),
+        asc(electoralLists.name),
+      )
 
-  const communesMap = new Map<
-    string,
-    {
-      id: number
-      name: string
-      slug: string
-      lists: Array<{
+    const communesMap = new Map<
+      string,
+      {
         id: number
         name: string
         slug: string
-        candidateName: string | null
-        photoUrl: string | null
-      }>
-    }
-  >()
+        lists: Array<{
+          id: number
+          name: string
+          slug: string
+          candidateName: string | null
+          photoUrl: string | null
+        }>
+      }
+    >()
 
-  for (const row of rows) {
-    const existingCommune = communesMap.get(row.communeName)
-    if (existingCommune) {
-      existingCommune.lists.push({
-        id: row.id,
-        name: row.name,
-        slug: row.slug,
-        candidateName: row.candidateName,
-        photoUrl: row.photoUrl,
-      })
-      continue
-    }
-
-    communesMap.set(row.communeName, {
-      id: row.communeId,
-      name: row.communeName,
-      slug: row.communeSlug,
-      lists: [
-        {
+    for (const row of rows) {
+      const existingCommune = communesMap.get(row.communeName)
+      if (existingCommune) {
+        existingCommune.lists.push({
           id: row.id,
           name: row.name,
           slug: row.slug,
           candidateName: row.candidateName,
           photoUrl: row.photoUrl,
-        },
-      ],
-    })
-  }
+        })
+        continue
+      }
 
-  return Array.from(communesMap.values())
+      communesMap.set(row.communeName, {
+        id: row.communeId,
+        name: row.communeName,
+        slug: row.communeSlug,
+        lists: [
+          {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            candidateName: row.candidateName,
+            photoUrl: row.photoUrl,
+          },
+        ],
+      })
+    }
+
+    return Array.from(communesMap.values())
+  })
 }
 
 export async function assertAdminAccess(input: {
@@ -1215,8 +1235,28 @@ async function countEligibleTracks(
     communeId?: number | null
   },
 ) {
-  const rows = await listEligibleTrackIds(db, input)
-  return rows.length
+  const filters = [eq(tracks.isActive, true)]
+
+  if (input.round === 'round1' && input.communeId) {
+    filters.push(eq(tracks.communeId, input.communeId))
+  }
+
+  const countRows =
+    input.round === 'round2'
+      ? await db
+          .select({ value: sql<number>`count(*)` })
+          .from(tracks)
+          .innerJoin(
+            round1CommuneWinners,
+            eq(round1CommuneWinners.winningTrackId, tracks.id),
+          )
+          .where(and(...filters))
+      : await db
+          .select({ value: sql<number>`count(*)` })
+          .from(tracks)
+          .where(and(...filters))
+
+  return Number(countRows[0]?.value ?? 0)
 }
 
 export async function startVoteSession(input: {
@@ -1532,6 +1572,8 @@ export async function pickWinner(input: {
     }
   })
 
+  invalidateServerCache('leaderboard:')
+
   const nextChallengerId = await pickRandomChallenger(db, {
     excludedTrackIds: Array.from(seen),
     round: session.electionRound,
@@ -1598,64 +1640,68 @@ export async function getLeaderboard(input?: {
   const phase = await resolveElectionPhase(db)
   const electionRound = input?.electionRound ?? (phase === 'round1' ? 'round1' : 'round2')
   const limit = input?.limit ?? 20
-  const filters = [eq(tracks.isActive, true)]
+  const cacheKey = `leaderboard:${electionRound}:${input?.communeSlug ?? 'all'}:${limit}`
 
-  if (electionRound === 'round2') {
-    await maybeFinalizeRound1Winners(db)
-  }
+  return getOrSetServerCache(cacheKey, LEADERBOARD_CACHE_TTL_MS, async () => {
+    const filters = [eq(tracks.isActive, true)]
 
-  if (electionRound === 'round1' && input?.communeSlug) {
-    filters.push(eq(communes.slug, input.communeSlug))
-  }
+    if (electionRound === 'round2') {
+      await maybeFinalizeRound1Winners(db)
+    }
 
-  const baseQuery = db
-    .select({
-      id: tracks.id,
-      title: tracks.title,
-      slug: tracks.slug,
-      streamUrl: tracks.streamUrl,
-      r2Key: tracks.r2Key,
-      rating: electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
-      wins: electionRound === 'round2' ? tracks.round2Wins : tracks.wins,
-      losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
-      appearances:
-        electionRound === 'round2' ? tracks.round2Appearances : tracks.appearances,
-      artistName: sql<string>`coalesce(${artists.name}, '')`,
-      communeId: communes.id,
-      communeName: communes.name,
-      communeSlug: communes.slug,
-      listName: electoralLists.name,
-      candidateName: electoralLists.candidateName,
-    })
-    .from(tracks)
-    .leftJoin(artists, eq(artists.id, tracks.artistId))
-    .innerJoin(communes, eq(communes.id, tracks.communeId))
-    .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
+    if (electionRound === 'round1' && input?.communeSlug) {
+      filters.push(eq(communes.slug, input.communeSlug))
+    }
 
-  const rows =
-    electionRound === 'round2'
-      ? await baseQuery
-          .innerJoin(
-            round1CommuneWinners,
-            eq(round1CommuneWinners.winningTrackId, tracks.id),
-          )
-          .where(and(...filters))
-          .orderBy(
-            desc(tracks.round2Rating),
-            desc(tracks.round2Wins),
-            desc(tracks.round2Appearances),
-          )
-          .limit(limit)
-      : await baseQuery
-          .where(and(...filters))
-          .orderBy(desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
-          .limit(limit)
+    const baseQuery = db
+      .select({
+        id: tracks.id,
+        title: tracks.title,
+        slug: tracks.slug,
+        streamUrl: tracks.streamUrl,
+        r2Key: tracks.r2Key,
+        rating: electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
+        wins: electionRound === 'round2' ? tracks.round2Wins : tracks.wins,
+        losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
+        appearances:
+          electionRound === 'round2' ? tracks.round2Appearances : tracks.appearances,
+        artistName: sql<string>`coalesce(${artists.name}, '')`,
+        communeId: communes.id,
+        communeName: communes.name,
+        communeSlug: communes.slug,
+        listName: electoralLists.name,
+        candidateName: electoralLists.candidateName,
+      })
+      .from(tracks)
+      .leftJoin(artists, eq(artists.id, tracks.artistId))
+      .innerJoin(communes, eq(communes.id, tracks.communeId))
+      .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
 
-  return rows.map((row, index) => ({
-    rank: index + 1,
-    electionRound,
-    ...row,
-  }))
+    const rows =
+      electionRound === 'round2'
+        ? await baseQuery
+            .innerJoin(
+              round1CommuneWinners,
+              eq(round1CommuneWinners.winningTrackId, tracks.id),
+            )
+            .where(and(...filters))
+            .orderBy(
+              desc(tracks.round2Rating),
+              desc(tracks.round2Wins),
+              desc(tracks.round2Appearances),
+            )
+            .limit(limit)
+        : await baseQuery
+            .where(and(...filters))
+            .orderBy(desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
+            .limit(limit)
+
+    return rows.map((row, index) => ({
+      rank: index + 1,
+      electionRound,
+      ...row,
+    }))
+  })
 }
 
 export async function getVotingStartOptions() {
@@ -1772,6 +1818,8 @@ export async function archiveTrack(input: { trackId: number }) {
       isActive: false,
     })
     .where(eq(tracks.id, input.trackId))
+
+  invalidateServerCache('leaderboard:')
 
   return {
     ok: true as const,
