@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { trackEvent } from '../lib/analytics'
 import { getJson, postFormData } from '../lib/kalot-client'
+import { buildSeo } from '../lib/seo'
 
 type ElectoralListsResponse =
   | {
@@ -33,6 +34,13 @@ type SubmitTrackResponse =
   | { ok: false; code?: string; message: string }
 
 export const Route = createFileRoute('/ajouter-son')({
+  head: () =>
+    buildSeo({
+      title: 'Ajouter un son de campagne',
+      description:
+        'Propose rapidement un son de campagne pour KalotMunicipales en envoyant ton fichier audio et la liste concernée.',
+      path: '/ajouter-son',
+    }),
   component: SubmitTrackPage,
 })
 

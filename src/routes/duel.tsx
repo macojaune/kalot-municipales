@@ -5,6 +5,7 @@ import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
 import { CrownIcon } from '../components/icons/CrownIcon'
 import { trackEvent } from '../lib/analytics'
+import { buildSeo } from '../lib/seo'
 import {
   clearActiveSessionId,
   getActiveSessionId,
@@ -37,6 +38,14 @@ type PlaybackInfo = {
 }
 
 export const Route = createFileRoute('/duel')({
+  head: () =>
+    buildSeo({
+      title: 'Duel musical en cours',
+      description:
+        'Vote entre deux musiques de campagne et fais monter ton favori dans le classement KalotMunicipales.',
+      path: '/duel',
+      robots: 'noindex,nofollow',
+    }),
   component: DuelPage,
 })
 

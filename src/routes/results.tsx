@@ -6,8 +6,17 @@ import { CrownIcon } from '../components/icons/CrownIcon'
 import { NeonButton } from '../components/soundsystem/NeonButton'
 import { trackEvent } from '../lib/analytics'
 import { getLastSummary } from '../lib/kalot-client'
+import { buildSeo } from '../lib/seo'
 
 export const Route = createFileRoute('/results')({
+  head: () =>
+    buildSeo({
+      title: 'Resultat de ta session de vote',
+      description:
+        'Retrouve le podium de ta session KalotMunicipales et partage ton top 3.',
+      path: '/results',
+      robots: 'noindex,nofollow',
+    }),
   component: ResultsPage,
 })
 

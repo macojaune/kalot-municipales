@@ -8,6 +8,7 @@ import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
 import { NeonButton } from '../components/soundsystem/NeonButton'
 import { ScrollingTicker } from '../components/soundsystem/ScrollingTicker'
 import { trackEvent } from '../lib/analytics'
+import { buildSeo } from '../lib/seo'
 import {
   getDisplayName,
   getExternalUserId,
@@ -24,6 +25,13 @@ import type {
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/')({
+  head: () =>
+    buildSeo({
+      title: 'Vote pour la meilleure musique de campagne',
+      description:
+        'Découvre les duels KalotMunicipales, vote pour les meilleures musiques de campagne 2026 et consulte le classement en direct.',
+      path: '/',
+    }),
   component: HomePage,
 })
 

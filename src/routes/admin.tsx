@@ -11,6 +11,7 @@ import {
   postFormData,
   postJson,
 } from '../lib/kalot-client'
+import { buildSeo } from '../lib/seo'
 
 type AdminTrackListResponse =
   | {
@@ -64,6 +65,13 @@ type AdminElectoralListResponse =
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/admin')({
+  head: () =>
+    buildSeo({
+      title: 'Administration',
+      description: 'Backoffice KalotMunicipales.',
+      path: '/admin',
+      robots: 'noindex,nofollow',
+    }),
   component: AdminPage,
 })
 

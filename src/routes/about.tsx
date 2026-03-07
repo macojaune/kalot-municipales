@@ -1,7 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Layout } from '../components/Layout'
+import { buildSeo } from '../lib/seo'
 
 export const Route = createFileRoute('/about')({
+  head: () =>
+    buildSeo({
+      title: 'A propos de KalotMunicipales',
+      description:
+        'Découvre le concept KalotMunicipales, une plateforme communautaire pour classer les sons de campagne en duel.',
+      path: '/about',
+    }),
   component: AboutPage,
 })
 

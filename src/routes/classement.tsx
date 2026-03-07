@@ -5,9 +5,17 @@ import { useMemo } from 'react'
 import { Layout } from '../components/Layout'
 import { getJson } from '../lib/kalot-client'
 import type { LeaderboardResponse } from '../lib/kalot-client'
+import { buildSeo } from '../lib/seo'
 import clsx from 'clsx'
 
 export const Route = createFileRoute('/classement')({
+  head: () =>
+    buildSeo({
+      title: 'Classement general des sons de campagne',
+      description:
+        'Consulte le classement général KalotMunicipales et découvre les morceaux de campagne les mieux notés.',
+      path: '/classement',
+    }),
   component: LeaderboardPage,
 })
 
