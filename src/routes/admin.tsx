@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { Lock, Plus, Trash2, Upload } from 'lucide-react'
+import { Lock, Pause, Play, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import {
@@ -102,9 +102,11 @@ function AdminPageContent() {
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null)
 
   const [feedback, setFeedback] = useState<string | null>(null)
   const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [form, setForm] = useState({
     title: '',
     artistName: '',
@@ -262,8 +264,60 @@ function AdminPageContent() {
 
   const adminTracks =
     tracksQuery.data?.ok && Array.isArray(tracksQuery.data.tracks)
-    ? tracksQuery.data.tracks
-    : []
+      ? tracksQuery.data.tracks
+      : []
+
+  function stopAudioPlayback() {
+    if (!audioPlayerRef.current) {
+      return
+    }
+
+    audioPlayerRef.current.pause()
+    audioPlayerRef.current.currentTime = 0
+    setPlayingTrackId(null)
+  }
+
+  async function toggleTrackPlayback(track: (typeof adminTracks)[number]) {
+    if (!track.streamUrl) {
+      setFeedback('Aucun flux audio disponible pour ce son.')
+      return
+    }
+
+    if (!audioPlayerRef.current) {
+      const audio = new Audio()
+      audio.preload = 'none'
+      audio.addEventListener('ended', () => {
+        setPlayingTrackId(null)
+      })
+      audio.addEventListener('pause', () => {
+        setPlayingTrackId((current) =>
+          audio.currentTime > 0 && !audio.ended ? current : null,
+        )
+      })
+      audioPlayerRef.current = audio
+    }
+
+    const audio = audioPlayerRef.current
+
+    if (playingTrackId === track.id && !audio.paused) {
+      audio.pause()
+      setPlayingTrackId(null)
+      return
+    }
+
+    audio.pause()
+    audio.src = track.streamUrl
+    audio.currentTime = 0
+
+    try {
+      await audio.play()
+      setPlayingTrackId(track.id)
+      setFeedback(null)
+    } catch {
+      setPlayingTrackId(null)
+      setFeedback("Impossible de lire l'aperçu audio.")
+    }
+  }
 
   if (!externalUserId) {
     return (
@@ -464,7 +518,23 @@ function AdminPageContent() {
               </div>
               <button
                 type="button"
+                onClick={() => void toggleTrackPlayback(song)}
+                disabled={!song.streamUrl}
+                className="p-2 text-muted-foreground hover:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={
+                  playingTrackId === song.id ? 'Mettre en pause' : 'Lire le son'
+                }
+              >
+                {playingTrackId === song.id ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
+                  stopAudioPlayback()
                   const confirmed = window.confirm(
                     'Supprimer ce son de la competition ?',
                   )
