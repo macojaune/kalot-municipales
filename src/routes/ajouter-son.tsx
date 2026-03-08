@@ -212,7 +212,7 @@ function SubmitTrackPageContent({
               Connecte-toi pour ajouter un son
             </h1>
             <p className="font-body text-sm text-muted-foreground">
-              L envoi d un morceau est reserve aux utilisateurs connectes.
+              L'envoi d'un morceau est réservé aux utilisateurs connectés.
             </p>
           </section>
 

@@ -1,3 +1,5 @@
+import posthog from 'posthog-js'
+
 declare global {
   interface Window {
     umami?: {
@@ -10,9 +12,15 @@ export function trackEvent(
   eventName: string,
   data?: Record<string, unknown>,
 ) {
-  if (typeof window === 'undefined' || typeof window.umami?.track !== 'function') {
+  if (typeof window === 'undefined') {
     return
   }
 
-  window.umami.track(eventName, data)
+  if (typeof window.umami?.track === 'function') {
+    window.umami.track(eventName, data)
+  }
+
+  if (import.meta.env.VITE_POSTHOG_KEY && posthog.__loaded) {
+    posthog.capture(eventName, data)
+  }
 }

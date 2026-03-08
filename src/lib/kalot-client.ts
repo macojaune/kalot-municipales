@@ -172,20 +172,65 @@ function normalizeHttpErrorMessage(status: number, bodyText: string) {
   return collapsed
 }
 
+function getResponseRequestId(response: Response) {
+  return (
+    response.headers.get('x-request-id') ||
+    response.headers.get('x-nf-request-id') ||
+    response.headers.get('cf-ray')
+  )
+}
+
 async function parseApiResponse<TResponse>(response: Response) {
   const contentType = response.headers.get('content-type') || ''
   const rawText = await response.text()
+  const responseRequestId = getResponseRequestId(response)
 
   if (contentType.includes('application/json')) {
     try {
-      return JSON.parse(rawText) as TResponse
-    } catch {
+      const parsed = JSON.parse(rawText) as TResponse & {
+        ok?: boolean
+        message?: string
+        requestId?: string
+      }
+
+      if (
+        response.ok === false &&
+        typeof parsed === 'object' &&
+        'ok' in parsed &&
+        parsed.ok === false
+      ) {
+        const baseMessage =
+          typeof parsed.message === 'string' && parsed.message.trim()
+            ? parsed.message.trim()
+            : `Erreur serveur (${response.status}).`
+
+        const requestIdSuffix =
+          typeof parsed.requestId === 'string' && parsed.requestId.trim()
+            ? ` [requestId: ${parsed.requestId.trim()}]`
+            : responseRequestId
+              ? ` [requestId: ${responseRequestId}]`
+              : ''
+
+        throw new Error(`${baseMessage}${requestIdSuffix}`)
+      }
+
+      return parsed as TResponse
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error
+      }
+
       throw new Error('La reponse JSON du serveur est invalide.')
     }
   }
 
   if (!response.ok) {
-    throw new Error(normalizeHttpErrorMessage(response.status, rawText))
+    const baseMessage = normalizeHttpErrorMessage(response.status, rawText)
+    const requestIdSuffix = responseRequestId
+      ? ` [requestId: ${responseRequestId}]`
+      : ''
+
+    throw new Error(`${baseMessage}${requestIdSuffix}`)
   }
 
   throw new Error('Le serveur a renvoye une reponse invalide.')

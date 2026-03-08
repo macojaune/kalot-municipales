@@ -10,6 +10,10 @@ import TanStackQueryProvider from '../integrations/tanstack-query/root-provider'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import ClerkProvider from '../integrations/clerk/provider'
+import PostHogProvider, {
+  PostHogClerkIdentity,
+  posthogEnabled,
+} from '../integrations/posthog/provider'
 import { RegionProvider } from '../context/RegionContext'
 
 import appCss from '../styles.css?url'
@@ -19,6 +23,8 @@ import type { QueryClient } from '@tanstack/react-query'
 interface MyRouterContext {
   queryClient: QueryClient
 }
+
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
@@ -104,27 +110,30 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           Aller au contenu principal
         </a>
         <TanStackQueryProvider>
-          <ClerkProvider>
-            <RegionProvider>
-              <div id="main-content" tabIndex={-1}>
-                {children}
-              </div>
-            </RegionProvider>
-            {showDevtools ? (
-              <TanStackDevtools
-                config={{
-                  position: 'bottom-right',
-                }}
-                plugins={[
-                  {
-                    name: 'Tanstack Router',
-                    render: <TanStackRouterDevtoolsPanel />,
-                  },
-                  TanStackQueryDevtools,
-                ]}
-              />
-            ) : null}
-          </ClerkProvider>
+          <PostHogProvider>
+            <ClerkProvider>
+              {posthogEnabled && clerkEnabled ? <PostHogClerkIdentity /> : null}
+              <RegionProvider>
+                <div id="main-content" tabIndex={-1}>
+                  {children}
+                </div>
+              </RegionProvider>
+              {showDevtools ? (
+                <TanStackDevtools
+                  config={{
+                    position: 'bottom-right',
+                  }}
+                  plugins={[
+                    {
+                      name: 'Tanstack Router',
+                      render: <TanStackRouterDevtoolsPanel />,
+                    },
+                    TanStackQueryDevtools,
+                  ]}
+                />
+              ) : null}
+            </ClerkProvider>
+          </PostHogProvider>
         </TanStackQueryProvider>
         <Scripts />
       </body>

@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { assertAdminAccess, listElectoralListsForAdmin } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/admin/electoral-lists')({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: withServerErrorLogging('/api/admin/electoral-lists', async ({ request }) => {
         const url = new URL(request.url)
         const externalUserId = url.searchParams.get('externalUserId')
         const communeName = url.searchParams.get('communeName')
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/api/admin/electoral-lists')({
           ok: true,
           communes,
         })
-      },
+      }),
     },
   },
 })

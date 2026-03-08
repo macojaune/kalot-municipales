@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { pickWinner } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/vote/pick')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: withServerErrorLogging('/api/vote/pick', async ({ request }) => {
         const body = (await request.json()) as {
           sessionId?: string
           winnerTrackId?: number
@@ -44,7 +45,7 @@ export const Route = createFileRoute('/api/vote/pick')({
         }
 
         return json(result)
-      },
+      }),
     },
   },
 })

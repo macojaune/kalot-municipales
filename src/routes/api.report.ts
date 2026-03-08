@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { submitReport } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/report')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: withServerErrorLogging('/api/report', async ({ request }) => {
         const body = (await request.json()) as {
           trackId?: number
           reason?: string
@@ -30,7 +31,7 @@ export const Route = createFileRoute('/api/report')({
         })
 
         return json(result)
-      },
+      }),
     },
   },
 })

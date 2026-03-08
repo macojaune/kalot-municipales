@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import {
   assertAdminAccess,
   seedElectoralLists,
@@ -9,7 +10,7 @@ import {
 export const Route = createFileRoute('/api/admin/seed')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: withServerErrorLogging('/api/admin/seed', async ({ request }) => {
         const body = (await request.json()) as {
           externalUserId?: string | null
         }
@@ -32,7 +33,7 @@ export const Route = createFileRoute('/api/admin/seed')({
           communes: communesResult,
           electoralLists: electoralListsResult,
         })
-      },
+      }),
     },
   },
 })

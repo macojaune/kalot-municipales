@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { getSessionState } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/vote/state')({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: withServerErrorLogging('/api/vote/state', async ({ request }) => {
         const url = new URL(request.url)
         const sessionId = url.searchParams.get('sessionId')
 
@@ -33,7 +34,7 @@ export const Route = createFileRoute('/api/vote/state')({
         }
 
         return json({ ok: true, ...state })
-      },
+      }),
     },
   },
 })

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { captureServerError, getRequestId, withServerErrorLogging } from '../lib/server-monitoring'
 import { createTrack, electoralListHasActiveTrack } from '../lib/vote-engine'
 import { deleteAudioFromR2, uploadAudioToR2 } from '../lib/r2'
 
@@ -15,7 +16,8 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
 export const Route = createFileRoute('/api/track/submit')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: withServerErrorLogging('/api/track/submit', async ({ request }) => {
+        const requestId = getRequestId(request)
         const formData = await request.formData()
         const externalUserId =
           typeof formData.get('externalUserId') === 'string'
@@ -93,6 +95,20 @@ export const Route = createFileRoute('/api/track/submit')({
             await deleteAudioFromR2(uploaded.key).catch(() => undefined)
           }
 
+          await captureServerError({
+            request,
+            requestId,
+            route: '/api/track/submit',
+            error,
+            properties: {
+              externalUserId,
+              electoralListId,
+              fileName: audioFile.name,
+              fileSize: audioFile.size,
+              uploadedKey: uploaded?.key ?? null,
+            },
+          })
+
           return json(
             {
               ok: false,
@@ -105,7 +121,7 @@ export const Route = createFileRoute('/api/track/submit')({
             { status: 400 },
           )
         }
-      },
+      }),
     },
   },
 })

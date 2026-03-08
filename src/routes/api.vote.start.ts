@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { startVoteSession } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/vote/start')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
+      POST: withServerErrorLogging('/api/vote/start', async ({ request }) => {
         const body = (await request.json()) as {
           externalUserId?: string
           username?: string | null
@@ -34,7 +35,7 @@ export const Route = createFileRoute('/api/vote/start')({
         }
 
         return json(result)
-      },
+      }),
     },
   },
 })

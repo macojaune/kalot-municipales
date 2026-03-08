@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Pause, Play, Trophy } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
@@ -261,6 +261,25 @@ function LeaderboardPage() {
             })}
           </section>
         )}
+
+        <section className="rounded-2xl border border-primary/35 bg-card/80 p-5 text-center neon-panel md:p-6">
+          <h2 className="font-display text-xl text-foreground md:text-2xl">
+            Participe pour faire monter ton champion
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
+            Le classement bouge selon les duels en cours. Lance le vote et aide ton
+            morceau préféré à remonter.
+          </p>
+          <Link
+            to="/"
+            onClick={() => {
+              trackEvent('classement_vote_cta_click')
+            }}
+            className="mt-5 inline-flex min-h-12 items-center justify-center rounded-[4px] border-2 border-primary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-primary transition-all duration-300 hover:bg-primary hover:text-background hover:box-glow-green active:scale-[0.97]"
+          >
+            Commencer a voter
+          </Link>
+        </section>
       </div>
     </Layout>
   )

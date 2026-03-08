@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { captureServerError, getRequestId, withServerErrorLogging } from '../lib/server-monitoring'
 import {
   assertAdminAccess,
   archiveTrack,
@@ -77,7 +78,7 @@ async function parseCreateTrackPayload(request: Request): Promise<CreateTrackPay
 export const Route = createFileRoute('/api/admin/track')({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: withServerErrorLogging('/api/admin/track', async ({ request }) => {
         const url = new URL(request.url)
         const externalUserId = url.searchParams.get('externalUserId')
 
@@ -100,8 +101,9 @@ export const Route = createFileRoute('/api/admin/track')({
           ok: true,
           tracks,
         })
-      },
-      POST: async ({ request }) => {
+      }),
+      POST: withServerErrorLogging('/api/admin/track', async ({ request }) => {
+        const requestId = getRequestId(request)
         const body = await parseCreateTrackPayload(request)
 
         const access = await assertAdminAccess({
@@ -162,6 +164,22 @@ export const Route = createFileRoute('/api/admin/track')({
             await deleteAudioFromR2(uploaded.key).catch(() => undefined)
           }
 
+          await captureServerError({
+            request,
+            requestId,
+            route: '/api/admin/track',
+            error,
+            properties: {
+              externalUserId: body.externalUserId ?? null,
+              electoralListId: body.electoralListId ?? null,
+              communeName: body.communeName ?? null,
+              hasAudioFile: Boolean(body.audioFile),
+              fileName: body.audioFile?.name ?? null,
+              fileSize: body.audioFile?.size ?? null,
+              uploadedKey: uploaded?.key ?? null,
+            },
+          })
+
           return json(
             {
               ok: false,
@@ -174,8 +192,8 @@ export const Route = createFileRoute('/api/admin/track')({
             { status: 400 },
           )
         }
-      },
-      DELETE: async ({ request }) => {
+      }),
+      DELETE: withServerErrorLogging('/api/admin/track', async ({ request }) => {
         const body = (await request.json()) as {
           externalUserId?: string | null
           trackId?: number
@@ -208,7 +226,7 @@ export const Route = createFileRoute('/api/admin/track')({
         }
 
         return json(result)
-      },
+      }),
     },
   },
 })

@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
+import { withServerErrorLogging } from '../lib/server-monitoring'
 import { getLeaderboard } from '../lib/vote-engine'
 
 export const Route = createFileRoute('/api/leaderboard')({
   server: {
     handlers: {
-      GET: async ({ request }) => {
+      GET: withServerErrorLogging('/api/leaderboard', async ({ request }) => {
         const url = new URL(request.url)
         const communeSlug = url.searchParams.get('commune')
         const electionRoundParam = url.searchParams.get('round')
@@ -29,7 +30,7 @@ export const Route = createFileRoute('/api/leaderboard')({
             'Cache-Control': 'public, max-age=0, s-maxage=15, stale-while-revalidate=60',
           },
         })
-      },
+      }),
     },
   },
 })
