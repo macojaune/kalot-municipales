@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Pause, Play, Trophy } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
+import { trackEvent } from '../lib/analytics'
 import { getJson } from '../lib/kalot-client'
 import type { LeaderboardResponse } from '../lib/kalot-client'
 import { buildSeo } from '../lib/seo'
@@ -122,8 +123,18 @@ function LeaderboardPage() {
 
     if (loadedTrackIdRef.current === song.id) {
       if (playingTrackId === song.id) {
+        trackEvent('classement_track_pause', {
+          trackId: song.id,
+          rank: song.rank,
+          communeName: song.communeName,
+        })
         audio.pause()
       } else {
+        trackEvent('classement_track_play', {
+          trackId: song.id,
+          rank: song.rank,
+          communeName: song.communeName,
+        })
         void audio.play()
       }
       return
@@ -133,8 +144,18 @@ function LeaderboardPage() {
     audio.src = song.streamUrl
     loadedTrackIdRef.current = song.id
     setPlayingTrackId(song.id)
+    trackEvent('classement_track_play', {
+      trackId: song.id,
+      rank: song.rank,
+      communeName: song.communeName,
+    })
     void audio.play().catch(() => {
       setPlayingTrackId(null)
+      trackEvent('classement_track_play_failed', {
+        trackId: song.id,
+        rank: song.rank,
+        communeName: song.communeName,
+      })
     })
   }
 
