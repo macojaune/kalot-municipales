@@ -148,6 +148,49 @@ const ACTIVE_SESSION_KEY = 'kalot-active-session-id'
 const LAST_SUMMARY_KEY = 'kalot-last-summary'
 const LOCAL_USER_KEY = 'kalot-local-user-id'
 
+function normalizeHttpErrorMessage(status: number, bodyText: string) {
+  const trimmed = bodyText.trim()
+
+  if (!trimmed) {
+    return `Erreur serveur (${status}).`
+  }
+
+  const collapsed = trimmed.replace(/\s+/g, ' ')
+
+  if (/^\s*</.test(trimmed)) {
+    if (status >= 500) {
+      return `Erreur serveur (${status}). Reessaie dans un instant.`
+    }
+
+    return `Requete invalide (${status}).`
+  }
+
+  if (collapsed.length > 220) {
+    return `${collapsed.slice(0, 217)}...`
+  }
+
+  return collapsed
+}
+
+async function parseApiResponse<TResponse>(response: Response) {
+  const contentType = response.headers.get('content-type') || ''
+  const rawText = await response.text()
+
+  if (contentType.includes('application/json')) {
+    try {
+      return JSON.parse(rawText) as TResponse
+    } catch {
+      throw new Error('La reponse JSON du serveur est invalide.')
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(normalizeHttpErrorMessage(response.status, rawText))
+  }
+
+  throw new Error('Le serveur a renvoye une reponse invalide.')
+}
+
 export function getOrCreateLocalUserId() {
   if (typeof window === 'undefined') {
     return null
@@ -245,7 +288,7 @@ export async function postJson<TResponse>(url: string, body: unknown) {
     body: JSON.stringify(body),
   })
 
-  return (await response.json()) as TResponse
+  return parseApiResponse<TResponse>(response)
 }
 
 export async function postFormData<TResponse>(url: string, body: FormData) {
@@ -254,7 +297,7 @@ export async function postFormData<TResponse>(url: string, body: FormData) {
     body,
   })
 
-  return (await response.json()) as TResponse
+  return parseApiResponse<TResponse>(response)
 }
 
 export async function deleteJson<TResponse>(url: string, body: unknown) {
@@ -266,10 +309,10 @@ export async function deleteJson<TResponse>(url: string, body: unknown) {
     body: JSON.stringify(body),
   })
 
-  return (await response.json()) as TResponse
+  return parseApiResponse<TResponse>(response)
 }
 
 export async function getJson<TResponse>(url: string) {
   const response = await fetch(url)
-  return (await response.json()) as TResponse
+  return parseApiResponse<TResponse>(response)
 }
