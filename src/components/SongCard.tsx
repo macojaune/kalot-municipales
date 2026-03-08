@@ -111,7 +111,10 @@ export function SongCard({
 
         <div className="w-full space-y-1 font-body text-sm text-muted-foreground md:text-base">
           <p className="break-words">
-            Artiste: <span className="font-semibold text-foreground">{track.artistName}</span>
+            Artiste:{' '}
+            <span className="font-semibold text-foreground">
+              {track.artistName.trim() || 'Inconnu'}
+            </span>
           </p>
           <p className="break-words">
             {track.listName ? 'Liste:' : 'Candidat:'}{' '}

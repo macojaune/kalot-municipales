@@ -133,7 +133,12 @@ function HomePageContent({
     songs.at(0)?.electionRound ?? 'round1'
 
   const tickerItems = useMemo(
-    () => topTracks.map((track) => `${track.title} - ${track.artistName}`),
+    () =>
+      topTracks.map((track) =>
+        track.artistName.trim()
+          ? `${track.title} - ${track.artistName}`
+          : track.title,
+      ),
     [topTracks],
   )
 
