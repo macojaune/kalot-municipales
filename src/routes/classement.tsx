@@ -204,11 +204,18 @@ function LeaderboardPage() {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-row gap-4">
-                      <p className="font-display text-xl font-semibold text-foreground truncate">
+                    <div className="flex flex-row items-baseline gap-2 md:gap-4">
+                      <p className="min-w-0 flex-1 font-display text-xl font-semibold text-foreground truncate">
                         {getTrackLabel(song)}
                       </p>
-                      <span className={clsx(["text-sm", medalColor])}>{song.communeName}</span>
+                      <span
+                        className={clsx([
+                          "max-w-[8rem] shrink truncate text-[11px] md:max-w-none md:text-sm",
+                          medalColor,
+                        ])}
+                      >
+                        {song.communeName}
+                      </span>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {getListLabel(song)}
