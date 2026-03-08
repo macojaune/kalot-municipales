@@ -216,7 +216,7 @@ function DuelPage() {
     setChallenger(payload.duel.rightTrack)
     setDuelIndex(payload.duel.roundsPlayed + 1)
     setTotalDuels(Math.max(payload.duel.progress?.total ?? 2, 2))
-  }, [navigate, stage, stateQuery.data])
+  }, [navigate, stateQuery.data])
 
   const voteMutation = useMutation({
     mutationFn: async (winnerSide: 'left' | 'right') => {
