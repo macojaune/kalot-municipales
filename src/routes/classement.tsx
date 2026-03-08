@@ -1,13 +1,26 @@
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useClerk, useUser } from '@clerk/clerk-react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Pause, Play, Trophy } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { trackEvent } from '../lib/analytics'
-import { getJson } from '../lib/kalot-client'
-import type { LeaderboardResponse } from '../lib/kalot-client'
+import {
+  getDisplayName,
+  getExternalUserId,
+  getJson,
+  postJson,
+  setActiveSessionId,
+} from '../lib/kalot-client'
+import type {
+  ElectionRound,
+  LeaderboardResponse,
+  StartSessionResponse,
+} from '../lib/kalot-client'
 import { buildSeo } from '../lib/seo'
 import clsx from 'clsx'
+
+const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/classement')({
   head: () =>
@@ -21,9 +34,50 @@ export const Route = createFileRoute('/classement')({
 })
 
 function LeaderboardPage() {
+  if (!clerkEnabled) {
+    return <LeaderboardPageContent />
+  }
+
+  return <AuthenticatedLeaderboardPage />
+}
+
+function AuthenticatedLeaderboardPage() {
+  const navigate = useNavigate()
+  const { openSignIn } = useClerk()
+  const { user } = useUser()
+
+  return (
+    <LeaderboardPageContent
+      user={user}
+      navigate={navigate}
+      onOpenSignIn={() =>
+        openSignIn({
+          fallbackRedirectUrl: window.location.href,
+        })
+      }
+    />
+  )
+}
+
+type LeaderboardPageContentProps = {
+  user?: ReturnType<typeof useUser>['user'] | null
+  navigate?: ReturnType<typeof useNavigate>
+  onOpenSignIn?: () => void
+}
+
+function LeaderboardPageContent({
+  user = null,
+  navigate,
+  onOpenSignIn,
+}: LeaderboardPageContentProps = {}) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const loadedTrackIdRef = useRef<number | null>(null)
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const safeNavigate = useNavigate()
+
+  const externalUserId = getExternalUserId(user)
+  const displayName = getDisplayName(user)
 
   useEffect(() => {
     const audio = new Audio()
@@ -77,6 +131,37 @@ function LeaderboardPage() {
         : [],
     [leaderboardQuery.data?.leaderboard],
   )
+
+  const electionRound: ElectionRound | 'closed' =
+    songs.at(0)?.electionRound ?? 'round1'
+
+  const startSessionMutation = useMutation({
+    mutationFn: async () => {
+      if (!externalUserId) {
+        throw new Error('Utilisateur non connecté.')
+      }
+
+      return postJson<StartSessionResponse>('/api/vote/start', {
+        externalUserId,
+        username: displayName,
+      })
+    },
+    onSuccess: async (response) => {
+      if (!response.ok) {
+        setFeedback(response.message)
+        return
+      }
+
+      setActiveSessionId(response.sessionId)
+      setFeedback(null)
+      await (navigate ?? safeNavigate)({ to: '/duel' })
+    },
+    onError: (error) => {
+      setFeedback(
+        error instanceof Error ? error.message : 'Impossible de lancer un duel.',
+      )
+    },
+  })
 
   const getListLabel = (song: (typeof songs)[number]) => {
     return song.listName || null
@@ -157,6 +242,34 @@ function LeaderboardPage() {
         communeName: song.communeName,
       })
     })
+  }
+
+  function handleVoteStart() {
+    trackEvent('classement_vote_cta_click', {
+      electionRound,
+      isAuthenticated: Boolean(externalUserId),
+    })
+
+    if (electionRound === 'closed') {
+      setFeedback('Le vote est terminé.')
+      return
+    }
+
+    if (!externalUserId) {
+      trackEvent('classement_vote_requires_signin', {
+        electionRound,
+      })
+
+      if (onOpenSignIn) {
+        setFeedback(null)
+        onOpenSignIn()
+      } else {
+        setFeedback('Connexion indisponible pour le moment.')
+      }
+      return
+    }
+
+    void startSessionMutation.mutate()
   }
 
   return (
@@ -270,16 +383,21 @@ function LeaderboardPage() {
             Le classement bouge selon les duels en cours. Lance le vote et aide ton
             morceau préféré à remonter.
           </p>
-          <Link
-            to="/"
-            onClick={() => {
-              trackEvent('classement_vote_cta_click')
-            }}
+          <button
+            type="button"
+            onClick={handleVoteStart}
+            disabled={startSessionMutation.isPending}
             className="mt-5 inline-flex min-h-12 items-center justify-center rounded-[4px] border-2 border-primary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-primary transition-all duration-300 hover:bg-primary hover:text-background hover:box-glow-green active:scale-[0.97]"
           >
-            Commencer a voter
-          </Link>
+            {startSessionMutation.isPending ? 'Chargement…' : 'Commencer à voter'}
+          </button>
         </section>
+
+        {feedback ? (
+          <p aria-live="polite" className="text-center text-sm text-accent">
+            {feedback}
+          </p>
+        ) : null}
       </div>
     </Layout>
   )
