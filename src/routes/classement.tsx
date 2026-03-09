@@ -369,11 +369,11 @@ function LeaderboardPageContent({
                   </button>
 
                   <div className="text-right shrink-0">
-                    <p className="tabular font-display text-xl text-foreground">
+                    <p className="tabular font-display text-base text-foreground md:text-xl">
                       {Math.round(song.rating)}
                     </p>
-                    <p className="text-[10px] font-display text-muted-foreground tracking-widest">
-                      POINTS
+                    <p className="text-[9px] font-display text-muted-foreground tracking-widest md:text-[10px]">
+                      PTS
                     </p>
                   </div>
                 </div>
