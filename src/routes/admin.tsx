@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Lock, Pause, Play, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
+import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/r2'
 import {
   deleteJson,
   getExternalUserId,
@@ -267,6 +268,27 @@ function AdminPageContent() {
       ? tracksQuery.data.tracks
       : []
 
+  function handleAudioFileChange(file: File | null) {
+    if (!file) {
+      setAudioFile(null)
+      return
+    }
+
+    if (file.size > MAX_AUDIO_SIZE_BYTES) {
+      setAudioFile(null)
+      setFeedback(
+        `Le fichier audio dépasse ${MAX_AUDIO_SIZE_LABEL}. Réduis le poids du morceau avant l'envoi.`,
+      )
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
+      return
+    }
+
+    setFeedback(null)
+    setAudioFile(file)
+  }
+
   function stopAudioPlayback() {
     if (!audioPlayerRef.current) {
       return
@@ -410,7 +432,8 @@ function AdminPageContent() {
                 {audioFile ? audioFile.name : 'Selectionner le fichier audio'}
               </p>
               <p className="mt-1 text-xs font-body text-muted-foreground">
-                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. 25 Mo max.
+                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. {MAX_AUDIO_SIZE_LABEL} max
+                pour éviter les erreurs d'envoi.
               </p>
             </div>
             <input
@@ -419,7 +442,7 @@ function AdminPageContent() {
               accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
               className="sr-only"
               onChange={(event) => {
-                setAudioFile(event.target.files?.[0] ?? null)
+                handleAudioFileChange(event.target.files?.[0] ?? null)
               }}
             />
           </label>

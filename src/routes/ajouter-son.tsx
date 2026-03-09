@@ -5,6 +5,7 @@ import { Lock, Music4, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { trackEvent } from '../lib/analytics'
+import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/r2'
 import {
   getDisplayName,
   getExternalUserId,
@@ -145,6 +146,27 @@ function SubmitTrackPageContent({
     [form.electoralListId, selectedCommune],
   )
   const hasAvailableLists = (selectedCommune?.lists.length ?? 0) > 0
+
+  function handleAudioFileChange(file: File | null) {
+    if (!file) {
+      setAudioFile(null)
+      return
+    }
+
+    if (file.size > MAX_AUDIO_SIZE_BYTES) {
+      setAudioFile(null)
+      setFeedback(
+        `Le fichier audio dépasse ${MAX_AUDIO_SIZE_LABEL}. Réduis le poids du morceau avant l'envoi.`,
+      )
+      if (audioInputRef.current) {
+        audioInputRef.current.value = ''
+      }
+      return
+    }
+
+    setFeedback(null)
+    setAudioFile(file)
+  }
 
   const submitTrackMutation = useMutation({
     mutationFn: () => {
@@ -366,7 +388,8 @@ function SubmitTrackPageContent({
                 {audioFile ? audioFile.name : 'Selectionner le fichier audio'}
               </p>
               <p className="mt-1 text-xs font-body text-muted-foreground">
-                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. 25 Mo max.
+                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. {MAX_AUDIO_SIZE_LABEL} max
+                pour éviter les erreurs d'envoi.
               </p>
             </div>
             <input
@@ -375,7 +398,7 @@ function SubmitTrackPageContent({
               accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.webm"
               className="sr-only"
               onChange={(event) => {
-                setAudioFile(event.target.files?.[0] ?? null)
+                handleAudioFileChange(event.target.files?.[0] ?? null)
               }}
             />
           </label>

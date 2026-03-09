@@ -8,7 +8,8 @@ import {
 
 const viteEnv = import.meta.env as Record<string, string | undefined>
 const AUDIO_PREFIX = 'tracks'
-const MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024
+export const MAX_AUDIO_SIZE_BYTES = 4 * 1024 * 1024
+export const MAX_AUDIO_SIZE_LABEL = '4 Mo'
 const ALLOWED_EXTENSIONS = new Set([
   'aac',
   'flac',
@@ -144,7 +145,9 @@ export async function uploadAudioToR2(file: File) {
   }
 
   if (file.size > MAX_AUDIO_SIZE_BYTES) {
-    throw new Error('Le fichier audio depasse 25 Mo.')
+    throw new Error(
+      `Le fichier audio dépasse ${MAX_AUDIO_SIZE_LABEL}. Réduis le poids du morceau avant l'envoi.`,
+    )
   }
 
   const extension = getFileExtension(file)
