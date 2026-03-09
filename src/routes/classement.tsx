@@ -16,6 +16,7 @@ import type {
   ElectionRound,
   LeaderboardResponse,
   StartSessionResponse,
+  VotingStartOptionsResponse,
 } from '../lib/kalot-client'
 import { buildSeo } from '../lib/seo'
 import clsx from 'clsx'
@@ -23,6 +24,12 @@ import clsx from 'clsx'
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/classement')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    commune:
+      typeof search.commune === 'string' && search.commune.trim().length > 0
+        ? search.commune
+        : undefined,
+  }),
   head: () =>
     buildSeo({
       title: 'Classement general des sons de campagne',
@@ -45,11 +52,13 @@ function AuthenticatedLeaderboardPage() {
   const navigate = useNavigate()
   const { openSignIn } = useClerk()
   const { user } = useUser()
+  const search = Route.useSearch()
 
   return (
     <LeaderboardPageContent
       user={user}
       navigate={navigate}
+      initialCommuneSlug={search.commune ?? ''}
       onOpenSignIn={() =>
         openSignIn({
           fallbackRedirectUrl: window.location.href,
@@ -62,12 +71,14 @@ function AuthenticatedLeaderboardPage() {
 type LeaderboardPageContentProps = {
   user?: ReturnType<typeof useUser>['user'] | null
   navigate?: ReturnType<typeof useNavigate>
+  initialCommuneSlug?: string
   onOpenSignIn?: () => void
 }
 
 function LeaderboardPageContent({
   user = null,
   navigate,
+  initialCommuneSlug = '',
   onOpenSignIn,
 }: LeaderboardPageContentProps = {}) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -75,9 +86,11 @@ function LeaderboardPageContent({
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const safeNavigate = useNavigate()
+  const search = Route.useSearch()
 
   const externalUserId = getExternalUserId(user)
   const displayName = getDisplayName(user)
+  const selectedCommuneSlug = initialCommuneSlug || search.commune || ''
 
   useEffect(() => {
     const audio = new Audio()
@@ -117,10 +130,24 @@ function LeaderboardPageContent({
   }, [])
 
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'full-table'],
-    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=500'),
+    queryKey: ['leaderboard', 'full-table', selectedCommuneSlug],
+    queryFn: () =>
+      getJson<LeaderboardResponse>(
+        `/api/leaderboard?limit=500${
+          selectedCommuneSlug
+            ? `&commune=${encodeURIComponent(selectedCommuneSlug)}`
+            : ''
+        }`,
+      ),
     staleTime: 60_000,
     refetchInterval: 60_000,
+    refetchOnWindowFocus: false,
+  })
+
+  const voteOptionsQuery = useQuery({
+    queryKey: ['vote-options'],
+    queryFn: () => getJson<VotingStartOptionsResponse>('/api/vote/options'),
+    staleTime: 30 * 60_000,
     refetchOnWindowFocus: false,
   })
 
@@ -131,6 +158,19 @@ function LeaderboardPageContent({
         : [],
     [leaderboardQuery.data?.leaderboard],
   )
+
+  const eligibleCommunes =
+    voteOptionsQuery.data?.ok && Array.isArray(voteOptionsQuery.data.eligibleCommunes)
+      ? voteOptionsQuery.data.eligibleCommunes
+      : []
+
+  const selectedCommune =
+    eligibleCommunes.find((commune) => commune.slug === selectedCommuneSlug) ??
+    null
+
+  const classementTitle = selectedCommune
+    ? `Classement ${selectedCommune.name}`
+    : 'Classement general'
 
   const electionRound: ElectionRound | 'closed' =
     songs.at(0)?.electionRound ?? 'round1'
@@ -144,6 +184,7 @@ function LeaderboardPageContent({
       return postJson<StartSessionResponse>('/api/vote/start', {
         externalUserId,
         username: displayName,
+        communeSlug: selectedCommuneSlug || null,
       })
     },
     onSuccess: async (response) => {
@@ -248,6 +289,7 @@ function LeaderboardPageContent({
     trackEvent('classement_vote_cta_click', {
       electionRound,
       isAuthenticated: Boolean(externalUserId),
+      communeSlug: selectedCommuneSlug || null,
     })
 
     if (electionRound === 'closed') {
@@ -258,6 +300,7 @@ function LeaderboardPageContent({
     if (!externalUserId) {
       trackEvent('classement_vote_requires_signin', {
         electionRound,
+        communeSlug: selectedCommuneSlug || null,
       })
 
       if (onOpenSignIn) {
@@ -278,8 +321,34 @@ function LeaderboardPageContent({
         <section className="rounded-2xl border border-secondary/35 bg-card/70 p-4 md:p-6">
           <h1 className="font-display text-3xl text-secondary text-glow-blue flex items-center gap-2">
             <Trophy className="w-7 h-7" />
-            Classement general
+            {classementTitle}
           </h1>
+          {eligibleCommunes.length > 0 ? (
+            <div className="mt-4">
+              <select
+                value={selectedCommuneSlug}
+                onChange={(event) => {
+                  const communeSlug = event.target.value
+                  void (navigate ?? safeNavigate)({
+                    to: '/classement',
+                    search: () => (communeSlug ? { commune: communeSlug } : {}),
+                    replace: false,
+                  })
+                  trackEvent('classement_commune_filter_change', {
+                    communeSlug: communeSlug || null,
+                  })
+                }}
+                className="min-h-[44px] w-full rounded-lg border border-border bg-background/85 p-3 font-body text-sm text-foreground md:max-w-sm"
+              >
+                <option value="">Toutes les communes</option>
+                {eligibleCommunes.map((commune) => (
+                  <option key={commune.id} value={commune.slug}>
+                    {commune.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
         </section>
 
         {songs.length === 0 ? (
