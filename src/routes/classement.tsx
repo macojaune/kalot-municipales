@@ -330,9 +330,16 @@ function LeaderboardPageContent({
                         {song.communeName}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {getListLabel(song)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 truncate text-sm text-muted-foreground">
+                        {getListLabel(song)}
+                      </p>
+                      {song.isAiGenerated ? (
+                        <span className="shrink-0 rounded-full border border-secondary/35 bg-secondary/10 px-2 py-0.5 font-body text-[11px] font-semibold text-secondary">
+                          IA
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <button
