@@ -169,7 +169,7 @@ function LeaderboardPageContent({
     null
 
   const classementTitle = selectedCommune
-    ? `Classement ${selectedCommune.name}`
+    ? 'Classement par commune'
     : 'Classement general'
 
   const electionRound: ElectionRound | 'closed' =
