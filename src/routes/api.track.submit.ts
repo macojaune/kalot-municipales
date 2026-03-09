@@ -13,6 +13,14 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function parseBoolean(value: FormDataEntryValue | null) {
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  return value === 'true' || value === '1' || value === 'on'
+}
+
 export const Route = createFileRoute('/api/track/submit')({
   server: {
     handlers: {
@@ -30,6 +38,7 @@ export const Route = createFileRoute('/api/track/submit')({
           typeof formData.get('artistName') === 'string'
             ? formData.get('artistName')
             : null
+        const isAiGenerated = parseBoolean(formData.get('isAiGenerated'))
         const audioFile = formData.get('audio')
 
         if (!externalUserId) {
@@ -85,6 +94,7 @@ export const Route = createFileRoute('/api/track/submit')({
             electoralListId,
             title,
             artistName,
+            isAiGenerated,
             streamUrl: uploaded.url,
             r2Key: uploaded.key,
           })
@@ -103,6 +113,7 @@ export const Route = createFileRoute('/api/track/submit')({
             properties: {
               externalUserId,
               electoralListId,
+              isAiGenerated,
               fileName: audioFile.name,
               fileSize: audioFile.size,
               uploadedKey: uploaded?.key ?? null,

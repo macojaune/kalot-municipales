@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Lock, Pause, Play, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
-import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/r2'
+import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/audio-upload'
 import {
   deleteJson,
   getExternalUserId,
@@ -21,6 +21,7 @@ type AdminTrackListResponse =
         id: number
         title: string
         artistName: string
+        isAiGenerated: boolean
         communeName: string
         listName: string | null
         candidateName: string | null
@@ -111,6 +112,7 @@ function AdminPageContent() {
   const [form, setForm] = useState({
     title: '',
     artistName: '',
+    isAiGenerated: false,
     communeName: '',
     electoralListId: '',
   })
@@ -169,6 +171,7 @@ function AdminPageContent() {
       payload.set('electoralListId', form.electoralListId)
       payload.set('title', form.title)
       payload.set('artistName', form.artistName)
+      payload.set('isAiGenerated', String(form.isAiGenerated))
 
       if (form.communeName) {
         payload.set('communeName', form.communeName)
@@ -191,6 +194,7 @@ function AdminPageContent() {
         ...previous,
         title: '',
         artistName: '',
+        isAiGenerated: false,
         communeName: '',
         electoralListId: '',
       }))
@@ -469,6 +473,23 @@ function AdminPageContent() {
             placeholder="Artiste connu (optionnel)…"
             className="w-full p-3 rounded-lg bg-background/85 border border-border font-body text-sm min-h-[44px]"
           />
+
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-background/60 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isAiGenerated}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  isAiGenerated: event.target.checked,
+                }))
+              }
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span className="font-body text-muted-foreground">
+              Musique générée ou assistée par IA.
+            </span>
+          </label>
 
           {selectedElectoralList ? (
             <div className="rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground space-y-1">

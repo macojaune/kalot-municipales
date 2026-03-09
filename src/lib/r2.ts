@@ -5,11 +5,10 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from './audio-upload'
 
 const viteEnv = import.meta.env as Record<string, string | undefined>
 const AUDIO_PREFIX = 'tracks'
-export const MAX_AUDIO_SIZE_BYTES = 4 * 1024 * 1024
-export const MAX_AUDIO_SIZE_LABEL = '4 Mo'
 const ALLOWED_EXTENSIONS = new Set([
   'aac',
   'flac',

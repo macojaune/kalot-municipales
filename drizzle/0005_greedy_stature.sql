@@ -1,0 +1,1 @@
+ALTER TABLE `tracks` ADD `is_ai_generated` integer DEFAULT false NOT NULL;

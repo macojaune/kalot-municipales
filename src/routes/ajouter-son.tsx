@@ -5,7 +5,7 @@ import { Lock, Music4, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { trackEvent } from '../lib/analytics'
-import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/r2'
+import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/audio-upload'
 import {
   getDisplayName,
   getExternalUserId,
@@ -110,6 +110,7 @@ function SubmitTrackPageContent({
   const [form, setForm] = useState({
     title: '',
     artistName: '',
+    isAiGenerated: false,
     communeName: '',
     electoralListId: '',
   })
@@ -173,6 +174,7 @@ function SubmitTrackPageContent({
       trackEvent('submit_track_attempt', {
         hasTitle: Boolean(form.title.trim()),
         hasArtistName: Boolean(form.artistName.trim()),
+        isAiGenerated: form.isAiGenerated,
         communeName: form.communeName || null,
       })
 
@@ -186,6 +188,7 @@ function SubmitTrackPageContent({
       payload.set('electoralListId', form.electoralListId)
       payload.set('title', form.title)
       payload.set('artistName', form.artistName)
+      payload.set('isAiGenerated', String(form.isAiGenerated))
 
       if (audioFile) {
         payload.set('audio', audioFile)
@@ -201,6 +204,7 @@ function SubmitTrackPageContent({
 
       setFeedback(null)
       trackEvent('submit_track_success', {
+        isAiGenerated: form.isAiGenerated,
         communeName: form.communeName || null,
       })
       setIsSubmitted(true)
@@ -211,6 +215,7 @@ function SubmitTrackPageContent({
       setForm({
         title: '',
         artistName: '',
+        isAiGenerated: false,
         communeName: '',
         electoralListId: '',
       })
@@ -426,6 +431,24 @@ function SubmitTrackPageContent({
             placeholder="Artiste connu (optionnel)"
             className="min-h-[44px] w-full rounded-lg border border-border bg-background/85 p-3 font-body text-sm"
           />
+
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-background/60 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isAiGenerated}
+              onChange={(event) =>
+                setForm((previous) => ({
+                  ...previous,
+                  isAiGenerated: event.target.checked,
+                }))
+              }
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span className="font-body text-muted-foreground">
+              Musique générée ou assistée par IA. Coche si l'IA a servi à créer
+              une partie importante du morceau.
+            </span>
+          </label>
 
           {selectedElectoralList ? (
             <div className="space-y-1 rounded-lg border border-border bg-background/60 p-3 text-xs font-body text-muted-foreground">

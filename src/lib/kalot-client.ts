@@ -13,6 +13,7 @@ export type DuelTrack = {
   slug: string
   streamUrl: string | null
   r2Key: string
+  isAiGenerated: boolean
   rating: number
   wins: number
   losses: number

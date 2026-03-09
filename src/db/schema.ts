@@ -73,6 +73,9 @@ export const tracks = sqliteTable('tracks', {
   round2Wins: integer('round2_wins').notNull().default(0),
   round2Losses: integer('round2_losses').notNull().default(0),
   round2Appearances: integer('round2_appearances').notNull().default(0),
+  isAiGenerated: integer('is_ai_generated', { mode: 'boolean' })
+    .notNull()
+    .default(false),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   isSeed: integer('is_seed', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at')

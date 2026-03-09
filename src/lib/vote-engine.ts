@@ -96,6 +96,7 @@ type TrackView = {
   slug: string
   streamUrl: string | null
   r2Key: string
+  isAiGenerated: boolean
   rating: number
   wins: number
   losses: number
@@ -434,6 +435,7 @@ async function getTrackViewsByIds(
       slug: tracks.slug,
       streamUrl: tracks.streamUrl,
       r2Key: tracks.r2Key,
+      isAiGenerated: tracks.isAiGenerated,
       rating: round === 'round2' ? tracks.round2Rating : tracks.rating,
       wins: round === 'round2' ? tracks.round2Wins : tracks.wins,
       losses: round === 'round2' ? tracks.round2Losses : tracks.losses,
@@ -763,6 +765,7 @@ export async function createTrack(input: {
   candidateName?: string | null
   streamUrl?: string | null
   r2Key?: string | null
+  isAiGenerated?: boolean
   isSeed?: boolean
 }) {
   const db = getDb()
@@ -836,6 +839,7 @@ export async function createTrack(input: {
     communeId: resolvedCommuneId,
     electoralListId,
     rating: STARTING_RATING,
+    isAiGenerated: input.isAiGenerated ?? false,
     isSeed: input.isSeed ?? false,
   })
 
@@ -1699,6 +1703,7 @@ export async function getLeaderboard(input?: {
         slug: tracks.slug,
         streamUrl: tracks.streamUrl,
         r2Key: tracks.r2Key,
+        isAiGenerated: tracks.isAiGenerated,
         rating: electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
         wins: electionRound === 'round2' ? tracks.round2Wins : tracks.wins,
         losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
@@ -1813,6 +1818,7 @@ export async function listTracksForAdmin(input?: {
       title: tracks.title,
       slug: tracks.slug,
       streamUrl: tracks.streamUrl,
+      isAiGenerated: tracks.isAiGenerated,
       rating: tracks.rating,
       wins: tracks.wins,
       losses: tracks.losses,

@@ -14,6 +14,7 @@ type CreateTrackPayload = {
   electoralListId?: number | null
   title?: string
   artistName?: string | null
+  isAiGenerated?: boolean
   communeName?: string
   listName?: string | null
   candidateName?: string | null
@@ -29,6 +30,18 @@ function parseOptionalNumber(value: FormDataEntryValue | null) {
 
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseBoolean(value: FormDataEntryValue | unknown) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  return value === 'true' || value === '1' || value === 'on'
 }
 
 async function parseCreateTrackPayload(request: Request): Promise<CreateTrackPayload> {
@@ -50,6 +63,7 @@ async function parseCreateTrackPayload(request: Request): Promise<CreateTrackPay
         typeof formData.get('artistName') === 'string'
           ? formData.get('artistName')
           : null,
+      isAiGenerated: parseBoolean(formData.get('isAiGenerated')),
       communeName:
         typeof formData.get('communeName') === 'string'
           ? formData.get('communeName')
@@ -151,6 +165,7 @@ export const Route = createFileRoute('/api/admin/track')({
             electoralListId: body.electoralListId,
             title: body.title,
             artistName: body.artistName,
+            isAiGenerated: body.isAiGenerated,
             communeName: body.communeName,
             listName: body.listName,
             candidateName: body.candidateName,
@@ -174,6 +189,7 @@ export const Route = createFileRoute('/api/admin/track')({
               electoralListId: body.electoralListId ?? null,
               communeName: body.communeName ?? null,
               hasAudioFile: Boolean(body.audioFile),
+              isAiGenerated: body.isAiGenerated ?? false,
               fileName: body.audioFile?.name ?? null,
               fileSize: body.audioFile?.size ?? null,
               uploadedKey: uploaded?.key ?? null,
