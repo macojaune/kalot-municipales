@@ -17,7 +17,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "seed:electoral-lists": "node scripts/seed-electoral-lists.mjs"
+    "seed:electoral-lists": "node scripts/seed-electoral-lists.mjs",
+    "r2:download": "node scripts/download-r2-bucket.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1004.0",
