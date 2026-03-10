@@ -1,0 +1,12 @@
+.git
+.gitignore
+.netlify
+dist
+node_modules
+.env
+.env.*
+!.env.example
+.DS_Store
+npm-debug.log*
+Dockerfile*
+docker-compose*.yml

@@ -15,7 +15,6 @@ import PostHogProvider, {
   posthogEnabled,
 } from '../integrations/posthog/provider'
 import { RegionProvider } from '../context/RegionContext'
-
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
@@ -58,7 +57,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         rel: 'stylesheet',
+        href: '/app.css',
+      },
+      {
+        rel: 'preload',
         href: appCss,
+        as: 'style',
       },
       {
         rel: 'icon',
