@@ -4,8 +4,9 @@ import { withServerErrorLogging } from '../lib/server-monitoring'
 import {
   assertAdminAccess,
   seedElectoralLists,
-  seedGuadeloupeCommunes,
+  seedRegionCommunes,
 } from '../lib/vote-engine'
+import { isRegion } from '../types/song'
 
 export const Route = createFileRoute('/api/admin/seed')({
   server: {
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/api/admin/seed')({
       POST: withServerErrorLogging('/api/admin/seed', async ({ request }) => {
         const body = (await request.json()) as {
           externalUserId?: string | null
+          region?: string | null
         }
 
         const access = await assertAdminAccess({
@@ -23,13 +25,16 @@ export const Route = createFileRoute('/api/admin/seed')({
           return json(access, { status: 403 })
         }
 
+        const region = isRegion(body.region) ? body.region : 'guadeloupe'
+
         const [communesResult, electoralListsResult] = await Promise.all([
-          seedGuadeloupeCommunes(),
-          seedElectoralLists(),
+          seedRegionCommunes(region),
+          seedElectoralLists(region),
         ])
 
         return json({
           ok: true,
+          region,
           communes: communesResult,
           electoralLists: electoralListsResult,
         })

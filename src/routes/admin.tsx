@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Lock, Pause, Play, Plus, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
+import { useRegion } from '../context/RegionContext'
 import { MAX_AUDIO_SIZE_BYTES, MAX_AUDIO_SIZE_LABEL } from '../lib/audio-upload'
 import {
   deleteJson,
@@ -13,6 +14,7 @@ import {
   postJson,
 } from '../lib/kalot-client'
 import { buildSeo } from '../lib/seo'
+import { REGION_LABELS } from '../types/song'
 
 type AdminTrackListResponse =
   | {
@@ -126,6 +128,7 @@ function AdminPage() {
 
 function AdminPageContent() {
   const { user } = useUser()
+  const { region } = useRegion()
   const queryClient = useQueryClient()
   const externalUserId = getExternalUserId(user)
   const audioInputRef = useRef<HTMLInputElement | null>(null)
@@ -143,23 +146,23 @@ function AdminPageContent() {
   })
 
   const tracksQuery = useQuery({
-    queryKey: ['admin-tracks'],
+    queryKey: ['admin-tracks', region ?? 'all'],
     queryFn: () =>
       getJson<AdminTrackListResponse>(
         `/api/admin/track?includeInactive=true&limit=300&externalUserId=${encodeURIComponent(
           externalUserId ?? '',
-        )}`,
+        )}${region ? `&region=${encodeURIComponent(region)}` : ''}`,
       ),
     enabled: Boolean(externalUserId),
   })
 
   const electoralListsQuery = useQuery({
-    queryKey: ['admin-electoral-lists'],
+    queryKey: ['admin-electoral-lists', region ?? 'all'],
     queryFn: () =>
       getJson<AdminElectoralListResponse>(
         `/api/admin/electoral-lists?externalUserId=${encodeURIComponent(
           externalUserId ?? '',
-        )}`,
+        )}${region ? `&region=${encodeURIComponent(region)}` : ''}`,
       ),
     enabled: Boolean(externalUserId),
     staleTime: 30 * 60_000,
@@ -241,7 +244,9 @@ function AdminPageContent() {
       if (audioInputRef.current) {
         audioInputRef.current.value = ''
       }
-      await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['admin-tracks', region ?? 'all'],
+      })
     },
     onError: () => {
       setFeedback("Impossible d'ajouter le son.")
@@ -261,7 +266,9 @@ function AdminPageContent() {
       }
 
       setFeedback('Son retire de la competition.')
-      await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['admin-tracks', region ?? 'all'],
+      })
     },
     onError: () => {
       setFeedback('Impossible de retirer ce son.')
@@ -273,6 +280,7 @@ function AdminPageContent() {
       postJson<
         | {
             ok: true
+            region: string
             communes: { inserted: number; totalTarget: number }
             electoralLists: {
               created: number
@@ -285,7 +293,7 @@ function AdminPageContent() {
             ok: false
             message: string
           }
-      >('/api/admin/seed', { externalUserId }),
+      >('/api/admin/seed', { externalUserId, region }),
     onSuccess: async (response) => {
       if (!response.ok) {
         setFeedback(response.message)
@@ -293,12 +301,14 @@ function AdminPageContent() {
       }
 
       setFeedback(
-        `${response.communes.inserted} communes ajoutees, ${response.electoralLists.created} listes creees, ${response.electoralLists.updated} mises a jour.`,
+        `${response.communes.inserted} communes ajoutees en ${REGION_LABELS[region ?? 'guadeloupe']}, ${response.electoralLists.created} listes creees, ${response.electoralLists.updated} mises a jour.`,
       )
       await queryClient.invalidateQueries({
-        queryKey: ['admin-electoral-lists'],
+        queryKey: ['admin-electoral-lists', region ?? 'all'],
       })
-      await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['admin-tracks', region ?? 'all'],
+      })
     },
     onError: () => {
       setFeedback("Impossible d'importer les listes electorales.")
@@ -437,9 +447,14 @@ function AdminPageContent() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-fade-in">
-        <h1 className="font-display font-black text-3xl text-primary text-glow-green">
-          Admin
-        </h1>
+        <div className="space-y-2">
+          <p className="font-display text-[11px] tracking-[0.24em] text-muted-foreground">
+            {region ? `REGION ${REGION_LABELS[region].toUpperCase()}` : 'ADMIN'}
+          </p>
+          <h1 className="font-display font-black text-3xl text-primary text-glow-green">
+            Admin
+          </h1>
+        </div>
 
         <div className="space-y-3 p-4 rounded-xl bg-card/80 border border-primary/35 neon-panel">
           <h2 className="font-display font-bold text-sm text-primary">

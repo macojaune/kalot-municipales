@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Image, Link2, Share2 } from 'lucide-react'
+import { Image, Share2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { CrownIcon } from '../components/icons/CrownIcon'
@@ -40,13 +40,13 @@ export function ResultsPage() {
 
   const runnerUps = top3.slice(1)
 
-  const siteUrl = useMemo(() => {
+  const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') {
       return 'https://kalotmunicipales.fr'
     }
 
-    return window.location.href
-  }, [])
+    return new URL(homeHref, window.location.origin).toString()
+  }, [homeHref])
 
   if (top3.length === 0) {
     return (
@@ -69,17 +69,6 @@ export function ResultsPage() {
 
   const subtitle = 'Voici le morceau que tu as propulse en tete de session.'
 
-  async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(siteUrl)
-      trackEvent('results_copy_link')
-      setFeedback('Lien copie.')
-      setIsShareOpen(false)
-    } catch {
-      setFeedback(siteUrl)
-    }
-  }
-
   function handleTwitterShare() {
     trackEvent('results_share_x')
     const text = buildShareText({
@@ -88,7 +77,7 @@ export function ResultsPage() {
       top3,
     })
 
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(siteUrl)}`
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
     window.open(twitterUrl, '_blank', 'noopener,noreferrer')
     setIsShareOpen(false)
   }
@@ -99,7 +88,7 @@ export function ResultsPage() {
       championTitle: currentChampion.title,
       communeName: currentSummary.communeName,
       top3,
-    })} ${siteUrl}`
+    })} ${shareUrl}`
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
@@ -260,8 +249,8 @@ export function ResultsPage() {
                     Fais tourner ton top 3
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Choisis un reseau, copie le lien, ou genere un visuel story
-                    pour Instagram / TikTok.
+                    Choisis un reseau ou genere un visuel story pour Instagram /
+                    TikTok.
                   </p>
                 </div>
 
@@ -309,18 +298,6 @@ export function ResultsPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     Genere un visuel vertical a partager
                   </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleCopyLink()}
-                  className="rounded-xl border border-border bg-background/80 px-4 py-4 text-left transition-all hover:border-white/50 hover:bg-white/5"
-                >
-                  <div className="flex items-center gap-2 font-display text-xl text-foreground">
-                    <Link2 className="h-5 w-5" />
-                    Copier le lien
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{siteUrl}</p>
                 </button>
               </div>
             </div>

@@ -1,0 +1,1733 @@
+{
+  "extractedAt": "2026-03-06T22:40:29.868Z",
+  "sourceUrl": "https://flo.uri.sh/visualisation/27671058/embed",
+  "visualizationId": 27671058,
+  "sourceColumns": {
+    "alt": "nom",
+    "filter": "commune",
+    "image": "photo",
+    "metadata": [
+      "nom_liste",
+      "couleur_parti"
+    ],
+    "subtitle": "parti",
+    "text": [
+      "sortant"
+    ],
+    "title": "nom"
+  },
+  "totalListes": 138,
+  "totalCommunes": 32,
+  "communes": [
+    {
+      "commune": "Anse-Bertrand",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Anse-Bertrand",
+          "nom": "Natacha Girard",
+          "nom_alt": "",
+          "nom_liste": "Alternative pour l'excellence ansoise",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/525197b0-8cf7-4ce3-a5bb-f0a08bdc81f7.png"
+        },
+        {
+          "commune": "Anse-Bertrand",
+          "nom": "Daniel Moustache",
+          "nom_alt": "",
+          "nom_liste": "Anse-Bertrand, terre d'avenir",
+          "parti": "GAREC (Groupe Ansois de Réflexions et d'Etudes pour la Construction) - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/8d0a7568-6b40-4fa3-bbde-896e83669306.png"
+        },
+        {
+          "commune": "Anse-Bertrand",
+          "nom": "Edouard Delta",
+          "nom_alt": "",
+          "nom_liste": "Anse-Bertrand, terre d'avenir",
+          "parti": "LDVD",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/e1b7698f-211b-4533-bc51-020b0c66b2a0.jpg"
+        },
+        {
+          "commune": "Anse-Bertrand",
+          "nom": "Katia Irca Henry",
+          "nom_alt": "",
+          "nom_liste": "Une nouvelle dynamique pour Anse-Bertrand",
+          "parti": "Front ultramarin - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/35340aef-5693-416b-ae02-f8871508fa3a.png"
+        }
+      ]
+    },
+    {
+      "commune": "Baie-Mahault",
+      "total_listes": 6,
+      "listes": [
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Simon Vainqueur",
+          "nom_alt": "",
+          "nom_liste": "Baie-Mahault mérite mieux",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/bc78ec77-7122-4402-9b05-a8b5ecd6ad32.png"
+        },
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Ary Chalus",
+          "nom_alt": "",
+          "nom_liste": "L'alliance démocratique",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/feab984a-5168-4996-a385-88efc81eb8f7.png"
+        },
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Sylvie Anno-Chammougon",
+          "nom_alt": "",
+          "nom_liste": "La force du renouveau",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/bf8d5420-cf79-478e-9bc2-d7400e89a0cd.png"
+        },
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Michel Mado",
+          "nom_alt": "",
+          "nom_liste": "Le cœur baie-mahaultien",
+          "parti": "GUSR - LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/a437f44c-5cc0-4ffe-8f57-2e2014ea2045.png"
+        },
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Frédéric Théobald",
+          "nom_alt": "",
+          "nom_liste": "Osons le changement ensemble",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/92ccfea5-b41f-462e-bc4b-0e3f01702176.png"
+        },
+        {
+          "commune": "Baie-Mahault",
+          "nom": "Sylvio Pierre Zélateur",
+          "nom_alt": "",
+          "nom_liste": "Vision citoyenne Baie-Mahault",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/dc2aa094-88a0-4f78-b588-ef022ccdf846.png"
+        }
+      ]
+    },
+    {
+      "commune": "Baillif",
+      "total_listes": 2,
+      "listes": [
+        {
+          "commune": "Baillif",
+          "nom": "Marie-Yveline Ponchateau-Théobald",
+          "nom_alt": "",
+          "nom_liste": "nom de la liste",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/63f91d03-626e-4ee9-8f32-93979721e6a5.png"
+        },
+        {
+          "commune": "Baillif",
+          "nom": "Sylvie Gustave Dit Duflo",
+          "nom_alt": "",
+          "nom_liste": "Nouvel élan pou Bayif",
+          "parti": "GUSR - LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/ec40854e-ce8b-4ea8-aadc-acca56f4f870.png"
+        }
+      ]
+    },
+    {
+      "commune": "Basse-Terre",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Basse-Terre",
+          "nom": "Joël Lobeau",
+          "nom_alt": "",
+          "nom_liste": "Agir pour Basse-Terre",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/9076c5b4-3a75-4112-8d81-d845282b3dc8.png"
+        },
+        {
+          "commune": "Basse-Terre",
+          "nom": "Teddy Saint-Julien",
+          "nom_alt": "",
+          "nom_liste": "Bastè ayen dòt",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/1c9166c0-d4b2-4438-b4f2-fd29230b8e7f.png"
+        },
+        {
+          "commune": "Basse-Terre",
+          "nom": "André Atallah",
+          "nom_alt": "",
+          "nom_liste": "Continuons à réussir Basse-Terre",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/f573577e-3d97-4ceb-8384-87e251f46f2d.png"
+        },
+        {
+          "commune": "Basse-Terre",
+          "nom": "Yanetti Paisley",
+          "nom_alt": "",
+          "nom_liste": "Faire mieux pour Basse-Terre",
+          "parti": "LFI",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#BE2828",
+          "photo": "https://public.flourish.studio/uploads/784851/00ca210a-a2d4-496d-b43d-cf78184f5afd.png"
+        }
+      ]
+    },
+    {
+      "commune": "Bouillante",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Bouillante",
+          "nom": "Michel Brard",
+          "nom_alt": "",
+          "nom_liste": "Bouillante nou paré",
+          "parti": "CIPPA - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/92d5c367-3021-4a03-8525-12e9ff590e75.png"
+        },
+        {
+          "commune": "Bouillante",
+          "nom": "Jaklin Farnabé Pavilla",
+          "nom_alt": "",
+          "nom_liste": "Ensemble pour Bouillante",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/84197eac-1ec9-44ae-a9e9-3324bb0cdbcd.png"
+        },
+        {
+          "commune": "Bouillante",
+          "nom": "Thierry Abelli",
+          "nom_alt": "",
+          "nom_liste": "Rassemblement des forces bouillantaises",
+          "parti": "LDVD",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/f6e00b8f-1617-43af-86aa-371281125504.png"
+        },
+        {
+          "commune": "Bouillante",
+          "nom": "Marc Guilliod Mounigan",
+          "nom_alt": "",
+          "nom_liste": "Union des citoyens bouillantais",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/1268f0f4-5d75-4fd7-9885-2b6868d81e0b.png"
+        }
+      ]
+    },
+    {
+      "commune": "Capesterre Belle-Eau",
+      "total_listes": 6,
+      "listes": [
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Hugues Philippe Ramdini",
+          "nom_alt": "",
+          "nom_liste": "Capesterre, c'est maintenant !",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/a7eadaf0-7951-4c0a-8e3f-3e1503e25324.png"
+        },
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Jean-Marie Nomertin",
+          "nom_alt": "",
+          "nom_liste": "Combat ouvrier",
+          "parti": "Combat ouvrier - LEXG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#821E1E",
+          "photo": "https://public.flourish.studio/uploads/784851/e794a495-a207-48ca-8fc4-becdb4f19a78.png"
+        },
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Nadia Carle-Martias",
+          "nom_alt": "",
+          "nom_liste": "Couleur d'espérance",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/495bd704-d57d-464f-9827-94ffe4f3e7ec.png"
+        },
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Jean-Philippe Courtois",
+          "nom_alt": "",
+          "nom_liste": "Kapestè sé nou tout'",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/36b4a798-38a8-4799-8514-12fba039ecbf.png"
+        },
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Marie-Christine Myre",
+          "nom_alt": "",
+          "nom_liste": "On gran sanblé pou voyé Kapestè monté",
+          "parti": "LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/5442ba56-d8e6-4c75-b233-947f56442d9f.png"
+        },
+        {
+          "commune": "Capesterre Belle-Eau",
+          "nom": "Yvette Moutama",
+          "nom_alt": "",
+          "nom_liste": "Osons le grand saut (Solidarité-Amour-Unité et tolérance)",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/fe32154e-0b85-46fe-9f63-33305d3419eb.png"
+        }
+      ]
+    },
+    {
+      "commune": "Capesterre de Marie-Galante",
+      "total_listes": 2,
+      "listes": [
+        {
+          "commune": "Capesterre de Marie-Galante",
+          "nom": "Jean-Claude Maës",
+          "nom_alt": "",
+          "nom_liste": "Réussir Capesterre ensemble",
+          "parti": "GUSR - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/6555fc69-dbc7-4200-b5f9-58ceb2837ab8.png"
+        },
+        {
+          "commune": "Capesterre de Marie-Galante",
+          "nom": "Betty Besry",
+          "nom_alt": "",
+          "nom_liste": "Unis pour Capesterre",
+          "parti": "Modem Guadeloupe",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF7800",
+          "photo": "https://public.flourish.studio/uploads/784851/50d9634a-d0b3-4794-b1a5-962b3b8de512.png"
+        }
+      ]
+    },
+    {
+      "commune": "Deshaies",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Deshaies",
+          "nom": "David Questel",
+          "nom_alt": "",
+          "nom_liste": "Ansanm pour Deshaies",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/e3638d21-c26d-4eaf-bc5a-ee4a345df84b.png"
+        },
+        {
+          "commune": "Deshaies",
+          "nom": "Sidjie Esdras",
+          "nom_alt": "",
+          "nom_liste": "Combat ouvrier",
+          "parti": "Combat ouvrier - LEXG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#821E1E",
+          "photo": "https://public.flourish.studio/uploads/784851/ac86c170-9ebf-4818-902d-c1d4dd1ba56c.png"
+        },
+        {
+          "commune": "Deshaies",
+          "nom": "Alphonse Guillaume",
+          "nom_alt": "",
+          "nom_liste": "Deshaies, continuons d'agir",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe -LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/f0294947-47d7-4750-8904-8f0227249920.png"
+        },
+        {
+          "commune": "Deshaies",
+          "nom": "Fred Goubin",
+          "nom_alt": "",
+          "nom_liste": "Nouvel élan pour Deshaies",
+          "parti": "GUSR - LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/6adbf917-353b-4527-8e71-8e08a2028f76.png"
+        }
+      ]
+    },
+    {
+      "commune": "Gourbeyre",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Gourbeyre",
+          "nom": "Claude Edmond",
+          "nom_alt": "",
+          "nom_liste": "Goubè an nou",
+          "parti": "LDIV",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/8d50499d-cd7d-4318-8731-362bbacd0780.png"
+        },
+        {
+          "commune": "Gourbeyre",
+          "nom": "Josy Jouyet",
+          "nom_alt": "",
+          "nom_liste": "Gourbeyre Agir en Vérité",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/ffb1746c-ee6c-40dc-910e-dd57d2ee64cd.jpg"
+        },
+        {
+          "commune": "Gourbeyre",
+          "nom": "Fabienne Thomas",
+          "nom_alt": "",
+          "nom_liste": "Gourbeyre autrement",
+          "parti": "Soutenue par le Parti socialiste Guadeloupe - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/15db5494-711e-4db9-a9ae-7c87dcc21cfa.png"
+        },
+        {
+          "commune": "Gourbeyre",
+          "nom": "Marguerite Civis",
+          "nom_alt": "",
+          "nom_liste": "L'unité gourbeyrienne",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/4cdef434-8209-483d-89a3-1a3cb7fdf9ff.png"
+        }
+      ]
+    },
+    {
+      "commune": "Goyave",
+      "total_listes": 5,
+      "listes": [
+        {
+          "commune": "Goyave",
+          "nom": "Maryse Josiane Citronnelle",
+          "nom_alt": "",
+          "nom_liste": "Goyave Doubout",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/dc6e52d9-f83b-4891-9517-2453ee705e41.png"
+        },
+        {
+          "commune": "Goyave",
+          "nom": "Ferdy Louisy",
+          "nom_alt": "",
+          "nom_liste": "Goyave en mouvement",
+          "parti": "Soutenu par le GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/107591d4-a4ff-403b-aa8a-a76aa3b4371a.png"
+        },
+        {
+          "commune": "Goyave",
+          "nom": "Josuart Dognon",
+          "nom_alt": "",
+          "nom_liste": "Goyave nouvelle génération",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": ""
+        },
+        {
+          "commune": "Goyave",
+          "nom": "Bernard Zora",
+          "nom_alt": "",
+          "nom_liste": "Nouvel élan pour Goyave",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/0fb8cd03-5156-477e-b7c1-6dd1fa2a39f7.png"
+        },
+        {
+          "commune": "Goyave",
+          "nom": "Jean-Luc Edom",
+          "nom_alt": "",
+          "nom_liste": "Unis pour Goyave",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/9dd39533-beea-431a-bb5f-31ac50753594.png"
+        }
+      ]
+    },
+    {
+      "commune": "Grand-Bourg",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Grand-Bourg",
+          "nom": "Yohann Selbonne",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, construisons demain",
+          "parti": "Dynamisme actif et rassembleur - LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/831f7d74-5055-456c-8494-cdee86fb576f.png"
+        },
+        {
+          "commune": "Grand-Bourg",
+          "nom": "Maryse Etzol",
+          "nom_alt": "",
+          "nom_liste": "Grand-Bourg 2030, écrivons la suite ensemble",
+          "parti": "Soutenu par le GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/6326c885-1b5f-4492-a9b8-0aac03efa814.png"
+        },
+        {
+          "commune": "Grand-Bourg",
+          "nom": "Guy Accipé",
+          "nom_alt": "",
+          "nom_liste": "Kap'La",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/982cf8c5-5270-4444-8d27-f0da6830688c.png"
+        }
+      ]
+    },
+    {
+      "commune": "La Désirade",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "La Désirade",
+          "nom": "Max Villeneuve",
+          "nom_alt": "",
+          "nom_liste": "Ensemble Contruisons la Désirade de demain",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/3f6aeac3-44ba-4bf6-bef7-c66708eb0876.png"
+        },
+        {
+          "commune": "La Désirade",
+          "nom": "Sylvette Saint Auret",
+          "nom_alt": "",
+          "nom_liste": "Ensemble pour une Désirade forte et solidaire",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/5c88ec11-2edb-4d63-8352-3212cfc619e4.png"
+        },
+        {
+          "commune": "La Désirade",
+          "nom": "Loïc Tonton",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, allons plus loin pour La Désirade",
+          "parti": "GUSR",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/0e461020-1a2f-4bd3-bc73-d2e7f69645dd.png"
+        },
+        {
+          "commune": "La Désirade",
+          "nom": "Jean-Claude Pioche",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, reprenons le Cap pour une Désirade gagnante",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/e603eb1f-ad3f-4cad-b8f0-ac1a70022be3.jpg"
+        }
+      ]
+    },
+    {
+      "commune": "Lamentin",
+      "total_listes": 7,
+      "listes": [
+        {
+          "commune": "Lamentin",
+          "nom": "Benjamin Gracchus",
+          "nom_alt": "",
+          "nom_liste": "C'est maintenant !",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/4693bd9f-b3de-4c9d-87e8-e019dab34701.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Jocelyn Sapotille",
+          "nom_alt": "",
+          "nom_liste": "L'avenir en confiance",
+          "parti": "Le Parti socialiste Guadeloupe",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/6424465a-e0cc-4fef-b7af-da8d981b7c01.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Reinette Juliard",
+          "nom_alt": "",
+          "nom_liste": "Lamentin demain",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/72709bb7-0765-4a6d-a015-0bf66c02de94.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Nicole Ramassamy",
+          "nom_alt": "",
+          "nom_liste": "Nouvel élan solidaire en action",
+          "parti": "Front ultramarin - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/2fb2386a-bf5e-4a78-b696-cac892e6dbea.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Annick Abela",
+          "nom_alt": "",
+          "nom_liste": "Renaître",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/faa9b14f-4bae-40ff-ad36-6c566b13c9af.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Ephrem Glorieux",
+          "nom_alt": "",
+          "nom_liste": "Transparence",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/6cfa6b80-37fb-495a-8d28-524e1ca18666.png"
+        },
+        {
+          "commune": "Lamentin",
+          "nom": "Emmanuelly Gougougnan-Zadigue",
+          "nom_alt": "",
+          "nom_liste": "Une nouvelle ère pour Lamentin",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/18e17c1a-c4ad-4357-9a41-af0b3d3080b8.png"
+        }
+      ]
+    },
+    {
+      "commune": "Le Gosier",
+      "total_listes": 10,
+      "listes": [
+        {
+          "commune": "Le Gosier",
+          "nom": "Marlène Valentino",
+          "nom_alt": "",
+          "nom_liste": "Combat Ouvrier",
+          "parti": "Combat ouvrier - LEXG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#821E1E",
+          "photo": "https://public.flourish.studio/uploads/784851/69dcdc5e-0144-4113-bee5-6fc9f80b665a.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Jocelyn Martial",
+          "nom_alt": "",
+          "nom_liste": "GCR (Le Gosier, confiance et respect)",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/23dc8b4e-fe12-4043-ab71-ec8c58ba4435.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Patrick Gob",
+          "nom_alt": "",
+          "nom_liste": "J'aime ma ville, ma région, mon pays Moun Gozié",
+          "parti": "Moun Gozié - LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/08da8acb-eaae-4dca-9bb1-79fcbd79a4ab.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Christelle Germain",
+          "nom_alt": "",
+          "nom_liste": "La nouvelle VAG, Vision d'Avenir pour le Gosier",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/2a2e93f8-4b5d-4c2f-8d76-9fac052be3ef.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Michel Hotin",
+          "nom_alt": "",
+          "nom_liste": "Le Gosier, c'est nous, ensemble",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/05cff938-2d8c-4ae0-9a0e-94a72c397c4f.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Ghylaine Jeanne",
+          "nom_alt": "",
+          "nom_liste": "Le renouveau gosiérien",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/3e89c1a3-a4e4-404d-92ac-20e2cd464501.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Liliane Montout",
+          "nom_alt": "",
+          "nom_liste": "Le sursaut pour le Gosier",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/e7568371-2957-467e-a140-1247918ce484.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Keetter Sylvain",
+          "nom_alt": "",
+          "nom_liste": "Mieux réussir Le Gosier",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/64ca234f-a036-4d39-8acb-8875a1be5b4e.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Jean-Claude Christophe",
+          "nom_alt": "",
+          "nom_liste": "Trajectoire",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/3dea0df1-79ba-4fd5-aece-583c007cbae8.png"
+        },
+        {
+          "commune": "Le Gosier",
+          "nom": "Patrice Pierre-Justin",
+          "nom_alt": "",
+          "nom_liste": "Unis et fiers en action",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/fe30c670-aac2-4208-b300-43daf204ba03.png"
+        }
+      ]
+    },
+    {
+      "commune": "Le Moule",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Le Moule",
+          "nom": "Gabrielle Louis Carabin",
+          "nom_alt": "",
+          "nom_liste": "Continuons à réussir !",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/62a61ffc-5415-4e0a-9d32-1ad08cfd95f4.png"
+        },
+        {
+          "commune": "Le Moule",
+          "nom": "Justine Bénin",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, unis pour Le Moule",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/5d4afac7-e45e-41b8-a66e-9bd4ca9ae03f.png"
+        },
+        {
+          "commune": "Le Moule",
+          "nom": "Christian Chingan",
+          "nom_alt": "",
+          "nom_liste": "Le Moule autrement, le temps d'une autre politique",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/f2260dce-2f85-4302-ab7d-e38688d15f7f.png"
+        },
+        {
+          "commune": "Le Moule",
+          "nom": "Yvane Rhinan",
+          "nom_alt": "",
+          "nom_liste": "Le Moule, ses valeurs, son avenir",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/16eee51a-4ce2-4348-8b22-576a6f88811e.png"
+        }
+      ]
+    },
+    {
+      "commune": "Les Abymes",
+      "total_listes": 5,
+      "listes": [
+        {
+          "commune": "Les Abymes",
+          "nom": "Aline Céril",
+          "nom_alt": "",
+          "nom_liste": "Combat ouvrier",
+          "parti": "Combat Ouvrier - LEXG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#821E1E",
+          "photo": "https://public.flourish.studio/uploads/784851/c105cd9c-42e4-424b-ba3f-e13b8ecaedbe.webp"
+        },
+        {
+          "commune": "Les Abymes",
+          "nom": "Olivier Serva",
+          "nom_alt": "",
+          "nom_liste": "Eko Zabym",
+          "parti": "Eko Zabym - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/04c3612a-f7d4-41ac-a470-0a58b8e72e3c.png"
+        },
+        {
+          "commune": "Les Abymes",
+          "nom": "Max Céligny",
+          "nom_alt": "",
+          "nom_liste": "Force citoyenne des Abymes",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe -LUG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#AA0D41",
+          "photo": "https://public.flourish.studio/uploads/784851/6c5056d1-6592-4cf8-9477-90889e100a74.png"
+        },
+        {
+          "commune": "Les Abymes",
+          "nom": "Eric Jalton",
+          "nom_alt": "",
+          "nom_liste": "Soyons Abymiens tous ensemble",
+          "parti": "FRAPP - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/747a0801-c93d-47e6-9ea4-755ae4d1a59a.png"
+        },
+        {
+          "commune": "Les Abymes",
+          "nom": "Alix Nabajoth",
+          "nom_alt": "",
+          "nom_liste": "Union pour une nouvelle trajectoire",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/8e26d149-4d57-4d7d-b8d4-c70a28c003b7.png"
+        }
+      ]
+    },
+    {
+      "commune": "Morne-à-l'Eau",
+      "total_listes": 6,
+      "listes": [
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Eric Manne",
+          "nom_alt": "",
+          "nom_liste": "AFMD",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/42bdddf0-84d7-4334-84f9-c6bf3e43fa23.png"
+        },
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Franck Garain",
+          "nom_alt": "",
+          "nom_liste": "Ensemble pour Morne-à-l'Eau",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe - LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/bbe47be7-db20-49c1-ab81-4a5149c186ea.png"
+        },
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Patrice Resdedant",
+          "nom_alt": "",
+          "nom_liste": "L'avenir mornalien",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/efb9c36b-5a2d-4e4f-9be6-f0c857c180a7.png"
+        },
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Georges Hermin",
+          "nom_alt": "",
+          "nom_liste": "L'unité en puissance",
+          "parti": "LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/ae129c41-b289-42c0-8748-2c31d89089b7.png"
+        },
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Jean Bardail",
+          "nom_alt": "",
+          "nom_liste": "Maintenant, allons plus loin",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/78fd1e20-d416-430f-ab70-665796697d47.png"
+        },
+        {
+          "commune": "Morne-à-l'Eau",
+          "nom": "Laurence Maquiaba",
+          "nom_alt": "",
+          "nom_liste": "Sé nou ké fey",
+          "parti": "NOU - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/b22be915-dd25-4628-9570-fd700dfcc9a2.png"
+        }
+      ]
+    },
+    {
+      "commune": "Petit-Bourg",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Petit-Bourg",
+          "nom": "Kelly Jourau",
+          "nom_alt": "",
+          "nom_liste": "Ansanm pou Ti-Bou",
+          "parti": "NOU - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/62d7774d-f793-4947-b02d-b8e4002e3b42.png"
+        },
+        {
+          "commune": "Petit-Bourg",
+          "nom": "David Nébor",
+          "nom_alt": "",
+          "nom_liste": "Continuons d'agir",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/2d776fba-9284-4e47-8eff-787f1f794c88.png"
+        },
+        {
+          "commune": "Petit-Bourg",
+          "nom": "Pascal Delver",
+          "nom_alt": "",
+          "nom_liste": "Relevons ensemble Petit-Bourg",
+          "parti": "LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/dc218efc-4d2a-4afb-a10f-30f08d8af0d4.png"
+        },
+        {
+          "commune": "Petit-Bourg",
+          "nom": "Sonia Devarieux",
+          "nom_alt": "",
+          "nom_liste": "Un nouveau souffle pour Petit-Bourg",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/14daf5bf-b96c-441b-b351-0e342fb67ddc.png"
+        }
+      ]
+    },
+    {
+      "commune": "Petit-Canal",
+      "total_listes": 2,
+      "listes": [
+        {
+          "commune": "Petit-Canal",
+          "nom": "Blaise Mornal",
+          "nom_alt": "",
+          "nom_liste": "Doubout pou Kannal \"Une vision partagée au cœur de Petit-Canal",
+          "parti": "Soutenu par le GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/6ba79781-9da8-4957-9c9c-9a44c64ba537.png"
+        },
+        {
+          "commune": "Petit-Canal",
+          "nom": "Mariano Mitel",
+          "nom_alt": "",
+          "nom_liste": "Ensemble pour le changement !",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/001484c2-435b-45af-b3ee-4d1f438dcdf4.png"
+        }
+      ]
+    },
+    {
+      "commune": "Pointe-à-Pitre",
+      "total_listes": 6,
+      "listes": [
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Alain Sorèze",
+          "nom_alt": "",
+          "nom_liste": "Alliance pour Pointe-à-Pitre",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/9524dba3-f77e-488a-8bb2-68ef92a5cc3f.png"
+        },
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Marie-Agnès Castrot",
+          "nom_alt": "",
+          "nom_liste": "Combat ouvrier",
+          "parti": "Combat ouvrier - LEXG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#821E1E",
+          "photo": "https://public.flourish.studio/uploads/784851/44b6a9f2-0fe8-4e2e-a0fc-e4c0f888e9c9.png"
+        },
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Claude Barfleur",
+          "nom_alt": "",
+          "nom_liste": "L'âme pointoise renaît",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/59859dd9-3f00-4571-847b-faa93eab25e0.png"
+        },
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Sandra Enjaric",
+          "nom_alt": "",
+          "nom_liste": "Le courage d'agir, la force d'avancer",
+          "parti": "Front ultramarin - LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/0e65686e-c4c2-470e-ad27-6152b867e62c.png"
+        },
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Loïc Martol",
+          "nom_alt": "",
+          "nom_liste": "Le projet pointois",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/5e0009e3-49c1-41b0-b49a-c177f0dc4796.png"
+        },
+        {
+          "commune": "Pointe-à-Pitre",
+          "nom": "Harry Durimel",
+          "nom_alt": "",
+          "nom_liste": "Une équipe qui gagne",
+          "parti": "Soutenu par le GUSR - LECO",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#3CC83C",
+          "photo": "https://public.flourish.studio/uploads/784851/dc4911da-c9ca-4649-a55d-8dbc33fe2083.png"
+        }
+      ]
+    },
+    {
+      "commune": "Pointe-Noire",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Pointe-Noire",
+          "nom": "Camille Elisabeth",
+          "nom_alt": "",
+          "nom_liste": "Nouvel élan pointe-noirien",
+          "parti": "Soutenu par le GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/7b2b2ed6-fae0-46cf-8db8-a7685b6655f7.png"
+        },
+        {
+          "commune": "Pointe-Noire",
+          "nom": "Sully Pandolf",
+          "nom_alt": "",
+          "nom_liste": "Nouvelle énergie citoyenne",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/6260e6d0-f393-4d64-95cb-39acf43f5e69.png"
+        },
+        {
+          "commune": "Pointe-Noire",
+          "nom": "Thierry Jean-Charles",
+          "nom_alt": "",
+          "nom_liste": "Nouvelle ère démocratique et populaire pointe-noirienne",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/fbe12307-90f4-4dcf-a713-a1a2700cdbc8.png"
+        },
+        {
+          "commune": "Pointe-Noire",
+          "nom": "Grégory Cabrion",
+          "nom_alt": "",
+          "nom_liste": "Objectif 116, osons pour Pointe-Noire",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/4707b4ef-075f-469a-9800-1886a90d6cd2.png"
+        }
+      ]
+    },
+    {
+      "commune": "Port-Louis",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Port-Louis",
+          "nom": "Victor Arthein",
+          "nom_alt": "",
+          "nom_liste": "Ansanm Pou Pòlwi",
+          "parti": "Soutenu par le Parti socialiste Guadeloupe -LUG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#AA0D41",
+          "photo": "https://public.flourish.studio/uploads/784851/27586107-150e-4568-95b1-7ee1e56d1a60.png"
+        },
+        {
+          "commune": "Port-Louis",
+          "nom": "Jacques Marie-Claire",
+          "nom_alt": "",
+          "nom_liste": "La nouvelle dynamique Port-Louisienne",
+          "parti": "LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/ae8fe4aa-da74-4823-8a5a-2ee9e121636e.png"
+        },
+        {
+          "commune": "Port-Louis",
+          "nom": "Jean-Marie Hubert",
+          "nom_alt": "",
+          "nom_liste": "Réussir Port-Louis \"Poursuivons\"",
+          "parti": "Soutenu par NOU - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/a2be97ac-3b91-4683-8560-b383e94e0064.png"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Claude",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Saint-Claude",
+          "nom": "Thierry Panol",
+          "nom_alt": "",
+          "nom_liste": "Faire plus pour tous !",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/a24b9667-0ea3-4134-a417-dced4373ea4c.png"
+        },
+        {
+          "commune": "Saint-Claude",
+          "nom": "Cédric Vitalis",
+          "nom_alt": "",
+          "nom_liste": "Fiers et responsables, la continuité dans un nouvel élan",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/c00515dc-0f04-490e-8940-1542ede52d1e.png"
+        },
+        {
+          "commune": "Saint-Claude",
+          "nom": "Rebecca Coupan",
+          "nom_alt": "",
+          "nom_liste": "Saint-Claude en commun",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/7b97fe05-6f05-4a70-8a3a-70f9e73abd8c.png"
+        },
+        {
+          "commune": "Saint-Claude",
+          "nom": "Fabrice Minatchy",
+          "nom_alt": "",
+          "nom_liste": "Saint-Claude Unis",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/ee40fad3-ccaa-4fd8-829f-b2bafe4e330f.png"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-François",
+      "total_listes": 8,
+      "listes": [
+        {
+          "commune": "Saint-François",
+          "nom": "Patrice Alexis",
+          "nom_alt": "",
+          "nom_liste": "Alliance Saint-Franciscaine pour le Renouveau",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/1808160f-05c5-4ae6-817e-6ece8360c80f.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Alix Mathieu Lendo",
+          "nom_alt": "",
+          "nom_liste": "Ansanm pour réussir Saint-François",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/9ce86770-27ee-432e-b2fe-0680322dc01d.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Donovan Soudiagom-Chouro",
+          "nom_alt": "",
+          "nom_liste": "Ecrivez l'histoire",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/59f47350-53cc-443d-948b-fb91a7e81380.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Sophie Peroumal",
+          "nom_alt": "",
+          "nom_liste": "En action pour Saint-François",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/1f5eeada-a299-434b-ab34-d0ba1162a233.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Jean-Luc Périan",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, continuons d'agir",
+          "parti": "GUSR - LDIV",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/fc2982bb-1873-47e8-9d62-2aca35eb947f.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Sandro Badri",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, Unis pour Saint-François",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/2bcb10d4-089b-4950-bd8b-121b99bc284d.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Laurent Petit",
+          "nom_alt": "",
+          "nom_liste": "Rassemblement populaire Saint-François",
+          "parti": "LEXD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#000077",
+          "photo": "https://public.flourish.studio/uploads/784851/da3fa4ea-b605-4389-9cfb-b468707721d8.png"
+        },
+        {
+          "commune": "Saint-François",
+          "nom": "Teddy Mary",
+          "nom_alt": "",
+          "nom_liste": "Union pour Saint-François",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/b3b84ef6-060d-4521-b05a-861b5564766b.png"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Louis",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Saint-Louis",
+          "nom": "François Navis",
+          "nom_alt": "",
+          "nom_liste": "Cap sur l'humain et les solidarités",
+          "parti": "GUSR - Selwi Marigalant Balan - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/f72a538c-7475-466b-a2f3-fe177a9e1661.png"
+        },
+        {
+          "commune": "Saint-Louis",
+          "nom": "Huguette Igor Ibalot",
+          "nom_alt": "",
+          "nom_liste": "Saint-Louis pour tous",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/7b24595f-1300-4f05-990a-62066f7cd771.png"
+        },
+        {
+          "commune": "Saint-Louis",
+          "nom": "Liliane Passé-Coutrin",
+          "nom_alt": "",
+          "nom_liste": "Unis pour le Progrès !",
+          "parti": "Lyannaj Unis - Soutenue par le Front ultramarin",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/b61fbad3-c615-4d17-8128-4083f0355b07.png"
+        }
+      ]
+    },
+    {
+      "commune": "Sainte-Anne",
+      "total_listes": 7,
+      "listes": [
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Patrick Galas",
+          "nom_alt": "",
+          "nom_liste": "Fors Saintannaise",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/b92d5390-16da-46bf-b6b4-efc798496441.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Diana Perran",
+          "nom_alt": "",
+          "nom_liste": "Nouvelle ère saintannaise",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/9e7356f0-765d-4e09-9359-68f22592afe5.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Francs Baptiste",
+          "nom_alt": "",
+          "nom_liste": "Rassemblement démocratique saintannais",
+          "parti": "Soutenu par le GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/b0a3c98b-8a38-42e6-8ffc-e851817f5b91.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Earvin Sainsily",
+          "nom_alt": "",
+          "nom_liste": "Sainte-Anne en mouvement",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/81c0db99-3420-42d1-8565-bcc0e1711644.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Blaise Aldo",
+          "nom_alt": "",
+          "nom_liste": "Sainte-Anne Excellence",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/3c8d75de-7d43-40f4-9f6b-1cc9a20ec58f.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Lydia Faro Couriol",
+          "nom_alt": "",
+          "nom_liste": "Sainte-Anne, avec vous, pour vous",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/83e42e27-e2c5-4b3f-8f7c-6798f4abae0c.png"
+        },
+        {
+          "commune": "Sainte-Anne",
+          "nom": "Jean-Yves Duro",
+          "nom_alt": "",
+          "nom_liste": "Sentann @vantou",
+          "parti": "",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/1adef038-5a92-46ef-988e-282bac7cdfd5.png"
+        }
+      ]
+    },
+    {
+      "commune": "Sainte-Rose",
+      "total_listes": 4,
+      "listes": [
+        {
+          "commune": "Sainte-Rose",
+          "nom": "Nicolas Citadelle",
+          "nom_alt": "",
+          "nom_liste": "Agir ensemble pour Sainte-Rose",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/9c09f57c-d963-4fb1-a800-7a400bfeccd0.png"
+        },
+        {
+          "commune": "Sainte-Rose",
+          "nom": "Adeline Ciserane",
+          "nom_alt": "",
+          "nom_liste": "Mangé péyi, viv péyi",
+          "parti": "LREG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/bd55c7e1-3854-4cf2-9709-4d305708836a.png"
+        },
+        {
+          "commune": "Sainte-Rose",
+          "nom": "Adrien Baron",
+          "nom_alt": "",
+          "nom_liste": "Sainte-Rose, ensemble et fière : en route vers l'excellence",
+          "parti": "LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/1e9ef239-bf2c-4f4e-bf09-f50dfdcd172d.png"
+        },
+        {
+          "commune": "Sainte-Rose",
+          "nom": "Jim Lapin",
+          "nom_alt": "",
+          "nom_liste": "Unis pour Une Nouvelle Impulsion Sainte-Rosienne",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/085d6536-c9f3-4871-8c3c-2c250fe8cc51.png"
+        }
+      ]
+    },
+    {
+      "commune": "Terre-de-Bas",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Terre-de-Bas",
+          "nom": "Monique Brudey-Beaujour",
+          "nom_alt": "",
+          "nom_liste": "Bâtissons ensemble l'avenir de Terre-de-Bas",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/d01623e0-4550-4bfa-a49b-145c91396cbf.png"
+        },
+        {
+          "commune": "Terre-de-Bas",
+          "nom": "Gabriel Foy",
+          "nom_alt": "",
+          "nom_liste": "On Sèl Vizyon Terre-de-Bas",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/0842215a-cdf0-4599-ae8e-da25318462d3.png"
+        },
+        {
+          "commune": "Terre-de-Bas",
+          "nom": "Rolande Nadille Vala",
+          "nom_alt": "",
+          "nom_liste": "Terre-de-Bas au cœur de nos ambitions",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/dd41c875-d784-4d74-9aa1-c18489aa1900.png"
+        }
+      ]
+    },
+    {
+      "commune": "Terre-de-Haut",
+      "total_listes": 2,
+      "listes": [
+        {
+          "commune": "Terre-de-Haut",
+          "nom": "Ginette Samson",
+          "nom_alt": "",
+          "nom_liste": "Agir par amour pour Terre-de-Haut",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/a62649b9-a935-437a-a6fc-f3045df365c4.png"
+        },
+        {
+          "commune": "Terre-de-Haut",
+          "nom": "Louly Bonbon",
+          "nom_alt": "",
+          "nom_liste": "Terre-de-Haut en mouvement",
+          "parti": "GUSR - LDVG",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/1216beac-fcc1-4fe6-9780-02d2d093d705.png"
+        }
+      ]
+    },
+    {
+      "commune": "Trois-Rivières",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Trois-Rivières",
+          "nom": "Jean-Louis Francisque",
+          "nom_alt": "",
+          "nom_liste": "Agissons ensemble, allons encore plus loin",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/c16bd00a-e0b6-45e0-9e63-dacce02b606d.png"
+        },
+        {
+          "commune": "Trois-Rivières",
+          "nom": "Albert Dorville",
+          "nom_alt": "",
+          "nom_liste": "L'équipe citoyenne",
+          "parti": "LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/c5f46c7a-64e9-455f-9756-332955ec0f8c.png"
+        },
+        {
+          "commune": "Trois-Rivières",
+          "nom": "Jimmy Fausta",
+          "nom_alt": "",
+          "nom_liste": "Trois-Rivières ensemble",
+          "parti": "LDIV",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "",
+          "photo": "https://public.flourish.studio/uploads/784851/812a059d-1d15-4d85-acca-46d482f6151b.png"
+        }
+      ]
+    },
+    {
+      "commune": "Vieux-Fort",
+      "total_listes": 2,
+      "listes": [
+        {
+          "commune": "Vieux-Fort",
+          "nom": "Héric André",
+          "nom_alt": "",
+          "nom_liste": "Ensemble, poursuivons le travail engagé",
+          "parti": "GUSR - LDVC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/58443408-910c-4a3d-b165-aca5f1f1f4b3.png"
+        },
+        {
+          "commune": "Vieux-Fort",
+          "nom": "Rolland Plantier",
+          "nom_alt": "",
+          "nom_liste": "Le Rassemblement Vieux-Fortain",
+          "parti": "LDVG",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FF64AA",
+          "photo": "https://public.flourish.studio/uploads/784851/b9dbc989-783c-4ec9-a8ae-5dd90b6b0f68.png"
+        }
+      ]
+    },
+    {
+      "commune": "Vieux-Habitants",
+      "total_listes": 3,
+      "listes": [
+        {
+          "commune": "Vieux-Habitants",
+          "nom": "Leslie Géran",
+          "nom_alt": "",
+          "nom_liste": "An wout",
+          "parti": "LDVD",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#87BEFF",
+          "photo": "https://public.flourish.studio/uploads/784851/5318f9e9-8cce-4f4c-b3c5-7d6018715bcb.png"
+        },
+        {
+          "commune": "Vieux-Habitants",
+          "nom": "Jules Otto",
+          "nom_alt": "",
+          "nom_liste": "Continuons ensemble pour aller plus loin",
+          "parti": "Le Parti socialiste Guadeloupe - LSOC",
+          "sortant": "sortant",
+          "est_sortant": true,
+          "couleur_parti": "#F2125C",
+          "photo": "https://public.flourish.studio/uploads/784851/3acb00e5-ccdc-4aa5-a870-70ddccb3d1e0.png"
+        },
+        {
+          "commune": "Vieux-Habitants",
+          "nom": "Jennifer Linon",
+          "nom_alt": "",
+          "nom_liste": "S’engager pour Vieux-Habitants",
+          "parti": "GUSR - LDVC",
+          "sortant": "",
+          "est_sortant": false,
+          "couleur_parti": "#FFAA00",
+          "photo": "https://public.flourish.studio/uploads/784851/559cd2b2-6c42-498d-af59-ad21ce76d785.png"
+        }
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ config()
 
 const DEFAULT_SOURCE_PATH = path.resolve(
   process.cwd(),
-  '../tmp/flourish-electoral-lists/municipales-guadeloupe-2026.json',
+  'data/electoral-lists/municipales-guadeloupe-2026.json',
 )
 
 const COMMUNE_ALIASES = {

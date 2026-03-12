@@ -1,0 +1,382 @@
+{
+  "communes": [
+    {
+      "commune": "Cayenne",
+      "listes": [
+        {
+          "nom": "PHINERA-HORTH Marie-Laure",
+          "nom_liste": "VOTRE AVENIR CAYENNE 2050 NOTRE PRIORITÉ"
+        },
+        {
+          "nom": "TAOUMI Olivier",
+          "nom_liste": "CAYENNE A BESOIN DE VOUS"
+        },
+        {
+          "nom": "TROCHIMARA Sandra",
+          "nom_liste": "POUR CAYENNE, GARDONS NOTRE CAP"
+        },
+        {
+          "nom": "COVIS Fabien",
+          "nom_liste": "ENSEMBLE REINVENTONS CAYENNE"
+        },
+        {
+          "nom": "DUCLONA Bernadette",
+          "nom_liste": "CAYENNE RENAISSANCE"
+        }
+      ]
+    },
+    {
+      "commune": "Iracoubo",
+      "listes": [
+        {
+          "nom": "GOLITIN Albert",
+          "nom_liste": "IRACOUBO UNIS DANS NOTRE DIVERSITE"
+        },
+        {
+          "nom": "WILLIAM Enrico Renaud",
+          "nom_liste": "UNE NOUVELLE ERE POUR IRACOUBO"
+        }
+      ]
+    },
+    {
+      "commune": "Kourou",
+      "listes": [
+        {
+          "nom": "CAUGANT Sébastien Pierre Fernand",
+          "nom_liste": "LUTTE OUVRIERE-LE CAMP DES TRAVAILLEURS"
+        },
+        {
+          "nom": "RINGUET François",
+          "nom_liste": "VIVRE KOUROU ENSEMBLE"
+        },
+        {
+          "nom": "ANTOINETTE Stéphane",
+          "nom_liste": "REDORER LE BLASON DE KOUROU"
+        },
+        {
+          "nom": "ANTOINETTE Micheline",
+          "nom_liste": "OSONS POUR KOUROU"
+        },
+        {
+          "nom": "ANTOINETTE Jean-Etienne",
+          "nom_liste": "REPARER KOUROU ET AVANCER"
+        },
+        {
+          "nom": "RIMANE Michael",
+          "nom_liste": "AVENIR KOUROUCIEN"
+        },
+        {
+          "nom": "ANATOLE Dario",
+          "nom_liste": "KOUROU DEBOUT, ENSEMBLE POUR LE RENOUVEAU"
+        }
+      ]
+    },
+    {
+      "commune": "Macouria",
+      "listes": [
+        {
+          "nom": "ADELSON Gilles",
+          "nom_liste": "MACOURIA 2026 LA POURSUITE DE L'ENGAGEMENT"
+        },
+        {
+          "nom": "PAKA Julien",
+          "nom_liste": "UNE NOUVELLE VOIE POUR MACOURIA"
+        },
+        {
+          "nom": "PRINCE Emmanuel",
+          "nom_liste": "OSONS UN NOUVEAU CAP A MACOURIA"
+        },
+        {
+          "nom": "FORTUNE MONTINA Jean-Tously",
+          "nom_liste": "ENSEMBLE ECRIVONS UNE NOUVELLE PAGE"
+        }
+      ]
+    },
+    {
+      "commune": "Matoury",
+      "listes": [
+        {
+          "nom": "CIPPE Albanie",
+          "nom_liste": "Matoury Ensemble"
+        },
+        {
+          "nom": "GRAND- EMILE Eline",
+          "nom_liste": "Viv Matoury"
+        },
+        {
+          "nom": "FELIX Francesca",
+          "nom_liste": "Nouvelle énergie pour Matoury"
+        },
+        {
+          "nom": "LEANDRE Roland Fiacre",
+          "nom_liste": "ENSEMBLE CONSTRUISONS MATOURY AUTREMENT"
+        },
+        {
+          "nom": "SMOCK Serge",
+          "nom_liste": "Matoury 2026 - AVEC VOUS ENCORE PLUS LOIN"
+        },
+        {
+          "nom": "LOUREL Lina",
+          "nom_liste": "TOUS MATOURIENS, NOTRE AMBITION, VOTRE BIEN-ÊTRE"
+        }
+      ]
+    },
+    {
+      "commune": "Remire-Montjoly",
+      "listes": [
+        {
+          "nom": "PLENET Claude",
+          "nom_liste": "L'AVENIR S'ECRIT ENSEMBLE POUR REMIRE-MONTJOLY"
+        },
+        {
+          "nom": "BOUBA Philippe",
+          "nom_liste": "VOUS ET NOUS, ENSEMBLE POUR REMIRE-MONTJOLY"
+        }
+      ]
+    },
+    {
+      "commune": "Roura",
+      "listes": [
+        {
+          "nom": "DECHESNE Jean Joël",
+          "nom_liste": "A LA RECONQUETE DE NOS VALEURS"
+        },
+        {
+          "nom": "RICHÉ David",
+          "nom_liste": "ENSEMBLE REPRENONS NOTRE COMMUNE EN MAIN"
+        },
+        {
+          "nom": "HO-TIN-NOE Karen",
+          "nom_liste": "ROURA ENSEMBLE"
+        },
+        {
+          "nom": "NOKO Christian",
+          "nom_liste": "AVEC CHRISTIAN NOKO NOUS SOMMES PRETS POUR ROURA"
+        }
+      ]
+    },
+    {
+      "commune": "Sinnamary",
+      "listes": [
+        {
+          "nom": "JEREMIE Michel-Ange",
+          "nom_liste": "KONTRE POU NOU LÉVÉ SINNAMARY"
+        },
+        {
+          "nom": "COSSET Patrick Victor",
+          "nom_liste": "UN NOUVEAU SOUFFLE POUR BATIR DEMAIN"
+        }
+      ]
+    },
+    {
+      "commune": "Montsinéry-Tonnegrande",
+      "listes": [
+        {
+          "nom": "PHINERA-HORTH Georges Michel",
+          "nom_liste": "Unis pour améliorer le quotidien des habitants de MONTSINERY-TONNEGRANDE"
+        },
+        {
+          "nom": "LABEAU Patrick",
+          "nom_liste": "MONTSINERY-TONNEGRANDE \"PARTAGEONS NOTRE AVENIR\""
+        },
+        {
+          "nom": "PORTHOS Christian",
+          "nom_liste": "AGIR POUR MONTSINERY-TONNEGRANDE"
+        },
+        {
+          "nom": "DELAR Charles-Henri",
+          "nom_liste": "Agissons ensemble pour le bien-être de Tous"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Elie",
+      "listes": [
+        {
+          "nom": "JACARIA Véronique",
+          "nom_liste": "NOTRE COMMUNE NOTRE RESPONSABILITE"
+        }
+      ]
+    },
+    {
+      "commune": "Mana",
+      "listes": [
+        {
+          "nom": "BENTH Alberic",
+          "nom_liste": "MANA DEMAIN"
+        },
+        {
+          "nom": "JADFARD Jean-Claude",
+          "nom_liste": "NOUVEL ELAN MANANAIS"
+        },
+        {
+          "nom": "PAVANT Steeve",
+          "nom_liste": "CONSTRUISONS MANA AVEC VOUS"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Laurent-du-Maroni",
+      "listes": [
+        {
+          "nom": "PERSDAM Paul",
+          "nom_liste": "GUYANE ESPOIR"
+        },
+        {
+          "nom": "KARAM Wender",
+          "nom_liste": "LA NOUVELLE NAISSANCE"
+        },
+        {
+          "nom": "CHARLES Sophie",
+          "nom_liste": "DIVERSITÉ SAINT LAURENT POUR TOUS"
+        },
+        {
+          "nom": "ADAM Lénaïck",
+          "nom_liste": "NOTRE VILLE, NOTRE HISTOIRE, NOTRE AVENIR"
+        },
+        {
+          "nom": "BERTRAND Léon Louis",
+          "nom_liste": "UNIS POUR UN SEUL OBJECTIF SAINT-LAURENT DU MARONI"
+        }
+      ]
+    },
+    {
+      "commune": "Saül",
+      "listes": [
+        {
+          "nom": "CHARLES Marie-Hélène",
+          "nom_liste": "UNIS POUR SAÜL"
+        },
+        {
+          "nom": "TIMANE Tracy",
+          "nom_liste": "TOUS ENSEMBLE POUR SAÜL"
+        }
+      ]
+    },
+    {
+      "commune": "Maripasoula",
+      "listes": [
+        {
+          "nom": "CAZAL Chrislain",
+          "nom_liste": "AGIR ET CROIRE"
+        },
+        {
+          "nom": "DEKON Philippe",
+          "nom_liste": "VISION D'AVENIR"
+        },
+        {
+          "nom": "ABIENSO Jonathan",
+          "nom_liste": "MAINTENANT AGISSONS POUR L'AVENIR"
+        },
+        {
+          "nom": "ANELLI Serge",
+          "nom_liste": "Ensemble poursuivons le developpement"
+        }
+      ]
+    },
+    {
+      "commune": "Grand-Santi",
+      "listes": [
+        {
+          "nom": "DADA Félix",
+          "nom_liste": "D'UN GESTE, CONTINUONS A AVANCER, A GO ANGA FESHI FU GRAND-SANTI"
+        }
+      ]
+    },
+    {
+      "commune": "Apatou",
+      "listes": [
+        {
+          "nom": "EDWIN Moïse",
+          "nom_liste": "ALLIANCE CITOYENNE POUR LE RENOUVEAU D'APATOU"
+        },
+        {
+          "nom": "DOLIANKI Paul",
+          "nom_liste": "L'UNION POUR LA RELANCE DU DEVELOPPEMENT D'APATOU"
+        },
+        {
+          "nom": "GOUBIN Rosan",
+          "nom_liste": "MOUVEMENT INCLUSIF ET DEMOCRATIQUE"
+        }
+      ]
+    },
+    {
+      "commune": "Awala-Yalimapo",
+      "listes": [
+        {
+          "nom": "FEREIRA Jean-Paul",
+          "nom_liste": "AWALA-YALIMAPO,TERRE DE PARTAGE"
+        },
+        {
+          "nom": "JOSEPH Josy",
+          "nom_liste": "AVEC VOUS POUR AWALA-YALIMAPO"
+        }
+      ]
+    },
+    {
+      "commune": "Papaichton",
+      "listes": [
+        {
+          "nom": "DEIE Jules",
+          "nom_liste": "PAPAÏCHTON UNIS"
+        },
+        {
+          "nom": "LOBI Richard",
+          "nom_liste": "MAKANDI DENKI"
+        }
+      ]
+    },
+    {
+      "commune": "Régina",
+      "listes": [
+        {
+          "nom": "BAZIN Gautier",
+          "nom_liste": "REGINA-KAW, ANSANM AN NOU WÈ"
+        },
+        {
+          "nom": "DÉSERT Pierre",
+          "nom_liste": "Régina-Kaw, la force du travail vers le progrès"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Georges",
+      "listes": [
+        {
+          "nom": "NORINO Steve Jean-Paul",
+          "nom_liste": "OYAPOCKOIS ACTIFS POU DIMEN"
+        },
+        {
+          "nom": "ELFORT Georges",
+          "nom_liste": "FORCE D'ELAN ET D'ACTIONS AU QUOTIDIEN"
+        }
+      ]
+    },
+    {
+      "commune": "Ouanary",
+      "listes": [
+        {
+          "nom": "MESMIN Alain",
+          "nom_liste": "OUANARY PLUS FORT ENSEMBLE POUR REVITALISER NOTRE TERRITOIRE"
+        }
+      ]
+    },
+    {
+      "commune": "Camopi",
+      "listes": [
+        {
+          "nom": "YAWALOU Laurent",
+          "nom_liste": "WAYAPUKUWAN"
+        },
+        {
+          "nom": "MONERVILLE René",
+          "nom_liste": "LE CHANGEMENT C'EST MAINTENANT"
+        },
+        {
+          "nom": "CHANEL Joseph",
+          "nom_liste": "REPRENONS LE DESTIN EN MAIN"
+        }
+      ]
+    }
+  ]
+}

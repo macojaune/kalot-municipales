@@ -78,16 +78,14 @@ export function RegionSwitcher({ compact = false }: { compact?: boolean }) {
     setRegion(nextRegion)
     setIsOpen(false)
 
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !shouldUseRegionPrefix(pathname)) {
       return
     }
-
-    const nextPathname = shouldUseRegionPrefix(pathname) ? pathname : '/'
 
     void navigate({
       to: buildRegionHref(
         nextRegion,
-        nextPathname,
+        pathname,
         window.location.search,
         window.location.hash,
       ),

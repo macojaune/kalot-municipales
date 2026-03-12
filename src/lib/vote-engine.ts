@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { resolve as resolvePath } from 'node:path'
 import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
@@ -29,63 +30,65 @@ const ELECTION_PHASE_CACHE_TTL_MS = 60_000
 const LEADERBOARD_CACHE_TTL_MS = 15_000
 const ELECTORAL_LISTS_CACHE_TTL_MS = 30 * 60_000
 
-const GUADELOUPE_COMMUNES = [
-  'Anse-Bertrand',
-  'Baie-Mahault',
-  'Baillif',
-  'Basse-Terre',
-  'Bouillante',
-  'Capesterre Belle-Eau',
-  'Capesterre de Marie-Galante',
-  'Deshaies',
-  'Gourbeyre',
-  'Goyave',
-  'Grand-Bourg',
-  'La Desirade',
-  'Le Gosier',
-  'Lamentin',
-  'Le Moule',
-  'Les Abymes',
-  "Morne-a-l'Eau",
-  'Petit-Bourg',
-  'Petit-Canal',
-  'Pointe-a-Pitre',
-  'Pointe-Noire',
-  'Port-Louis',
-  'Saint-Claude',
-  'Saint-Francois',
-  'Saint-Louis',
-  'Sainte-Anne',
-  'Sainte-Rose',
-  'Terre-de-Bas',
-  'Terre-de-Haut',
-  'Trois-Rivieres',
-  'Vieux-Fort',
-  'Vieux-Habitants',
-] as const
+const ELECTORAL_SOURCE_PATHS: Partial<Record<Region, string>> = {
+  guadeloupe: resolvePath(
+    process.cwd(),
+    'data/electoral-lists/municipales-guadeloupe-2026.json',
+  ),
+  martinique: resolvePath(
+    process.cwd(),
+    'data/electoral-lists/municipales-martinique-2026.json',
+  ),
+  guyane: resolvePath(
+    process.cwd(),
+    'data/electoral-lists/municipales-guyane-2026.json',
+  ),
+}
 
-const ELECTORAL_SOURCE_URL = new URL(
-  '../../../tmp/flourish-electoral-lists/municipales-guadeloupe-2026.json',
-  import.meta.url,
-)
-
-const COMMUNE_ALIASES: Record<string, string> = {
-  'capesterre-belle-eau': 'Capesterre Belle-Eau',
-  'capesterre belle eau': 'Capesterre Belle-Eau',
-  'capesterre-de-marie-galante': 'Capesterre de Marie-Galante',
-  'capesterre de marie galante': 'Capesterre de Marie-Galante',
-  'la desirade': 'La Desirade',
-  'la-desirade': 'La Desirade',
-  'le lamentin': 'Lamentin',
-  lamentin: 'Lamentin',
-  "morne-a-l'eau": "Morne-a-l'Eau",
-  "morne a l'eau": "Morne-a-l'Eau",
-  'pointe-a-pitre': 'Pointe-a-Pitre',
-  'pointe a pitre': 'Pointe-a-Pitre',
-  'saint-francois': 'Saint-Francois',
-  'saint francois': 'Saint-Francois',
-  'trois-rivieres': 'Trois-Rivieres',
-  'trois rivieres': 'Trois-Rivieres',
+const REGION_COMMUNE_ALIASES: Partial<Record<Region, Record<string, string>>> = {
+  guadeloupe: {
+    'capesterre-belle-eau': 'Capesterre Belle-Eau',
+    'capesterre belle eau': 'Capesterre Belle-Eau',
+    'capesterre-de-marie-galante': 'Capesterre de Marie-Galante',
+    'capesterre de marie galante': 'Capesterre de Marie-Galante',
+    'la desirade': 'La Desirade',
+    'la-desirade': 'La Desirade',
+    'le lamentin': 'Lamentin',
+    lamentin: 'Lamentin',
+    "morne-a-l'eau": "Morne-a-l'Eau",
+    "morne a l'eau": "Morne-a-l'Eau",
+    'pointe-a-pitre': 'Pointe-a-Pitre',
+    'pointe a pitre': 'Pointe-a-Pitre',
+    'saint-francois': 'Saint-Francois',
+    'saint francois': 'Saint-Francois',
+    'trois-rivieres': 'Trois-Rivieres',
+    'trois rivieres': 'Trois-Rivieres',
+  },
+  martinique: {
+    "l ajoupa bouillon": "L'Ajoupa-Bouillon",
+    "l'ajoupa-bouillon": "L'Ajoupa-Bouillon",
+    'grand riviere': "Grand'Riviere",
+    "grand'riviere": "Grand'Riviere",
+    'les anses d arlet': "Les Anses-d'Arlet",
+    "les anses-d'arlet": "Les Anses-d'Arlet",
+    'la trinite': 'La Trinite',
+    'le francois': 'Le Francois',
+    'le lamentin': 'Le Lamentin',
+    'les trois ilets': 'Les Trois-Ilets',
+    'riviere pilote': 'Riviere-Pilote',
+    'riviere salee': 'Riviere-Salee',
+    'sainte luce': 'Sainte-Luce',
+    'le precheur': 'Le Precheur',
+  },
+  guyane: {
+    'awala yalimapo': 'Awala-Yalimapo',
+    'montsinery tonnegrande': 'Montsinery-Tonnegrande',
+    'remire montjoly': 'Remire-Montjoly',
+    regina: 'Regina',
+    saul: 'Saul',
+    'saint elie': 'Saint-Elie',
+    'saint georges': 'Saint-Georges',
+  },
 }
 
 type Db = ReturnType<typeof getDb>
@@ -188,9 +191,17 @@ function normalizeLooseText(input: string) {
     .trim()
 }
 
-function canonicalizeCommuneName(input: string) {
+function getCommuneAliases(region?: Region | null) {
+  if (!region) {
+    return {}
+  }
+
+  return REGION_COMMUNE_ALIASES[region] ?? {}
+}
+
+function canonicalizeCommuneName(input: string, region?: Region | null) {
   const normalized = normalizeLooseText(input)
-  const canonical = COMMUNE_ALIASES[normalized]
+  const canonical = getCommuneAliases(region)[normalized]
 
   if (canonical) {
     return canonical
@@ -199,14 +210,14 @@ function canonicalizeCommuneName(input: string) {
   return input.trim()
 }
 
-function getCommuneSlugCandidates(input: string) {
-  const canonicalName = canonicalizeCommuneName(input)
+function getCommuneSlugCandidates(input: string, region?: Region | null) {
+  const canonicalName = canonicalizeCommuneName(input, region)
   const slugCandidates = new Set<string>([
     slugify(canonicalName),
     slugify(input),
   ])
 
-  for (const [alias, candidate] of Object.entries(COMMUNE_ALIASES)) {
+  for (const [alias, candidate] of Object.entries(getCommuneAliases(region))) {
     if (candidate === canonicalName) {
       slugCandidates.add(slugify(alias))
     }
@@ -227,7 +238,7 @@ function getElectoralListSlug(input: {
 
 function getRegionCommuneSlugs(region: Region) {
   return COMMUNES[region].map((communeName) =>
-    slugify(canonicalizeCommuneName(communeName)),
+    slugify(canonicalizeCommuneName(communeName, region)),
   )
 }
 
@@ -304,8 +315,18 @@ async function resolveSessionRegion(
   return regions[0] ?? null
 }
 
-async function loadElectoralImportRows() {
-  const raw = await readFile(ELECTORAL_SOURCE_URL, 'utf8')
+function getElectoralSourcePath(region: Region) {
+  return ELECTORAL_SOURCE_PATHS[region] ?? null
+}
+
+async function loadElectoralImportRows(region: Region) {
+  const sourcePath = getElectoralSourcePath(region)
+
+  if (!sourcePath) {
+    throw new Error(`Aucune source electorale configuree pour ${region}.`)
+  }
+
+  const raw = await readFile(sourcePath, 'utf8')
   const parsed = JSON.parse(raw) as {
     communes?: Array<{
       commune?: string
@@ -320,7 +341,10 @@ async function loadElectoralImportRows() {
   const rows: ElectoralImportRow[] = []
 
   for (const communeEntry of parsed.communes ?? []) {
-    const communeName = canonicalizeCommuneName(communeEntry.commune ?? '')
+    const communeName = canonicalizeCommuneName(
+      communeEntry.commune ?? '',
+      region,
+    )
 
     for (const listEntry of communeEntry.listes ?? []) {
       const candidateName = listEntry.nom?.trim() ?? ''
@@ -733,9 +757,9 @@ async function getOrCreateUser(
   return created[0]
 }
 
-async function ensureCommune(db: Db, communeName: string) {
+async function ensureCommune(db: Db, communeName: string, region?: Region | null) {
   const { canonicalName, slugCandidates } =
-    getCommuneSlugCandidates(communeName)
+    getCommuneSlugCandidates(communeName, region)
   const slug = slugify(canonicalName)
   const existing = await db
     .select()
@@ -1140,18 +1164,19 @@ export async function seedDemoTracks() {
   return { created, total: existingCount + created }
 }
 
-export async function seedGuadeloupeCommunes() {
+export async function seedRegionCommunes(region: Region) {
   const db = getDb()
+  const targetCommunes = COMMUNES[region]
 
   const existingRows = await db
     .select({ name: communes.name })
     .from(communes)
-    .where(inArray(communes.name, [...GUADELOUPE_COMMUNES]))
+    .where(inArray(communes.name, [...targetCommunes]))
 
   const existingSet = new Set(existingRows.map((row) => row.name))
 
   let inserted = 0
-  for (const communeName of GUADELOUPE_COMMUNES) {
+  for (const communeName of targetCommunes) {
     if (existingSet.has(communeName)) {
       continue
     }
@@ -1165,19 +1190,23 @@ export async function seedGuadeloupeCommunes() {
 
   return {
     inserted,
-    totalTarget: GUADELOUPE_COMMUNES.length,
+    totalTarget: targetCommunes.length,
   }
 }
 
-export async function seedElectoralLists() {
+export async function seedGuadeloupeCommunes() {
+  return seedRegionCommunes('guadeloupe')
+}
+
+export async function seedElectoralLists(region: Region = 'guadeloupe') {
   const db = getDb()
-  const importedRows = await loadElectoralImportRows()
+  const importedRows = await loadElectoralImportRows(region)
 
   let created = 0
   let updated = 0
 
   for (const row of importedRows) {
-    const commune = await ensureCommune(db, row.communeName)
+    const commune = await ensureCommune(db, row.communeName, region)
     const slug = getElectoralListSlug({
       candidateName: row.candidateName,
       listName: row.listName,
@@ -1249,7 +1278,7 @@ export async function listElectoralListsForAdmin(input?: {
   const communeName = input?.communeName?.trim()
   const excludeListsWithActiveTracks =
     input?.excludeListsWithActiveTracks ?? false
-  const cacheKey = `electoral-lists:${input?.region ?? 'all'}:${communeName ? canonicalizeCommuneName(communeName) : 'all'}:${excludeListsWithActiveTracks ? 'available-only' : 'all'}`
+  const cacheKey = `electoral-lists:${input?.region ?? 'all'}:${communeName ? canonicalizeCommuneName(communeName, input?.region) : 'all'}:${excludeListsWithActiveTracks ? 'available-only' : 'all'}`
 
   return getOrSetServerCache(
     cacheKey,
@@ -1258,7 +1287,12 @@ export async function listElectoralListsForAdmin(input?: {
       const filters = []
 
       if (communeName) {
-        filters.push(eq(communes.name, canonicalizeCommuneName(communeName)))
+        filters.push(
+          eq(
+            communes.name,
+            canonicalizeCommuneName(communeName, input?.region),
+          ),
+        )
       }
 
       if (input?.region) {
@@ -2114,6 +2148,7 @@ export async function submitReport(input: {
 export async function listTracksForAdmin(input?: {
   includeInactive?: boolean
   limit?: number
+  region?: Region | null
 }) {
   const db = getDb()
   const limit = input?.limit ?? 200
@@ -2121,6 +2156,14 @@ export async function listTracksForAdmin(input?: {
   const filters = []
   if (!input?.includeInactive) {
     filters.push(eq(tracks.isActive, true))
+  }
+
+  if (input?.region) {
+    const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
+    if (regionCommuneSlugs.length === 0) {
+      return []
+    }
+    filters.push(inArray(communes.slug, regionCommuneSlugs))
   }
 
   const rows = await db

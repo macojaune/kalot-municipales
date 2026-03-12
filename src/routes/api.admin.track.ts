@@ -8,6 +8,7 @@ import {
   listTracksForAdmin,
 } from '../lib/vote-engine'
 import { deleteAudioFromR2, uploadAudioToR2 } from '../lib/r2'
+import { isRegion } from '../types/song'
 
 type CreateTrackPayload = {
   externalUserId?: string | null
@@ -95,6 +96,7 @@ export const Route = createFileRoute('/api/admin/track')({
       GET: withServerErrorLogging('/api/admin/track', async ({ request }) => {
         const url = new URL(request.url)
         const externalUserId = url.searchParams.get('externalUserId')
+        const regionParam = url.searchParams.get('region')
 
         const access = await assertAdminAccess({ externalUserId })
         if (!access.ok) {
@@ -109,6 +111,7 @@ export const Route = createFileRoute('/api/admin/track')({
         const tracks = await listTracksForAdmin({
           includeInactive,
           limit: Number.isNaN(parsedLimit) ? 200 : parsedLimit,
+          region: isRegion(regionParam) ? regionParam : null,
         })
 
         return json({

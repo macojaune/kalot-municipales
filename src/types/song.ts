@@ -48,39 +48,87 @@ export const COMMUNES: Record<Region, string[]> = {
     'Vieux-Habitants',
   ],
   martinique: [
-    'Fort-de-France',
-    'Le Lamentin',
-    'Le Robert',
-    'Schoelcher',
-    'Sainte-Marie',
-    'Le Francois',
+    "L'Ajoupa-Bouillon",
+    'Basse-Pointe',
+    'Bellefontaine',
+    'Case-Pilote',
     'Ducos',
-    'Saint-Joseph',
-    'Riviere-Pilote',
+    'Fonds-Saint-Denis',
+    'Fort-de-France',
+    "Grand'Riviere",
+    'Gros-Morne',
+    "Les Anses-d'Arlet",
+    'Les Trois-Ilets',
     'La Trinite',
+    'Le Lamentin',
+    'Le Carbet',
+    'Le Diamant',
+    'Le Francois',
+    'Le Lorrain',
+    'Le Marigot',
+    'Le Marin',
+    'Le Morne-Rouge',
+    'Le Morne-Vert',
+    'Le Precheur',
+    'Le Robert',
+    'Sainte-Marie',
+    'Saint-Esprit',
+    'Saint-Joseph',
+    'Saint-Pierre',
+    'Schoelcher',
+    'Macouba',
+    'Riviere-Salee',
+    'Riviere-Pilote',
+    'Sainte-Anne',
+    'Sainte-Luce',
+    'Le Vauclin',
   ],
   guyane: [
+    'Apatou',
+    'Awala-Yalimapo',
+    'Camopi',
     'Cayenne',
-    'Matoury',
-    'Saint-Laurent-du-Maroni',
+    'Grand-Santi',
+    'Iracoubo',
     'Kourou',
-    'Remire-Montjoly',
     'Macouria',
     'Mana',
     'Maripasoula',
+    'Matoury',
+    'Montsinery-Tonnegrande',
+    'Ouanary',
+    'Papaichton',
+    'Regina',
+    'Remire-Montjoly',
     'Sinnamary',
     'Roura',
+    'Saint-Elie',
+    'Saint-Georges',
+    'Saint-Laurent-du-Maroni',
+    'Saul',
   ],
 }
 
 export function getRegionForCommune(communeName: string): Region {
-  const normalized = communeName.trim().toLowerCase()
+  const normalized = communeName
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
 
   for (const [region, communes] of Object.entries(COMMUNES) as Array<
     [Region, string[]]
   >) {
     const match = communes.some(
-      (commune) => commune.toLowerCase() === normalized,
+      (commune) =>
+        commune
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, ' ')
+          .trim() === normalized,
     )
     if (match) {
       return region

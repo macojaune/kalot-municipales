@@ -1,0 +1,606 @@
+{
+  "communes": [
+    {
+      "commune": "Fort-de-France",
+      "listes": [
+        {
+          "nom": "JEAN-MARIE Gabriel",
+          "nom_liste": "COMBAT OUVRIER"
+        },
+        {
+          "nom": "MOREAU Steeve",
+          "nom_liste": "NOU DOUBOUT POU FODFWANS APY !"
+        },
+        {
+          "nom": "LAGUERRE Didier",
+          "nom_liste": "DEMOCRATES ET PROGRESSISTES"
+        },
+        {
+          "nom": "JOS Nathalie Marie Elisabeth",
+          "nom_liste": "AKSYON FOYAL - ANSANM POU LÉVÉ FODFWANS"
+        },
+        {
+          "nom": "CAROLE Francis",
+          "nom_liste": "DÉMARÉ FODFWANS"
+        }
+      ]
+    },
+    {
+      "commune": "Le Lamentin",
+      "listes": [
+        {
+          "nom": "OLINY Raoul",
+          "nom_liste": "POU AN LOT LANMANTIN"
+        },
+        {
+          "nom": "GIBON Sylvio Robert",
+          "nom_liste": "UNE FORCE COLLECTIVE POUR UN LAMENTIN AMBITIEUX"
+        },
+        {
+          "nom": "ZOBDA David",
+          "nom_liste": "LE LAMENTIN PLUS GRAND"
+        },
+        {
+          "nom": "DUNON Fabrice",
+          "nom_liste": "LE LAMENTIN FORT, LE LAMENTIN FIER"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Joseph",
+      "listes": [
+        {
+          "nom": "COLER Thierry",
+          "nom_liste": "AMBITIONS JOSEPHINES"
+        },
+        {
+          "nom": "MONPLAISIR Yan",
+          "nom_liste": "ENSEMBLE RÉUSSIR SAINT-JOSEPH"
+        },
+        {
+          "nom": "SAINT-HONORE Laurent",
+          "nom_liste": "UNE ENERGIE NOUVELLE POUR SAINT-JOSEPH"
+        }
+      ]
+    },
+    {
+      "commune": "Schoelcher",
+      "listes": [
+        {
+          "nom": "CHOMET Daniel",
+          "nom_liste": "SCHOELCHER DYNAMIQUE ET SOLIDAIRE"
+        },
+        {
+          "nom": "MALOUDA Noé Jean",
+          "nom_liste": "FOK SA CHANJÉ CHÈLCHÈ"
+        },
+        {
+          "nom": "JULTAT Eric",
+          "nom_liste": "FIERS"
+        },
+        {
+          "nom": "SAINTE-ROSE-ROSEMOND Franck",
+          "nom_liste": "CITOYENS SCHOELCHEROIS"
+        },
+        {
+          "nom": "MARMOT Didier",
+          "nom_liste": "L'UNION AVEC VIVRE A SCHOELCHER"
+        }
+      ]
+    },
+    {
+      "commune": "L'Ajoupa-Bouillon",
+      "listes": [
+        {
+          "nom": "BESUBE NINO Lydia",
+          "nom_liste": "L'UNION BOUILLONNAISE"
+        },
+        {
+          "nom": "ZABEAU José Sylvère",
+          "nom_liste": "LE RASSEMBLEMENT POPULAIRE BOUILLONNAIS"
+        },
+        {
+          "nom": "PHAROSE Lucia",
+          "nom_liste": "AGIR POUR AJOUPA"
+        },
+        {
+          "nom": "JOACHIM Thierry",
+          "nom_liste": "GRAND RASSEMBLEMENT BOUILLONNAIS"
+        }
+      ]
+    },
+    {
+      "commune": "Basse-Pointe",
+      "listes": [
+        {
+          "nom": "CASIMIRIUS Marie Thérèse",
+          "nom_liste": "DYNAMIQUE POINTOISE"
+        },
+        {
+          "nom": "CAPRON Kévin",
+          "nom_liste": "SYNERGIE POINTOISE"
+        }
+      ]
+    },
+    {
+      "commune": "Grand'Rivière",
+      "listes": [
+        {
+          "nom": "MARIE-LOUISE Jean-Louis",
+          "nom_liste": "GRAND-RIVIERE AVANT TOUT"
+        },
+        {
+          "nom": "MARIELLO Patrick",
+          "nom_liste": "LANBELYA BEL"
+        }
+      ]
+    },
+    {
+      "commune": "Gros-Morne",
+      "listes": [
+        {
+          "nom": "COUTURIER Gilbert",
+          "nom_liste": "UNITE GROS-MORNAISE"
+        },
+        {
+          "nom": "THALY-BARDOL Audrey",
+          "nom_liste": "AN CHIMEN POU DEMEN"
+        },
+        {
+          "nom": "TABAR Jonathan",
+          "nom_liste": "LE REVEIL AVEC AUDACE ENSEMBLE BATISSONS LE GROS-MORNE"
+        }
+      ]
+    },
+    {
+      "commune": "Le Lorrain",
+      "listes": [
+        {
+          "nom": "PAMPHILE Justin",
+          "nom_liste": "ENSEMBLE CONTINUONS À CONSTRUIRE LE LORRAIN"
+        },
+        {
+          "nom": "TANIC Tony Jean-Claude",
+          "nom_liste": "MOUVEMENT POPULAIRE LORRINOIS"
+        }
+      ]
+    },
+    {
+      "commune": "Macouba",
+      "listes": [
+        {
+          "nom": "GEORGE Herbert",
+          "nom_liste": "COLLECTIF MOUVEMENT CITOYEN DU MACOUBA"
+        },
+        {
+          "nom": "VARACAVOUDIN Jean-Charles",
+          "nom_liste": "MOUVEMENT AGIR POUR DEMAIN"
+        }
+      ]
+    },
+    {
+      "commune": "Le Marigot",
+      "listes": [
+        {
+          "nom": "YERRO Cynthia",
+          "nom_liste": "LE MARIGOT EN COMMUN"
+        },
+        {
+          "nom": "HERACLIDE Mylène",
+          "nom_liste": "DYNAMIQUE MARIGOTINE"
+        },
+        {
+          "nom": "BREDAS Médard Patrick",
+          "nom_liste": "L'ALLIANCE NOUVELLE"
+        },
+        {
+          "nom": "PERASTE Toussaint Joseph",
+          "nom_liste": "ENSEMBLE POUR UN MARIGOT FORT ET SOLIDAIRE"
+        }
+      ]
+    },
+    {
+      "commune": "Le Robert",
+      "listes": [
+        {
+          "nom": "BELLUNE Claude",
+          "nom_liste": "UNISSONS NOUS POUR FAIRE PROGRESSER LE ROBERT"
+        },
+        {
+          "nom": "JEAN-MARIE-ALPHONSINE Philippe",
+          "nom_liste": "AN LOT VIZION BA WOBÈ"
+        },
+        {
+          "nom": "MERINE Félix",
+          "nom_liste": "UN NOUVEAU CAP POUR LE ROBERT"
+        },
+        {
+          "nom": "FRANÇOIS-HAUGRIN Farell",
+          "nom_liste": "POU WOBÈ PLI DOUVAN"
+        }
+      ]
+    },
+    {
+      "commune": "Sainte-Marie",
+      "listes": [
+        {
+          "nom": "FRANCOIS-ENDELMONT Thierry Wenceslas",
+          "nom_liste": "SAINTE MARIE SE NOU"
+        },
+        {
+          "nom": "AZEROT Bruno Nestor",
+          "nom_liste": "NOU TOUJOU PARÉ"
+        },
+        {
+          "nom": "GRANDIN Georges-Henry",
+          "nom_liste": "SAINTE-MARIE MA FIERTE"
+        },
+        {
+          "nom": "LORDINOT Marie-Frédérique",
+          "nom_liste": "NOU SAMARITEN"
+        }
+      ]
+    },
+    {
+      "commune": "La Trinité",
+      "listes": [
+        {
+          "nom": "TELLE Patricia",
+          "nom_liste": "DYNAMIQUE TRINITÉENNE"
+        },
+        {
+          "nom": "LIMOL Leo",
+          "nom_liste": "PLA'NET TRINITE"
+        }
+      ]
+    },
+    {
+      "commune": "Les Anses-d'Arlet",
+      "listes": [
+        {
+          "nom": "CHARMET Michaël",
+          "nom_liste": "AGIR AVEC AUDACE POUR LES ANSES D'ARLETS"
+        },
+        {
+          "nom": "LARCHER Eugène",
+          "nom_liste": "LEZANSDALE POU TOUJOU"
+        },
+        {
+          "nom": "DINAL David",
+          "nom_liste": "L'ALLIANCE ARLESIENNE"
+        }
+      ]
+    },
+    {
+      "commune": "Le Diamant",
+      "listes": [
+        {
+          "nom": "TOUSSAY Hugues",
+          "nom_liste": "LIANNAJ DES FORCES DIAMANTINOISES"
+        },
+        {
+          "nom": "DUVILLE Ruddy",
+          "nom_liste": "LE DIAMANT RASSEMBLÉ - LA NOUVELLE DYNAMIQUE"
+        }
+      ]
+    },
+    {
+      "commune": "Ducos",
+      "listes": [
+        {
+          "nom": "NELLA Aurelie",
+          "nom_liste": "DUCOS S'ENGAGE"
+        },
+        {
+          "nom": "PETIT Philippe",
+          "nom_liste": "ENSEMBLE, CONSTRUISONS L'AVENIR DE DUCOS"
+        },
+        {
+          "nom": "MARIE-SAINTE Louis",
+          "nom_liste": "ENSEMBLE POUR DUCOS"
+        }
+      ]
+    },
+    {
+      "commune": "Le François",
+      "listes": [
+        {
+          "nom": "CLIO Teddy",
+          "nom_liste": "AN AKSYON AN TJÈ FRANSWA POU AN PLI BEL LANDEMEN"
+        },
+        {
+          "nom": "URSULET François-Christophe",
+          "nom_liste": "UNIR LE FRANCOIS CONSTRUIRE L'AVENIR"
+        },
+        {
+          "nom": "GRANDIN Lionel",
+          "nom_liste": "ANNOU KONTINIÉ TRAVAY ÉPI INITIATIVES FRANCISCAINES"
+        },
+        {
+          "nom": "LAGIER Alain Claude (claudy)",
+          "nom_liste": "FRANSWA PLI WO PLI FÓ"
+        }
+      ]
+    },
+    {
+      "commune": "Le Marin",
+      "listes": [
+        {
+          "nom": "BONNAIRE Michelle",
+          "nom_liste": "SOLIDAIRE POUR LE MARIN"
+        },
+        {
+          "nom": "TRITZ Yvonne",
+          "nom_liste": "MARIN AN KONFYANS"
+        },
+        {
+          "nom": "MIRANDE José",
+          "nom_liste": "DYNAMIQUE MARINOISE"
+        }
+      ]
+    },
+    {
+      "commune": "Rivière-Pilote",
+      "listes": [
+        {
+          "nom": "VEILLEUR Victor Vladimir",
+          "nom_liste": "UNITE PILOTINE"
+        },
+        {
+          "nom": "BEAUNOL Jean François Emmanuel",
+          "nom_liste": "AGIR POUR RIVIERE-PILOTE"
+        }
+      ]
+    },
+    {
+      "commune": "Rivière-Salée",
+      "listes": [
+        {
+          "nom": "LESUEUR André",
+          "nom_liste": "RASSEMBLEMENT SALEEN"
+        },
+        {
+          "nom": "MAURIOL Ronald",
+          "nom_liste": "INITIATIVES SALÉENNES"
+        },
+        {
+          "nom": "LOUIS-SIDNEY Jonathan",
+          "nom_liste": "FORCES SALÉENES"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Esprit",
+      "listes": [
+        {
+          "nom": "OURMIAH Edouard",
+          "nom_liste": "LE SAINT-ESPRIT EN MOUVEMENT"
+        },
+        {
+          "nom": "TIRAULT Fred Michel",
+          "nom_liste": "LE SAINT-ESPRIT AVANT TOUT"
+        }
+      ]
+    },
+    {
+      "commune": "Sainte-Anne",
+      "listes": [
+        {
+          "nom": "BELON Marie-Stéphanie",
+          "nom_liste": "MARIE-STEPHANIE BELON CABIT"
+        },
+        {
+          "nom": "ANGLIO Gérard",
+          "nom_liste": "NOUVELLE FORCE POUR SAINT-ANNE"
+        },
+        {
+          "nom": "GEMIEUX Jean-Michel",
+          "nom_liste": "SAINTE-ANNE À COEUR"
+        },
+        {
+          "nom": "FERDINAND Jérémie",
+          "nom_liste": "ANSANM POUR SAINTE-ANNE"
+        }
+      ]
+    },
+    {
+      "commune": "Sainte-Luce",
+      "listes": [
+        {
+          "nom": "MONROSE Nicaise",
+          "nom_liste": "L'ALTERNATIVE LUCÉENNE ANKÒ PLI LWEN"
+        },
+        {
+          "nom": "ALCIBIADE Chimène",
+          "nom_liste": "LE NOUVEAU SOUFFLE LUCÉEN"
+        }
+      ]
+    },
+    {
+      "commune": "Les Trois-Ilets",
+      "listes": [
+        {
+          "nom": "GRAT Nathalie",
+          "nom_liste": "TROIS-ILETS AVENIR - AN CHIMEN POU DEMEN"
+        },
+        {
+          "nom": "SAINTE-ROSE Serge",
+          "nom_liste": "RASSEMBLER, ECOUTER, AGIR POUR TROIS-ILETS : UN CAP, UNE EQUIPE, UN AVENIR"
+        },
+        {
+          "nom": "RENE-CORAIL Arnaud Adrien",
+          "nom_liste": "E.T.R.E 3I"
+        }
+      ]
+    },
+    {
+      "commune": "Le Vauclin",
+      "listes": [
+        {
+          "nom": "FARREAUX Jimmy",
+          "nom_liste": "ANSANM NOU KA FÉ'Y"
+        },
+        {
+          "nom": "ODONNAT Fernand Bruno",
+          "nom_liste": "MANMAY VOKLEN LE A RIVE"
+        },
+        {
+          "nom": "LEBRAVE Lucie",
+          "nom_liste": "ALTERNATIVE VAUCLINOISE"
+        }
+      ]
+    },
+    {
+      "commune": "Le Carbet",
+      "listes": [
+        {
+          "nom": "MONSTIN Gerard Antoine",
+          "nom_liste": "LE CARBET ANSANM ANSANM"
+        },
+        {
+          "nom": "BOUTRIN Louis",
+          "nom_liste": "LE CARBET D'ABORD !"
+        },
+        {
+          "nom": "GRIFFIT Louis-Georges",
+          "nom_liste": "UN CARBET SOLIDAIRE ET AMBITIEUX"
+        },
+        {
+          "nom": "ECANVIL Jean-Claude",
+          "nom_liste": "KOLÉ TÈT KOLÉ ZÉPOL POU KABÉ"
+        }
+      ]
+    },
+    {
+      "commune": "Case-Pilote",
+      "listes": [
+        {
+          "nom": "BOCQUET Jean-Marc",
+          "nom_liste": "TOUS POUR CASE-PILOTE"
+        },
+        {
+          "nom": "EUGÈNE Edson",
+          "nom_liste": "CASE-PILOTE UNIS POUR L'AVENIR"
+        }
+      ]
+    },
+    {
+      "commune": "Fonds-Saint-Denis",
+      "listes": [
+        {
+          "nom": "JEAN-BAPTISTE Fred Emmanuel",
+          "nom_liste": "GÉNÉRATIONS AMBITION AVENIR"
+        },
+        {
+          "nom": "MICHANOL Frédérique",
+          "nom_liste": "FON SEN-DINI PLI WO"
+        },
+        {
+          "nom": "ROMANA Henri",
+          "nom_liste": "FONDS-SAINT-DENIS DE DEMAIN"
+        }
+      ]
+    },
+    {
+      "commune": "Le Morne-Rouge",
+      "listes": [
+        {
+          "nom": "MAUZOLE Andréa",
+          "nom_liste": "NOUVEL ÉLAN PELÉEN"
+        },
+        {
+          "nom": "DULYS-PETIT Jenny",
+          "nom_liste": "LIANNAJ BA MONWOUJ"
+        },
+        {
+          "nom": "HENRY Hilario Emile",
+          "nom_liste": "NOUVELLE GENERATION PELEENNE"
+        },
+        {
+          "nom": "MALIDOR Jean Joseph",
+          "nom_liste": "L'UNION POUR LE RÉVEIL PÉLÉEN"
+        }
+      ]
+    },
+    {
+      "commune": "Le Prêcheur",
+      "listes": [
+        {
+          "nom": "CAZAL Louison",
+          "nom_liste": "ANSANM POU NOU LÉVÉ PRÊCHÈ PLI WO"
+        },
+        {
+          "nom": "DUTON Germain",
+          "nom_liste": "NOU DI'Y, NOU FÈ'Y BA PRÉCHÈ"
+        },
+        {
+          "nom": "JOSEPH-ANGELIQUE Guylène",
+          "nom_liste": "ANNOU MACHE ANSANM"
+        },
+        {
+          "nom": "LIMIER Nadia",
+          "nom_liste": "PRÉCHÈ AN AKSION"
+        },
+        {
+          "nom": "CAZAL Jean-Pierre",
+          "nom_liste": "MARMAILLE PRÊCHÈ DOUBOUT"
+        },
+        {
+          "nom": "NADEAU Roger",
+          "nom_liste": "NOUVEL ELAN POUR LE PRECHEUR"
+        }
+      ]
+    },
+    {
+      "commune": "Saint-Pierre",
+      "listes": [
+        {
+          "nom": "LARADE-EUSTACHE Ludmila",
+          "nom_liste": "AGISSONS POUR SAINT-PIERRE"
+        },
+        {
+          "nom": "RAPHA Christian",
+          "nom_liste": "FAIRE GAGNER SAINT-PIERRE"
+        },
+        {
+          "nom": "LOWINSKI Kevin",
+          "nom_liste": "UNION PIERROTINE"
+        }
+      ]
+    },
+    {
+      "commune": "Le Morne-Vert",
+      "listes": [
+        {
+          "nom": "SALIBER Karine",
+          "nom_liste": "AN LOT BALAN POU MON VE"
+        },
+        {
+          "nom": "SERBIN Angèle",
+          "nom_liste": "ANSANM POU MÒN VÈ"
+        }
+      ]
+    },
+    {
+      "commune": "Bellefontaine",
+      "listes": [
+        {
+          "nom": "ISMAIN Felix",
+          "nom_liste": "BELLEFONTAINE AVANT TOUT"
+        },
+        {
+          "nom": "AVININ Ugo",
+          "nom_liste": "DYNAMIQUE BELLEFONTAINE"
+        },
+        {
+          "nom": "CHARLES-DONATIEN Servius",
+          "nom_liste": "BELLEFONTAINE DOUBOUT'"
+        },
+        {
+          "nom": "SUIVANT Michel",
+          "nom_liste": "UN NOUVEL ELAN POUR BELLEFONTAINE YON EPI LOT"
+        }
+      ]
+    }
+  ]
+}
