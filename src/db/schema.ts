@@ -19,12 +19,24 @@ export const users = sqliteTable('users', {
 
 export const communes = sqliteTable('communes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull().unique(),
-  slug: text('slug').notNull().unique(),
+  region: text('region', {
+    enum: ['guadeloupe', 'martinique', 'guyane'],
+  }).notNull(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull(),
   createdAt: text('created_at')
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
-})
+}, (table) => ({
+  regionNameUnique: uniqueIndex('communes_region_name_unique').on(
+    table.region,
+    table.name,
+  ),
+  regionSlugUnique: uniqueIndex('communes_region_slug_unique').on(
+    table.region,
+    table.slug,
+  ),
+}))
 
 export const artists = sqliteTable('artists', {
   id: integer('id').primaryKey({ autoIncrement: true }),

@@ -109,30 +109,39 @@ export const COMMUNES: Record<Region, string[]> = {
   ],
 }
 
-export function getRegionForCommune(communeName: string): Region {
-  const normalized = communeName
+function normalizeCommuneLookup(communeName: string) {
+  return communeName
     .trim()
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
+}
+
+export function getRegionsForCommune(communeName: string): Region[] {
+  const normalized = normalizeCommuneLookup(communeName)
+  const matches: Region[] = []
 
   for (const [region, communes] of Object.entries(COMMUNES) as Array<
     [Region, string[]]
   >) {
     const match = communes.some(
-      (commune) =>
-        commune
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, ' ')
-          .trim() === normalized,
+      (commune) => normalizeCommuneLookup(commune) === normalized,
     )
     if (match) {
-      return region
+      matches.push(region)
     }
+  }
+
+  return matches
+}
+
+export function getRegionForCommune(communeName: string): Region {
+  const [region] = getRegionsForCommune(communeName)
+
+  if (region) {
+    return region
   }
 
   return 'guadeloupe'

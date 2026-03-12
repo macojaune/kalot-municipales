@@ -18,19 +18,22 @@ export function RegionSelector({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background text-grain relative overflow-hidden">
       <div className="speaker-grill" />
-      <div className="w-full max-w-sm space-y-8 animate-fade-in">
-        <div className="text-center space-y-3">
-          <div className="space-y-4">
-            <h1 className="text-6xl font-display font-bold leading-[0.9] text-foreground md:text-8xl">
-              <span className="text-glow-white">KALOT</span>
-              <br />
-              <span className="text-primary text-glow-green">MUNICIPALES</span>
-            </h1>
-            <p className="text-xl font-display font-black text-primary text-glow-green">
+      <div className="w-full max-w-sm space-y-8 animate-fade-in sm:max-w-md">
+        <div className="text-center space-y-4">
+          <div className="space-y-5">
+            <div className="space-y-1.5 leading-none">
+              <p className="font-display font-bold tracking-[-0.04em] text-foreground text-glow-white text-[clamp(4.4rem,20vw,7.6rem)]">
+                KALOT
+              </p>
+              <p className="font-display font-bold tracking-[-0.05em] text-primary text-glow-green text-[clamp(2.9rem,13vw,6.5rem)] whitespace-nowrap">
+                MUNICIPALES
+              </p>
+            </div>
+            <p className="text-lg font-display font-black uppercase tracking-[-0.03em] text-primary text-glow-green sm:text-xl">
               Choisis ta region
             </p>
           </div>
-          <p className="text-muted-foreground font-body">
+          <p className="mx-auto max-w-xs text-muted-foreground font-body sm:max-w-sm">
             Chaque territoire a ses propres sons de campagne
           </p>
         </div>

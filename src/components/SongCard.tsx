@@ -45,21 +45,11 @@ export function SongCard({
   return (
     <div
       className={`relative neon-panel flex flex-col gap-3 rounded-xl border-2 p-3 transition-shadow ${accentClasses} ${animationClass || ''} ${
-        disabled
-          ? 'cursor-not-allowed opacity-95'
-          : 'cursor-pointer hover:shadow-[0_0_22px_rgba(255,255,255,0.08)]'
+        disabled ? 'cursor-not-allowed opacity-95' : 'cursor-default'
       } ${className || ''}`}
     >
-      <button
-        type="button"
-        onClick={onVote}
-        disabled={disabled}
-        aria-label={`Voter pour ${track.title}`}
-        className="absolute inset-0 z-0 rounded-xl"
-      />
-
-      <div className="pointer-events-none relative z-10 flex h-full flex-col gap-3 text-left">
-        <div className="pointer-events-auto flex items-center gap-3">
+      <div className="relative flex h-full flex-col gap-3 text-left">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onPlay}
@@ -124,7 +114,7 @@ export function SongCard({
           </p>
         </div>
 
-        <div className="mt-auto w-full pt-1.5 pointer-events-auto">
+        <div className="mt-auto w-full pt-1.5">
           <NeonButton
             color={isChampion ? 'green' : 'blue'}
             size="md"

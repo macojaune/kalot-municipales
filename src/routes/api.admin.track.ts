@@ -13,6 +13,7 @@ import { isRegion } from '../types/song'
 type CreateTrackPayload = {
   externalUserId?: string | null
   electoralListId?: number | null
+  region?: string | null
   title?: string
   artistName?: string | null
   isAiGenerated?: boolean
@@ -58,6 +59,10 @@ async function parseCreateTrackPayload(request: Request): Promise<CreateTrackPay
           ? formData.get('externalUserId')
           : null,
       electoralListId: parseOptionalNumber(formData.get('electoralListId')),
+      region:
+        typeof formData.get('region') === 'string'
+          ? formData.get('region')
+          : null,
       title:
         typeof formData.get('title') === 'string' ? formData.get('title') : '',
       artistName:
@@ -169,6 +174,7 @@ export const Route = createFileRoute('/api/admin/track')({
             title: body.title,
             artistName: body.artistName,
             isAiGenerated: body.isAiGenerated,
+            region: isRegion(body.region) ? body.region : null,
             communeName: body.communeName,
             listName: body.listName,
             candidateName: body.candidateName,

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { resolve as resolvePath } from 'node:path'
-import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, notInArray, or, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
   aiGuesses,
@@ -16,7 +16,12 @@ import {
   voteSessions,
   votes,
 } from '../db/schema'
-import { COMMUNES, getRegionForCommune, type Region } from '../types/song'
+import {
+  COMMUNES,
+  getRegionForCommune,
+  getRegionsForCommune,
+  type Region,
+} from '../types/song'
 import { getOrSetServerCache, invalidateServerCache } from './server-cache'
 
 const STARTING_RATING = 1200
@@ -111,6 +116,7 @@ type TrackView = {
   artistName: string
   communeName: string
   communeSlug: string
+  communeRegion: Region
   listName: string | null
   candidateName: string | null
 }
@@ -120,6 +126,7 @@ type ElectoralListReference = {
   communeId: number
   communeName: string
   communeSlug: string
+  communeRegion: Region
   listName: string
   candidateName: string | null
   photoUrl: string | null
@@ -243,29 +250,28 @@ function getRegionCommuneSlugs(region: Region) {
 }
 
 async function resolveRegionCommuneIds(db: Db, region: Region) {
-  const regionCommuneSlugs = getRegionCommuneSlugs(region)
-
-  if (regionCommuneSlugs.length === 0) {
-    return []
-  }
-
   const rows = await db
     .select({ id: communes.id })
     .from(communes)
-    .where(inArray(communes.slug, regionCommuneSlugs))
+    .where(eq(communes.region, region))
 
   return rows.map((row) => row.id)
 }
 
-async function getCommuneBySlug(db: Db, slug: string) {
+async function getCommuneBySlug(db: Db, slug: string, region?: Region | null) {
   const rows = await db
     .select({
       id: communes.id,
+      region: communes.region,
       name: communes.name,
       slug: communes.slug,
     })
     .from(communes)
-    .where(eq(communes.slug, slug))
+    .where(
+      region
+        ? and(eq(communes.slug, slug), eq(communes.region, region))
+        : eq(communes.slug, slug),
+    )
     .limit(1)
 
   return rows.at(0) ?? null
@@ -275,6 +281,7 @@ async function getCommuneById(db: Db, communeId: number) {
   const rows = await db
     .select({
       id: communes.id,
+      region: communes.region,
       name: communes.name,
       slug: communes.slug,
     })
@@ -296,7 +303,7 @@ async function resolveSessionRegion(
 ) {
   if (typeof session.communeId === 'number') {
     const commune = await getCommuneById(db, session.communeId)
-    return commune ? getRegionForCommune(commune.name) : null
+    return commune?.region ?? null
   }
 
   const activeTracks = await getTrackViewsByIds(
@@ -305,7 +312,7 @@ async function resolveSessionRegion(
     session.electionRound,
   )
   const regions = Array.from(
-    new Set(activeTracks.map((track) => getRegionForCommune(track.communeName))),
+    new Set(activeTracks.map((track) => track.communeRegion)),
   )
 
   if (regions.length !== 1) {
@@ -757,14 +764,42 @@ async function getOrCreateUser(
   return created[0]
 }
 
+function resolveCommuneRegion(
+  communeName: string,
+  region?: Region | null,
+): Region {
+  if (region) {
+    return region
+  }
+
+  const matchingRegions = getRegionsForCommune(communeName)
+
+  if (matchingRegions.length > 1) {
+    throw new Error(
+      `La region est requise pour la commune "${communeName.trim()}".`,
+    )
+  }
+
+  return matchingRegions[0] ?? getRegionForCommune(communeName)
+}
+
 async function ensureCommune(db: Db, communeName: string, region?: Region | null) {
   const { canonicalName, slugCandidates } =
     getCommuneSlugCandidates(communeName, region)
+  const resolvedRegion = resolveCommuneRegion(canonicalName, region)
   const slug = slugify(canonicalName)
   const existing = await db
     .select()
     .from(communes)
-    .where(inArray(communes.slug, slugCandidates))
+    .where(
+      and(
+        eq(communes.region, resolvedRegion),
+        or(
+          eq(communes.name, canonicalName),
+          inArray(communes.slug, slugCandidates),
+        ),
+      ),
+    )
     .limit(1)
 
   if (existing[0]) {
@@ -772,6 +807,7 @@ async function ensureCommune(db: Db, communeName: string, region?: Region | null
       await db
         .update(communes)
         .set({
+          region: resolvedRegion,
           name: canonicalName,
           slug,
         })
@@ -779,6 +815,7 @@ async function ensureCommune(db: Db, communeName: string, region?: Region | null
 
       return {
         ...existing[0],
+        region: resolvedRegion,
         name: canonicalName,
         slug,
       }
@@ -788,6 +825,7 @@ async function ensureCommune(db: Db, communeName: string, region?: Region | null
   }
 
   await db.insert(communes).values({
+    region: resolvedRegion,
     name: canonicalName,
     slug,
   })
@@ -795,7 +833,7 @@ async function ensureCommune(db: Db, communeName: string, region?: Region | null
   const created = await db
     .select()
     .from(communes)
-    .where(eq(communes.slug, slug))
+    .where(and(eq(communes.slug, slug), eq(communes.region, resolvedRegion)))
     .limit(1)
 
   if (!created[0]) {
@@ -943,6 +981,7 @@ async function getElectoralListReferenceById(
       communeId: communes.id,
       communeName: communes.name,
       communeSlug: communes.slug,
+      communeRegion: communes.region,
       listName: electoralLists.name,
       candidateName: electoralLists.candidateName,
       photoUrl: electoralLists.photoUrl,
@@ -960,6 +999,7 @@ export async function createTrack(input: {
   title?: string | null
   artistName?: string | null
   communeName?: string
+  region?: Region | null
   listName?: string | null
   candidateName?: string | null
   streamUrl?: string | null
@@ -1005,7 +1045,7 @@ export async function createTrack(input: {
       throw new Error('Commune name is required')
     }
 
-    const commune = await ensureCommune(db, input.communeName)
+    const commune = await ensureCommune(db, input.communeName, input.region)
     resolvedCommuneId = commune.id
     resolvedCommuneName = commune.name
 
@@ -1156,6 +1196,7 @@ export async function seedDemoTracks() {
   for (const track of demoTracks) {
     await createTrack({
       ...track,
+      region: 'guadeloupe',
       isSeed: true,
     })
     created += 1
@@ -1171,7 +1212,7 @@ export async function seedRegionCommunes(region: Region) {
   const existingRows = await db
     .select({ name: communes.name })
     .from(communes)
-    .where(inArray(communes.name, [...targetCommunes]))
+    .where(and(eq(communes.region, region), inArray(communes.name, [...targetCommunes])))
 
   const existingSet = new Set(existingRows.map((row) => row.name))
 
@@ -1182,6 +1223,7 @@ export async function seedRegionCommunes(region: Region) {
     }
 
     await db.insert(communes).values({
+      region,
       name: communeName,
       slug: slugify(communeName),
     })
@@ -1296,11 +1338,7 @@ export async function listElectoralListsForAdmin(input?: {
       }
 
       if (input?.region) {
-        const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
-        if (regionCommuneSlugs.length === 0) {
-          return []
-        }
-        filters.push(inArray(communes.slug, regionCommuneSlugs))
+        filters.push(eq(communes.region, input.region))
       }
 
       const rows = await db
@@ -1362,7 +1400,7 @@ export async function listElectoralListsForAdmin(input?: {
           continue
         }
 
-        const existingCommune = communesMap.get(row.communeName)
+        const existingCommune = communesMap.get(String(row.communeId))
         if (existingCommune) {
           existingCommune.lists.push({
             id: row.id,
@@ -1374,7 +1412,7 @@ export async function listElectoralListsForAdmin(input?: {
           continue
         }
 
-        communesMap.set(row.communeName, {
+        communesMap.set(String(row.communeId), {
           id: row.communeId,
           name: row.communeName,
           slug: row.communeSlug,
@@ -1512,11 +1550,7 @@ async function listEligibleCommunesForRound1(db: Db, region?: Region | null) {
   const filters = [eq(tracks.isActive, true)]
 
   if (region) {
-    const regionCommuneSlugs = getRegionCommuneSlugs(region)
-    if (regionCommuneSlugs.length === 0) {
-      return []
-    }
-    filters.push(inArray(communes.slug, regionCommuneSlugs))
+    filters.push(eq(communes.region, region))
   }
 
   const rows = await db
@@ -1602,7 +1636,7 @@ export async function startVoteSession(input: {
 
   const requestedCommune =
     phase === 'round1' && input.communeSlug
-      ? await getCommuneBySlug(db, input.communeSlug)
+      ? await getCommuneBySlug(db, input.communeSlug, input.region)
       : null
 
   if (phase === 'round1' && input.communeSlug && !requestedCommune) {
@@ -1616,7 +1650,7 @@ export async function startVoteSession(input: {
   if (
     requestedCommune &&
     input.region &&
-    getRegionForCommune(requestedCommune.name) !== input.region
+    requestedCommune.region !== input.region
   ) {
     return {
       ok: false as const,
@@ -2023,11 +2057,7 @@ export async function getLeaderboard(input?: {
     }
 
     if (input?.region) {
-      const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
-      if (regionCommuneSlugs.length === 0) {
-        return []
-      }
-      filters.push(inArray(communes.slug, regionCommuneSlugs))
+      filters.push(eq(communes.region, input.region))
     }
 
     const baseQuery = db
@@ -2159,11 +2189,7 @@ export async function listTracksForAdmin(input?: {
   }
 
   if (input?.region) {
-    const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
-    if (regionCommuneSlugs.length === 0) {
-      return []
-    }
-    filters.push(inArray(communes.slug, regionCommuneSlugs))
+    filters.push(eq(communes.region, input.region))
   }
 
   const rows = await db

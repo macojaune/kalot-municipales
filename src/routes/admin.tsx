@@ -214,6 +214,9 @@ function AdminPageContent() {
       payload.set('title', form.title)
       payload.set('artistName', form.artistName)
       payload.set('isAiGenerated', String(form.isAiGenerated))
+      if (region) {
+        payload.set('region', region)
+      }
 
       if (form.communeName) {
         payload.set('communeName', form.communeName)
