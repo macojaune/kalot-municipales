@@ -6,6 +6,7 @@ import { SongCard } from '../components/SongCard'
 import { CrownIcon } from '../components/icons/CrownIcon'
 import { trackEvent } from '../lib/analytics'
 import { buildSeo } from '../lib/seo'
+import { useRegionPath } from '../lib/region-routing'
 import {
   clearActiveSessionId,
   getActiveSessionId,
@@ -49,8 +50,10 @@ export const Route = createFileRoute('/duel')({
   component: DuelPage,
 })
 
-function DuelPage() {
+export function DuelPage() {
   const navigate = useNavigate()
+  const classementHref = useRegionPath('/classement')
+  const resultsHref = useRegionPath('/results')
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [champion, setChampion] = useState<DuelTrack | null>(null)
@@ -194,7 +197,7 @@ function DuelPage() {
     if (payload.status === 'completed') {
       setLastSummary(payload.summary)
       clearActiveSessionId()
-      void navigate({ to: '/results' })
+      void navigate({ to: resultsHref })
       return
     }
 
@@ -278,7 +281,7 @@ function DuelPage() {
       if (response.status === 'completed') {
         setLastSummary(response.summary)
         clearActiveSessionId()
-        void navigate({ to: '/results' })
+        void navigate({ to: resultsHref })
         return
       }
 
@@ -395,7 +398,7 @@ function DuelPage() {
           type="button"
           onClick={() => {
             trackEvent('duel_quit_click')
-            void navigate({ to: '/classement' })
+            void navigate({ to: classementHref })
           }}
           className="inline-flex min-h-9 items-center rounded-full border border-border px-3 text-[11px] font-display tracking-widest text-muted-foreground transition-colors hover:border-primary hover:text-primary"
         >

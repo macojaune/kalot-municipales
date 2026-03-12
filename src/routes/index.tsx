@@ -8,6 +8,7 @@ import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
 import { NeonButton } from '../components/soundsystem/NeonButton'
 import { ScrollingTicker } from '../components/soundsystem/ScrollingTicker'
 import { trackEvent } from '../lib/analytics'
+import { useRegionPath, useResolvedRegion } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
 import {
   getDisplayName,
@@ -35,7 +36,7 @@ export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
-function HomePage() {
+export function HomePage() {
   if (!clerkEnabled) {
     return <HomePageContent />
   }
@@ -47,6 +48,7 @@ function AuthenticatedHomePage() {
   const navigate = useNavigate()
   const { openSignIn, signOut } = useClerk()
   const { user } = useUser()
+  const homeHref = useRegionPath('/')
   return (
     <HomePageContent
       user={user}
@@ -55,7 +57,7 @@ function AuthenticatedHomePage() {
           fallbackRedirectUrl: window.location.href,
         })
       }
-      onSignOut={() => signOut({ redirectUrl: '/' })}
+      onSignOut={() => signOut({ redirectUrl: homeHref })}
       navigate={navigate}
     />
   )
@@ -74,6 +76,10 @@ function HomePageContent({
   onSignOut,
   navigate,
 }: HomePageContentProps = {}) {
+  const classementHref = useRegionPath('/classement')
+  const duelHref = useRegionPath('/duel')
+  const submitTrackHref = useRegionPath('/ajouter-son')
+  const resolvedRegion = useResolvedRegion()
   const safeNavigate = useNavigate()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -109,8 +115,13 @@ function HomePageContent({
   }, [isUserMenuOpen])
 
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'home-full'],
-    queryFn: () => getJson<LeaderboardResponse>('/api/leaderboard?limit=20'),
+    queryKey: ['leaderboard', 'home-full', resolvedRegion],
+    queryFn: () =>
+      getJson<LeaderboardResponse>(
+        `/api/leaderboard?limit=20${
+          resolvedRegion ? `&region=${encodeURIComponent(resolvedRegion)}` : ''
+        }`,
+      ),
     staleTime: 60_000,
     refetchInterval: 60_000,
     refetchOnWindowFocus: false,
@@ -151,6 +162,7 @@ function HomePageContent({
       return postJson<StartSessionResponse>('/api/vote/start', {
         externalUserId,
         username: displayName,
+        region: resolvedRegion ?? null,
       })
     },
     onSuccess: async (response) => {
@@ -161,7 +173,7 @@ function HomePageContent({
 
       setActiveSessionId(response.sessionId)
       setFeedback(null)
-      await (navigate ?? safeNavigate)({ to: '/duel' })
+      await (navigate ?? safeNavigate)({ to: duelHref })
     },
     onError: (error) => {
       setFeedback(
@@ -281,7 +293,7 @@ function HomePageContent({
             </NeonButton>
 
             <Link
-              to="/classement"
+              to={classementHref}
               onClick={() => {
                 trackEvent('home_classement_click')
               }}
@@ -292,7 +304,7 @@ function HomePageContent({
 
             <div className="text-center">
               <Link
-                to="/ajouter-son"
+                to={submitTrackHref}
                 onClick={() => {
                   trackEvent('home_add_track_click')
                 }}
@@ -304,7 +316,10 @@ function HomePageContent({
           </section>
 
           {feedback ? (
-            <p aria-live="polite" className="text-center font-body text-sm text-accent">
+            <p
+              aria-live="polite"
+              className="text-center font-body text-sm text-accent"
+            >
               {feedback}
             </p>
           ) : null}
@@ -328,7 +343,6 @@ function HomePageContent({
           </div>
           <ScrollingTicker items={tickerItems} />
         </div>
-
       </div>
     </Layout>
   )

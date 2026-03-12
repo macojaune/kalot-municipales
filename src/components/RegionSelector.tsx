@@ -2,7 +2,11 @@ import { useRegion } from '../context/RegionContext'
 import type { Region } from '../types/song'
 import { REGION_LABELS } from '../types/song'
 
-export function RegionSelector() {
+export function RegionSelector({
+  onSelect,
+}: {
+  onSelect?: (region: Region) => void
+}) {
   const { setRegion } = useRegion()
 
   const regions: Array<{ id: Region; color: string }> = [
@@ -16,9 +20,16 @@ export function RegionSelector() {
       <div className="speaker-grill" />
       <div className="w-full max-w-sm space-y-8 animate-fade-in">
         <div className="text-center space-y-3">
-          <h1 className="text-3xl font-display font-black text-primary text-glow-green">
-            Choisis ta region
-          </h1>
+          <div className="space-y-4">
+            <h1 className="text-6xl font-display font-bold leading-[0.9] text-foreground md:text-8xl">
+              <span className="text-glow-white">KALOT</span>
+              <br />
+              <span className="text-primary text-glow-green">MUNICIPALES</span>
+            </h1>
+            <p className="text-xl font-display font-black text-primary text-glow-green">
+              Choisis ta region
+            </p>
+          </div>
           <p className="text-muted-foreground font-body">
             Chaque territoire a ses propres sons de campagne
           </p>
@@ -29,7 +40,10 @@ export function RegionSelector() {
             <button
               key={region.id}
               type="button"
-              onClick={() => setRegion(region.id)}
+              onClick={() => {
+                setRegion(region.id)
+                onSelect?.(region.id)
+              }}
               className={`w-full py-5 px-6 rounded-xl border-2 border-border bg-card/80 text-card-foreground font-display font-bold text-lg neon-panel
                 hover:border-primary hover:box-glow-green transition-all active:scale-[0.97]
                 flex items-center gap-4`}

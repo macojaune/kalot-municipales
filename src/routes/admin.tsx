@@ -64,6 +64,31 @@ type AdminElectoralListResponse =
       message: string
     }
 
+type AdminBlindtestStatsResponse =
+  | {
+      ok: true
+      stats: Array<{
+        id: number
+        title: string
+        isActive: boolean
+        artistName: string
+        communeName: string
+        listName: string | null
+        candidateName: string | null
+        actualLabel: 'ai' | 'human'
+        totalAnswers: number
+        guessedAiPercentage: number
+        guessedHumanPercentage: number
+        accuracyPercentage: number
+        ambiguityScore: number
+      }>
+    }
+  | {
+      ok: false
+      code: string
+      message: string
+    }
+
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/admin')({
@@ -142,9 +167,22 @@ function AdminPageContent() {
     refetchOnWindowFocus: false,
   })
 
+  const blindtestStatsQuery = useQuery({
+    queryKey: ['admin-blindtest-stats'],
+    queryFn: () =>
+      getJson<AdminBlindtestStatsResponse>(
+        `/api/admin/blindtest-stats?externalUserId=${encodeURIComponent(
+          externalUserId ?? '',
+        )}`,
+      ),
+    enabled: Boolean(externalUserId),
+    refetchOnWindowFocus: false,
+  })
+
   const electoralCommunes = useMemo(
     () =>
-      electoralListsQuery.data?.ok && Array.isArray(electoralListsQuery.data.communes)
+      electoralListsQuery.data?.ok &&
+      Array.isArray(electoralListsQuery.data.communes)
         ? electoralListsQuery.data.communes
         : [],
     [electoralListsQuery.data],
@@ -152,7 +190,8 @@ function AdminPageContent() {
 
   const selectedCommune = useMemo(
     () =>
-      electoralCommunes.find((commune) => commune.name === form.communeName) ?? null,
+      electoralCommunes.find((commune) => commune.name === form.communeName) ??
+      null,
     [electoralCommunes, form.communeName],
   )
 
@@ -211,10 +250,10 @@ function AdminPageContent() {
 
   const archiveTrackMutation = useMutation({
     mutationFn: (trackId: number) =>
-      deleteJson<AdminMutationResponse>(
-        '/api/admin/track',
-        { trackId, externalUserId },
-      ),
+      deleteJson<AdminMutationResponse>('/api/admin/track', {
+        trackId,
+        externalUserId,
+      }),
     onSuccess: async (response) => {
       if (!response.ok) {
         setFeedback(response.message)
@@ -231,19 +270,22 @@ function AdminPageContent() {
 
   const seedMutation = useMutation({
     mutationFn: () =>
-      postJson<{
-        ok: true
-        communes: { inserted: number; totalTarget: number }
-        electoralLists: {
-          created: number
-          updated: number
-          total: number
-          totalCommunes: number
-        }
-      } | {
-        ok: false
-        message: string
-      }>('/api/admin/seed', { externalUserId }),
+      postJson<
+        | {
+            ok: true
+            communes: { inserted: number; totalTarget: number }
+            electoralLists: {
+              created: number
+              updated: number
+              total: number
+              totalCommunes: number
+            }
+          }
+        | {
+            ok: false
+            message: string
+          }
+      >('/api/admin/seed', { externalUserId }),
     onSuccess: async (response) => {
       if (!response.ok) {
         setFeedback(response.message)
@@ -253,7 +295,9 @@ function AdminPageContent() {
       setFeedback(
         `${response.communes.inserted} communes ajoutees, ${response.electoralLists.created} listes creees, ${response.electoralLists.updated} mises a jour.`,
       )
-      await queryClient.invalidateQueries({ queryKey: ['admin-electoral-lists'] })
+      await queryClient.invalidateQueries({
+        queryKey: ['admin-electoral-lists'],
+      })
       await queryClient.invalidateQueries({ queryKey: ['admin-tracks'] })
     },
     onError: () => {
@@ -265,11 +309,20 @@ function AdminPageContent() {
     (tracksQuery.data && !tracksQuery.data.ok ? tracksQuery.data : null) ||
     (electoralListsQuery.data && !electoralListsQuery.data.ok
       ? electoralListsQuery.data
+      : null) ||
+    (blindtestStatsQuery.data && !blindtestStatsQuery.data.ok
+      ? blindtestStatsQuery.data
       : null)
 
   const adminTracks =
     tracksQuery.data?.ok && Array.isArray(tracksQuery.data.tracks)
       ? tracksQuery.data.tracks
+      : []
+
+  const blindtestStats =
+    blindtestStatsQuery.data?.ok &&
+    Array.isArray(blindtestStatsQuery.data.stats)
+      ? blindtestStatsQuery.data.stats
       : []
 
   function handleAudioFileChange(file: File | null) {
@@ -351,7 +404,9 @@ function AdminPageContent() {
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
             <Lock className="w-10 h-10 mx-auto text-primary" />
-            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
+            <h1 className="font-display font-bold text-2xl text-glow-green">
+              Admin
+            </h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             Connexion requise pour acceder a l'administration.
@@ -367,7 +422,9 @@ function AdminPageContent() {
         <div className="max-w-sm mx-auto px-4 py-20 space-y-4 animate-fade-in">
           <div className="text-center space-y-2">
             <Lock className="w-10 h-10 mx-auto text-primary" />
-            <h1 className="font-display font-bold text-2xl text-glow-green">Admin</h1>
+            <h1 className="font-display font-bold text-2xl text-glow-green">
+              Admin
+            </h1>
           </div>
           <p className="text-xs text-muted-foreground font-body text-center">
             {adminAccessError.message}
@@ -380,13 +437,18 @@ function AdminPageContent() {
   return (
     <Layout>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6 animate-fade-in">
-        <h1 className="font-display font-black text-3xl text-primary text-glow-green">Admin</h1>
+        <h1 className="font-display font-black text-3xl text-primary text-glow-green">
+          Admin
+        </h1>
 
         <div className="space-y-3 p-4 rounded-xl bg-card/80 border border-primary/35 neon-panel">
-          <h2 className="font-display font-bold text-sm text-primary">Ajouter un son</h2>
+          <h2 className="font-display font-bold text-sm text-primary">
+            Ajouter un son
+          </h2>
           <p className="text-xs font-body text-muted-foreground">
-            Choisis la commune, la tete de liste et un fichier audio. Le son sera
-            envoye vers ton bucket Cloudflare R2 puis lie automatiquement a la base.
+            Choisis la commune, la tete de liste et un fichier audio. Le son
+            sera envoye vers ton bucket Cloudflare R2 puis lie automatiquement a
+            la base.
           </p>
 
           <select
@@ -436,8 +498,8 @@ function AdminPageContent() {
                 {audioFile ? audioFile.name : 'Selectionner le fichier audio'}
               </p>
               <p className="mt-1 text-xs font-body text-muted-foreground">
-                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. {MAX_AUDIO_SIZE_LABEL} max
-                pour éviter les erreurs d'envoi.
+                MP3, WAV, M4A, OGG, FLAC, AAC ou WEBM. {MAX_AUDIO_SIZE_LABEL}{' '}
+                max pour éviter les erreurs d'envoi.
               </p>
             </div>
             <input
@@ -521,7 +583,9 @@ function AdminPageContent() {
             className="w-full py-3 rounded-xl border-2 border-primary bg-transparent text-primary font-display font-bold flex items-center justify-center gap-2 min-h-[44px] hover:bg-primary hover:text-background hover:box-glow-green transition-all"
           >
             <Plus className="w-4 h-4" />
-            {createTrackMutation.isPending ? 'Upload en cours…' : 'Ajouter le son'}
+            {createTrackMutation.isPending
+              ? 'Upload en cours…'
+              : 'Ajouter le son'}
           </button>
         </div>
 
@@ -536,7 +600,8 @@ function AdminPageContent() {
 
         {electoralCommunes.length === 0 ? (
           <p className="text-xs text-muted-foreground font-body text-center">
-            Importe d'abord le referentiel electoral pour activer le formulaire dynamique.
+            Importe d'abord le referentiel electoral pour activer le formulaire
+            dynamique.
           </p>
         ) : null}
 
@@ -592,6 +657,83 @@ function AdminPageContent() {
               >
                 <Trash2 className="w-4 h-4" />
               </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h2 className="font-display font-bold text-sm text-accent">
+              Stats blindtest
+            </h2>
+            <p className="text-xs font-body text-muted-foreground">
+              Tri par ambiguité puis volume de réponses. Plus un score est
+              proche de 100, plus le morceau divise les joueurs.
+            </p>
+          </div>
+
+          {blindtestStats.map((stat) => (
+            <div
+              key={stat.id}
+              className="rounded-xl border border-accent/30 bg-card/80 p-3 neon-panel"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-display font-bold text-sm text-foreground truncate">
+                    {stat.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-body">
+                    {stat.artistName ? `${stat.artistName} · ` : ''}
+                    {stat.communeName}
+                    {stat.candidateName ? ` · ${stat.candidateName}` : ''}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-display tracking-widest text-muted-foreground">
+                    LABEL REEL
+                  </p>
+                  <p
+                    className={`font-display text-sm ${
+                      stat.actualLabel === 'ai' ? 'text-accent' : 'text-primary'
+                    }`}
+                  >
+                    {stat.actualLabel === 'ai' ? 'IA' : 'PAS IA'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-body text-muted-foreground md:grid-cols-5">
+                <div className="rounded-lg border border-border bg-background/55 p-2">
+                  <p>Total</p>
+                  <p className="font-display text-base text-foreground">
+                    {stat.totalAnswers}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background/55 p-2">
+                  <p>% IA</p>
+                  <p className="font-display text-base text-foreground">
+                    {stat.guessedAiPercentage}%
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background/55 p-2">
+                  <p>% Pas IA</p>
+                  <p className="font-display text-base text-foreground">
+                    {stat.guessedHumanPercentage}%
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background/55 p-2">
+                  <p>Accuracy</p>
+                  <p className="font-display text-base text-foreground">
+                    {stat.accuracyPercentage}%
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-background/55 p-2">
+                  <p>Ambiguite</p>
+                  <p className="font-display text-base text-foreground">
+                    {stat.ambiguityScore}
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>

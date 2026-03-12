@@ -14,8 +14,9 @@ import PostHogProvider, {
   PostHogClerkIdentity,
   posthogEnabled,
 } from '../integrations/posthog/provider'
+import { RegionRoutingBoundary } from '../components/RegionRoutingBoundary'
 import { RegionProvider } from '../context/RegionContext'
-import appCss from '../styles.css?url'
+import '../styles.css'
 
 import type { QueryClient } from '@tanstack/react-query'
 
@@ -24,6 +25,50 @@ interface MyRouterContext {
 }
 
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
+const headLinks = [
+  {
+    rel: 'preconnect',
+    href: 'https://fonts.googleapis.com',
+  },
+  {
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous',
+  },
+  ...(import.meta.env.PROD
+    ? [
+        {
+          rel: 'stylesheet' as const,
+          href: '/app.css',
+        },
+      ]
+    : []),
+  {
+    rel: 'icon',
+    type: 'image/png',
+    sizes: '32x32',
+    href: '/favicon-32x32.png',
+  },
+  {
+    rel: 'icon',
+    type: 'image/png',
+    sizes: '16x16',
+    href: '/favicon-16x16.png',
+  },
+  {
+    rel: 'shortcut icon',
+    href: '/favicon.ico',
+  },
+  {
+    rel: 'apple-touch-icon',
+    sizes: '180x180',
+    href: '/apple-touch-icon.png',
+  },
+  {
+    rel: 'manifest',
+    href: '/site.webmanifest',
+  },
+]
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
@@ -45,51 +90,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         title: 'KalotMunicipales',
       },
     ],
-    links: [
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.googleapis.com',
-      },
-      {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      },
-      {
-        rel: 'stylesheet',
-        href: '/app.css',
-      },
-      {
-        rel: 'preload',
-        href: appCss,
-        as: 'style',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        href: '/favicon-32x32.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        href: '/favicon-16x16.png',
-      },
-      {
-        rel: 'shortcut icon',
-        href: '/favicon.ico',
-      },
-      {
-        rel: 'apple-touch-icon',
-        sizes: '180x180',
-        href: '/apple-touch-icon.png',
-      },
-      {
-        rel: 'manifest',
-        href: '/site.webmanifest',
-      },
-    ],
+    links: headLinks,
   }),
   shellComponent: RootDocument,
 })
@@ -118,9 +119,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             <ClerkProvider>
               {posthogEnabled && clerkEnabled ? <PostHogClerkIdentity /> : null}
               <RegionProvider>
-                <div id="main-content" tabIndex={-1}>
-                  {children}
-                </div>
+                <RegionRoutingBoundary>
+                  <div id="main-content" tabIndex={-1}>
+                    {children}
+                  </div>
+                </RegionRoutingBoundary>
               </RegionProvider>
               {showDevtools ? (
                 <TanStackDevtools

@@ -145,8 +145,95 @@ export type VotingStartOptionsResponse = {
   }>
 }
 
+export type BlindtestTrack = DuelTrack
+
+export type BlindtestTrackStats = {
+  trackId: number
+  actualLabel: 'ai' | 'human'
+  totalAnswers: number
+  guessedAiCount: number
+  guessedHumanCount: number
+  guessedAiPercentage: number
+  guessedHumanPercentage: number
+  accuracyPercentage: number
+  ambiguityScore: number
+}
+
+export type BlindtestRoundSummary = {
+  trackId: number
+  title: string
+  userGuess: 'ai' | 'human'
+  actualLabel: 'ai' | 'human'
+  isCorrect: boolean
+}
+
+export type BlindtestSummary = {
+  totalRounds: number
+  correctAnswers: number
+  accuracyPercentage: number
+  rounds: BlindtestRoundSummary[]
+}
+
+export type StartBlindtestSessionResponse =
+  | {
+      ok: true
+      sessionId: string
+      totalRounds: number
+      currentRound: number
+      track: BlindtestTrack
+    }
+  | ApiError
+
+export type BlindtestSessionStateResponse =
+  | {
+      ok: true
+      status: 'active'
+      sessionId: string
+      totalRounds: number
+      currentRound: number
+      track: BlindtestTrack
+    }
+  | {
+      ok: true
+      status: 'completed'
+      summary: BlindtestSummary
+    }
+  | ApiError
+
+export type SubmitBlindtestAnswerResponse =
+  | {
+      ok: true
+      status: 'active'
+      result: {
+        trackId: number
+        userGuess: 'ai' | 'human'
+        actualLabel: 'ai' | 'human'
+        isCorrect: boolean
+      }
+      trackStats: BlindtestTrackStats
+      totalRounds: number
+      currentRound: number
+      nextTrack: BlindtestTrack
+      summary: BlindtestSummary
+    }
+  | {
+      ok: true
+      status: 'completed'
+      result: {
+        trackId: number
+        userGuess: 'ai' | 'human'
+        actualLabel: 'ai' | 'human'
+        isCorrect: boolean
+      }
+      trackStats: BlindtestTrackStats
+      summary: BlindtestSummary
+    }
+  | ApiError
+
 const ACTIVE_SESSION_KEY = 'kalot-active-session-id'
 const LAST_SUMMARY_KEY = 'kalot-last-summary'
+const BLINDTEST_SESSION_KEY = 'kalot-blindtest-session-id'
+const BLINDTEST_SUMMARY_KEY = 'kalot-blindtest-summary'
 const LOCAL_USER_KEY = 'kalot-local-user-id'
 
 function normalizeHttpErrorMessage(status: number, bodyText: string) {
@@ -320,6 +407,55 @@ export function getLastSummary() {
 
   try {
     return JSON.parse(raw) as SessionSummary
+  } catch {
+    return null
+  }
+}
+
+export function setBlindtestSessionId(sessionId: string) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(BLINDTEST_SESSION_KEY, sessionId)
+}
+
+export function getBlindtestSessionId() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  return window.localStorage.getItem(BLINDTEST_SESSION_KEY)
+}
+
+export function clearBlindtestSessionId() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem(BLINDTEST_SESSION_KEY)
+}
+
+export function setBlindtestSummary(summary: BlindtestSummary) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(BLINDTEST_SUMMARY_KEY, JSON.stringify(summary))
+}
+
+export function getBlindtestSummary() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = window.localStorage.getItem(BLINDTEST_SUMMARY_KEY)
+  if (!raw) {
+    return null
+  }
+
+  try {
+    return JSON.parse(raw) as BlindtestSummary
   } catch {
     return null
   }

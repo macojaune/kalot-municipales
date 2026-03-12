@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { withServerErrorLogging } from '../lib/server-monitoring'
 import { startVoteSession } from '../lib/vote-engine'
+import { isRegion } from '../types/song'
 
 export const Route = createFileRoute('/api/vote/start')({
   server: {
@@ -11,6 +12,7 @@ export const Route = createFileRoute('/api/vote/start')({
           externalUserId?: string
           username?: string | null
           communeSlug?: string | null
+          region?: string | null
         }
 
         if (!body.externalUserId) {
@@ -28,6 +30,7 @@ export const Route = createFileRoute('/api/vote/start')({
           externalUserId: body.externalUserId,
           username: body.username,
           communeSlug: body.communeSlug,
+          region: isRegion(body.region) ? body.region : null,
         })
 
         if (!result.ok) {

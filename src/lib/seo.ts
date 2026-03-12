@@ -7,7 +7,7 @@ export const SITE_URL = (rawSiteUrl || 'https://kalotmunicipales.fr').replace(
 )
 export const TWITTER_HANDLE = '@macojaune'
 export const DEFAULT_DESCRIPTION =
-  'Vote pour les meilleures musiques de campagne des municipales 2026 en Guadeloupe, consulte le classement en direct et propose un son.'
+  'Vote pour les meilleures musiques de campagne des municipales 2026, consulte le classement en direct et propose un son.'
 
 type SeoOptions = {
   title: string
@@ -57,7 +57,7 @@ export function buildSeo({
     meta: [
       { title: resolvedTitle },
       { name: 'description', content: description },
-      { name: 'keywords', content: 'municipales 2026, Guadeloupe, musique de campagne, vote, classement, KalotMunicipales' },
+      { name: 'keywords', content: 'municipales 2026, outre-mer, Guadeloupe, Martinique, Guyane, musique de campagne, vote, classement, KalotMunicipales' },
       { name: 'robots', content: robots },
       { property: 'og:site_name', content: SITE_NAME },
       { property: 'og:locale', content: 'fr_FR' },

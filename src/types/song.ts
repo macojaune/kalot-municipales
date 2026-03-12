@@ -1,5 +1,11 @@
 export type Region = 'guadeloupe' | 'martinique' | 'guyane'
 
+export function isRegion(value: string | null | undefined): value is Region {
+  return (
+    value === 'guadeloupe' || value === 'martinique' || value === 'guyane'
+  )
+}
+
 export const REGION_LABELS: Record<Region, string> = {
   guadeloupe: 'Guadeloupe',
   martinique: 'Martinique',

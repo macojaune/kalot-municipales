@@ -12,6 +12,7 @@ import {
   getJson,
   postFormData,
 } from '../lib/kalot-client'
+import { useRegionPath, useResolvedRegion } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
 
 type ElectoralListsResponse =
@@ -53,7 +54,7 @@ export const Route = createFileRoute('/ajouter-son')({
   component: SubmitTrackPage,
 })
 
-function SubmitTrackPage() {
+export function SubmitTrackPage() {
   if (!clerkEnabled) {
     return (
       <Layout>
@@ -103,6 +104,8 @@ function SubmitTrackPageContent({
   user = null,
   onOpenSignIn,
 }: SubmitTrackPageContentProps) {
+  const homeHref = useRegionPath('/')
+  const resolvedRegion = useResolvedRegion()
   const audioInputRef = useRef<HTMLInputElement | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -118,8 +121,13 @@ function SubmitTrackPageContent({
   const displayName = getDisplayName(user)
 
   const electoralListsQuery = useQuery({
-    queryKey: ['public-electoral-lists'],
-    queryFn: () => getJson<ElectoralListsResponse>('/api/electoral-lists'),
+    queryKey: ['public-electoral-lists', resolvedRegion],
+    queryFn: () =>
+      getJson<ElectoralListsResponse>(
+        `/api/electoral-lists${
+          resolvedRegion ? `?region=${encodeURIComponent(resolvedRegion)}` : ''
+        }`,
+      ),
     staleTime: 30 * 60_000,
     gcTime: 60 * 60_000,
     refetchOnWindowFocus: false,
@@ -297,7 +305,7 @@ function SubmitTrackPageContent({
 
           <section className="relative z-10 flex flex-col gap-3">
             <Link
-              to="/"
+              to={homeHref}
               onClick={() => {
                 trackEvent('submit_track_go_vote_click')
               }}
@@ -479,7 +487,7 @@ function SubmitTrackPageContent({
         </section>
 
         <div className="text-center">
-          <Link to="/" className="font-display text-sm text-secondary hover:underline">
+          <Link to={homeHref} className="font-display text-sm text-secondary hover:underline">
             Retour a l accueil
           </Link>
         </div>

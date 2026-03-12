@@ -6,6 +6,7 @@ import { CrownIcon } from '../components/icons/CrownIcon'
 import { NeonButton } from '../components/soundsystem/NeonButton'
 import { trackEvent } from '../lib/analytics'
 import { getLastSummary } from '../lib/kalot-client'
+import { useRegionPath } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
 
 export const Route = createFileRoute('/results')({
@@ -20,7 +21,9 @@ export const Route = createFileRoute('/results')({
   component: ResultsPage,
 })
 
-function ResultsPage() {
+export function ResultsPage() {
+  const homeHref = useRegionPath('/')
+  const classementHref = useRegionPath('/classement')
   const summary = getLastSummary()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -42,7 +45,7 @@ function ResultsPage() {
       return 'https://kalotmunicipales.fr'
     }
 
-    return window.location.origin
+    return window.location.href
   }, [])
 
   if (top3.length === 0) {
@@ -50,7 +53,7 @@ function ResultsPage() {
       <Layout>
         <div className="mx-auto max-w-lg space-y-4 px-4 py-20 text-center animate-fade-in">
           <p className="font-body text-muted-foreground">Aucun resultat disponible</p>
-          <Link to="/" className="font-display text-primary hover:underline">
+          <Link to={homeHref} className="font-display text-primary hover:underline">
             Retour a l accueil
           </Link>
         </div>
@@ -216,7 +219,7 @@ function ResultsPage() {
 
         <section className="relative z-10 flex flex-col gap-3">
           <Link
-            to="/classement"
+            to={classementHref}
             onClick={() => {
               trackEvent('results_classement_click')
             }}

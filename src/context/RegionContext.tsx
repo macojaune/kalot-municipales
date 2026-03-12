@@ -3,11 +3,12 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useState,
+  useSyncExternalStore,
 } from 'react'
 import type { Region } from '../types/song'
 
 const REGION_KEY = 'kalot_region'
+const regionListeners = new Set<() => void>()
 
 type RegionContextValue = {
   region: Region | null
@@ -32,13 +33,46 @@ function getInitialRegion(): Region | null {
   return null
 }
 
+function emitRegionChange() {
+  for (const listener of regionListeners) {
+    listener()
+  }
+}
+
+function subscribeToRegionStore(onStoreChange: () => void) {
+  regionListeners.add(onStoreChange)
+
+  if (typeof window === 'undefined') {
+    return () => {
+      regionListeners.delete(onStoreChange)
+    }
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === REGION_KEY) {
+      onStoreChange()
+    }
+  }
+
+  window.addEventListener('storage', handleStorage)
+
+  return () => {
+    regionListeners.delete(onStoreChange)
+    window.removeEventListener('storage', handleStorage)
+  }
+}
+
 export function RegionProvider({ children }: { children: React.ReactNode }) {
-  const [region, setRegionState] = useState<Region | null>(getInitialRegion)
+  const region = useSyncExternalStore(
+    subscribeToRegionStore,
+    getInitialRegion,
+    () => null,
+  )
 
   const setRegion = useCallback((nextRegion: Region) => {
-    setRegionState(nextRegion)
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(REGION_KEY, nextRegion)
+      emitRegionChange()
     }
   }, [])
 

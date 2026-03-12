@@ -26,6 +26,22 @@ const staticContentTypes = {
   '.xml': 'application/xml; charset=utf-8',
 }
 
+async function resolveAppStylesheetPath() {
+  const assetDirectory = join(clientDistDir, 'assets')
+
+  try {
+    const assetEntries = await readdir(assetDirectory)
+    const stylesheetEntry =
+      assetEntries.find((entry) => entry.startsWith('main-') && entry.endsWith('.css')) ||
+      assetEntries.find((entry) => entry.startsWith('styles-') && entry.endsWith('.css')) ||
+      assetEntries.find((entry) => entry.endsWith('.css'))
+
+    return stylesheetEntry ? join(assetDirectory, stylesheetEntry) : null
+  } catch {
+    return null
+  }
+}
+
 function toRequestHeaders(nodeHeaders) {
   const headers = new Headers()
 
@@ -63,17 +79,7 @@ async function getStaticFilePath(url) {
   }
 
   if (url.pathname === '/app.css') {
-    const assetDirectory = join(clientDistDir, 'assets')
-
-    try {
-      const stylesheetEntry = (await readdir(assetDirectory)).find((entry) => {
-        return entry.startsWith('styles-') && entry.endsWith('.css')
-      })
-
-      return stylesheetEntry ? join(assetDirectory, stylesheetEntry) : null
-    } catch {
-      return null
-    }
+    return resolveAppStylesheetPath()
   }
 
   const normalizedPath = normalize(decodeURIComponent(url.pathname)).replace(/^(\.\.(\/|\\|$))+/, '')

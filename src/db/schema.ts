@@ -1,4 +1,10 @@
-import { integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import {
+  integer,
+  real,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -107,6 +113,43 @@ export const voteSessions = sqliteTable('vote_sessions', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
   completedAt: text('completed_at'),
+})
+
+export const aiGuessSessions = sqliteTable('ai_guess_sessions', {
+  id: text('id').primaryKey(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  status: text('status', { enum: ['active', 'completed'] })
+    .notNull()
+    .default('active'),
+  trackIds: text('track_ids').notNull().default('[]'),
+  currentIndex: integer('current_index').notNull().default(0),
+  correctAnswers: integer('correct_answers').notNull().default(0),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  completedAt: text('completed_at'),
+})
+
+export const aiGuesses = sqliteTable('ai_guesses', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => aiGuessSessions.id),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  trackId: integer('track_id')
+    .notNull()
+    .references(() => tracks.id),
+  roundNumber: integer('round_number').notNull(),
+  guessedLabel: text('guessed_label', { enum: ['ai', 'human'] }).notNull(),
+  actualLabel: text('actual_label', { enum: ['ai', 'human'] }).notNull(),
+  isCorrect: integer('is_correct', { mode: 'boolean' }).notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
 })
 
 export const appSettings = sqliteTable('app_settings', {

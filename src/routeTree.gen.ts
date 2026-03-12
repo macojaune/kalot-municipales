@@ -12,22 +12,36 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResultsRouteImport } from './routes/results'
 import { Route as DuelRouteImport } from './routes/duel'
 import { Route as ClassementRouteImport } from './routes/classement'
+import { Route as BlindtestRouteImport } from './routes/blindtest'
 import { Route as AjouterSonRouteImport } from './routes/ajouter-son'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as RegionRouteImport } from './routes/$region'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RegionIndexRouteImport } from './routes/$region.index'
+import { Route as BlindtestResultatsRouteImport } from './routes/blindtest.resultats'
 import { Route as ApiReportRouteImport } from './routes/api.report'
 import { Route as ApiOgRouteImport } from './routes/api.og'
 import { Route as ApiLeaderboardRouteImport } from './routes/api.leaderboard'
 import { Route as ApiElectoralListsRouteImport } from './routes/api.electoral-lists'
+import { Route as RegionResultsRouteImport } from './routes/$region.results'
+import { Route as RegionDuelRouteImport } from './routes/$region.duel'
+import { Route as RegionClassementRouteImport } from './routes/$region.classement'
+import { Route as RegionBlindtestRouteImport } from './routes/$region.blindtest'
+import { Route as RegionAjouterSonRouteImport } from './routes/$region.ajouter-son'
 import { Route as ApiVoteStateRouteImport } from './routes/api.vote.state'
 import { Route as ApiVoteStartRouteImport } from './routes/api.vote.start'
 import { Route as ApiVotePickRouteImport } from './routes/api.vote.pick'
 import { Route as ApiVoteOptionsRouteImport } from './routes/api.vote.options'
 import { Route as ApiTrackSubmitRouteImport } from './routes/api.track.submit'
+import { Route as ApiBlindtestStateRouteImport } from './routes/api.blindtest.state'
+import { Route as ApiBlindtestStartRouteImport } from './routes/api.blindtest.start'
+import { Route as ApiBlindtestAnswerRouteImport } from './routes/api.blindtest.answer'
 import { Route as ApiAdminTrackRouteImport } from './routes/api.admin.track'
 import { Route as ApiAdminSeedRouteImport } from './routes/api.admin.seed'
 import { Route as ApiAdminElectoralListsRouteImport } from './routes/api.admin.electoral-lists'
+import { Route as ApiAdminBlindtestStatsRouteImport } from './routes/api.admin.blindtest-stats'
+import { Route as RegionBlindtestResultatsRouteImport } from './routes/$region.blindtest.resultats'
 
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
@@ -42,6 +56,11 @@ const DuelRoute = DuelRouteImport.update({
 const ClassementRoute = ClassementRouteImport.update({
   id: '/classement',
   path: '/classement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlindtestRoute = BlindtestRouteImport.update({
+  id: '/blindtest',
+  path: '/blindtest',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AjouterSonRoute = AjouterSonRouteImport.update({
@@ -59,10 +78,25 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegionRoute = RegionRouteImport.update({
+  id: '/$region',
+  path: '/$region',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RegionIndexRoute = RegionIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RegionRoute,
+} as any)
+const BlindtestResultatsRoute = BlindtestResultatsRouteImport.update({
+  id: '/resultats',
+  path: '/resultats',
+  getParentRoute: () => BlindtestRoute,
 } as any)
 const ApiReportRoute = ApiReportRouteImport.update({
   id: '/api/report',
@@ -83,6 +117,31 @@ const ApiElectoralListsRoute = ApiElectoralListsRouteImport.update({
   id: '/api/electoral-lists',
   path: '/api/electoral-lists',
   getParentRoute: () => rootRouteImport,
+} as any)
+const RegionResultsRoute = RegionResultsRouteImport.update({
+  id: '/results',
+  path: '/results',
+  getParentRoute: () => RegionRoute,
+} as any)
+const RegionDuelRoute = RegionDuelRouteImport.update({
+  id: '/duel',
+  path: '/duel',
+  getParentRoute: () => RegionRoute,
+} as any)
+const RegionClassementRoute = RegionClassementRouteImport.update({
+  id: '/classement',
+  path: '/classement',
+  getParentRoute: () => RegionRoute,
+} as any)
+const RegionBlindtestRoute = RegionBlindtestRouteImport.update({
+  id: '/blindtest',
+  path: '/blindtest',
+  getParentRoute: () => RegionRoute,
+} as any)
+const RegionAjouterSonRoute = RegionAjouterSonRouteImport.update({
+  id: '/ajouter-son',
+  path: '/ajouter-son',
+  getParentRoute: () => RegionRoute,
 } as any)
 const ApiVoteStateRoute = ApiVoteStateRouteImport.update({
   id: '/api/vote/state',
@@ -109,6 +168,21 @@ const ApiTrackSubmitRoute = ApiTrackSubmitRouteImport.update({
   path: '/api/track/submit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBlindtestStateRoute = ApiBlindtestStateRouteImport.update({
+  id: '/api/blindtest/state',
+  path: '/api/blindtest/state',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBlindtestStartRoute = ApiBlindtestStartRouteImport.update({
+  id: '/api/blindtest/start',
+  path: '/api/blindtest/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBlindtestAnswerRoute = ApiBlindtestAnswerRouteImport.update({
+  id: '/api/blindtest/answer',
+  path: '/api/blindtest/answer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminTrackRoute = ApiAdminTrackRouteImport.update({
   id: '/api/admin/track',
   path: '/api/admin/track',
@@ -124,22 +198,47 @@ const ApiAdminElectoralListsRoute = ApiAdminElectoralListsRouteImport.update({
   path: '/api/admin/electoral-lists',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminBlindtestStatsRoute = ApiAdminBlindtestStatsRouteImport.update({
+  id: '/api/admin/blindtest-stats',
+  path: '/api/admin/blindtest-stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegionBlindtestResultatsRoute =
+  RegionBlindtestResultatsRouteImport.update({
+    id: '/resultats',
+    path: '/resultats',
+    getParentRoute: () => RegionBlindtestRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$region': typeof RegionRouteWithChildren
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/ajouter-son': typeof AjouterSonRoute
+  '/blindtest': typeof BlindtestRouteWithChildren
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/$region/ajouter-son': typeof RegionAjouterSonRoute
+  '/$region/blindtest': typeof RegionBlindtestRouteWithChildren
+  '/$region/classement': typeof RegionClassementRoute
+  '/$region/duel': typeof RegionDuelRoute
+  '/$region/results': typeof RegionResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
+  '/blindtest/resultats': typeof BlindtestResultatsRoute
+  '/$region/': typeof RegionIndexRoute
+  '/$region/blindtest/resultats': typeof RegionBlindtestResultatsRoute
+  '/api/admin/blindtest-stats': typeof ApiAdminBlindtestStatsRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/blindtest/answer': typeof ApiBlindtestAnswerRoute
+  '/api/blindtest/start': typeof ApiBlindtestStartRoute
+  '/api/blindtest/state': typeof ApiBlindtestStateRoute
   '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
@@ -151,16 +250,29 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/ajouter-son': typeof AjouterSonRoute
+  '/blindtest': typeof BlindtestRouteWithChildren
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/$region/ajouter-son': typeof RegionAjouterSonRoute
+  '/$region/blindtest': typeof RegionBlindtestRouteWithChildren
+  '/$region/classement': typeof RegionClassementRoute
+  '/$region/duel': typeof RegionDuelRoute
+  '/$region/results': typeof RegionResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
+  '/blindtest/resultats': typeof BlindtestResultatsRoute
+  '/$region': typeof RegionIndexRoute
+  '/$region/blindtest/resultats': typeof RegionBlindtestResultatsRoute
+  '/api/admin/blindtest-stats': typeof ApiAdminBlindtestStatsRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/blindtest/answer': typeof ApiBlindtestAnswerRoute
+  '/api/blindtest/start': typeof ApiBlindtestStartRoute
+  '/api/blindtest/state': typeof ApiBlindtestStateRoute
   '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
@@ -170,19 +282,33 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$region': typeof RegionRouteWithChildren
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/ajouter-son': typeof AjouterSonRoute
+  '/blindtest': typeof BlindtestRouteWithChildren
   '/classement': typeof ClassementRoute
   '/duel': typeof DuelRoute
   '/results': typeof ResultsRoute
+  '/$region/ajouter-son': typeof RegionAjouterSonRoute
+  '/$region/blindtest': typeof RegionBlindtestRouteWithChildren
+  '/$region/classement': typeof RegionClassementRoute
+  '/$region/duel': typeof RegionDuelRoute
+  '/$region/results': typeof RegionResultsRoute
   '/api/electoral-lists': typeof ApiElectoralListsRoute
   '/api/leaderboard': typeof ApiLeaderboardRoute
   '/api/og': typeof ApiOgRoute
   '/api/report': typeof ApiReportRoute
+  '/blindtest/resultats': typeof BlindtestResultatsRoute
+  '/$region/': typeof RegionIndexRoute
+  '/$region/blindtest/resultats': typeof RegionBlindtestResultatsRoute
+  '/api/admin/blindtest-stats': typeof ApiAdminBlindtestStatsRoute
   '/api/admin/electoral-lists': typeof ApiAdminElectoralListsRoute
   '/api/admin/seed': typeof ApiAdminSeedRoute
   '/api/admin/track': typeof ApiAdminTrackRoute
+  '/api/blindtest/answer': typeof ApiBlindtestAnswerRoute
+  '/api/blindtest/start': typeof ApiBlindtestStartRoute
+  '/api/blindtest/state': typeof ApiBlindtestStateRoute
   '/api/track/submit': typeof ApiTrackSubmitRoute
   '/api/vote/options': typeof ApiVoteOptionsRoute
   '/api/vote/pick': typeof ApiVotePickRoute
@@ -193,19 +319,33 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$region'
     | '/about'
     | '/admin'
     | '/ajouter-son'
+    | '/blindtest'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/$region/ajouter-son'
+    | '/$region/blindtest'
+    | '/$region/classement'
+    | '/$region/duel'
+    | '/$region/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/og'
     | '/api/report'
+    | '/blindtest/resultats'
+    | '/$region/'
+    | '/$region/blindtest/resultats'
+    | '/api/admin/blindtest-stats'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/blindtest/answer'
+    | '/api/blindtest/start'
+    | '/api/blindtest/state'
     | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
@@ -217,16 +357,29 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/ajouter-son'
+    | '/blindtest'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/$region/ajouter-son'
+    | '/$region/blindtest'
+    | '/$region/classement'
+    | '/$region/duel'
+    | '/$region/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/og'
     | '/api/report'
+    | '/blindtest/resultats'
+    | '/$region'
+    | '/$region/blindtest/resultats'
+    | '/api/admin/blindtest-stats'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/blindtest/answer'
+    | '/api/blindtest/start'
+    | '/api/blindtest/state'
     | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
@@ -235,19 +388,33 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$region'
     | '/about'
     | '/admin'
     | '/ajouter-son'
+    | '/blindtest'
     | '/classement'
     | '/duel'
     | '/results'
+    | '/$region/ajouter-son'
+    | '/$region/blindtest'
+    | '/$region/classement'
+    | '/$region/duel'
+    | '/$region/results'
     | '/api/electoral-lists'
     | '/api/leaderboard'
     | '/api/og'
     | '/api/report'
+    | '/blindtest/resultats'
+    | '/$region/'
+    | '/$region/blindtest/resultats'
+    | '/api/admin/blindtest-stats'
     | '/api/admin/electoral-lists'
     | '/api/admin/seed'
     | '/api/admin/track'
+    | '/api/blindtest/answer'
+    | '/api/blindtest/start'
+    | '/api/blindtest/state'
     | '/api/track/submit'
     | '/api/vote/options'
     | '/api/vote/pick'
@@ -257,9 +424,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  RegionRoute: typeof RegionRouteWithChildren
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   AjouterSonRoute: typeof AjouterSonRoute
+  BlindtestRoute: typeof BlindtestRouteWithChildren
   ClassementRoute: typeof ClassementRoute
   DuelRoute: typeof DuelRoute
   ResultsRoute: typeof ResultsRoute
@@ -267,9 +436,13 @@ export interface RootRouteChildren {
   ApiLeaderboardRoute: typeof ApiLeaderboardRoute
   ApiOgRoute: typeof ApiOgRoute
   ApiReportRoute: typeof ApiReportRoute
+  ApiAdminBlindtestStatsRoute: typeof ApiAdminBlindtestStatsRoute
   ApiAdminElectoralListsRoute: typeof ApiAdminElectoralListsRoute
   ApiAdminSeedRoute: typeof ApiAdminSeedRoute
   ApiAdminTrackRoute: typeof ApiAdminTrackRoute
+  ApiBlindtestAnswerRoute: typeof ApiBlindtestAnswerRoute
+  ApiBlindtestStartRoute: typeof ApiBlindtestStartRoute
+  ApiBlindtestStateRoute: typeof ApiBlindtestStateRoute
   ApiTrackSubmitRoute: typeof ApiTrackSubmitRoute
   ApiVoteOptionsRoute: typeof ApiVoteOptionsRoute
   ApiVotePickRoute: typeof ApiVotePickRoute
@@ -300,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClassementRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blindtest': {
+      id: '/blindtest'
+      path: '/blindtest'
+      fullPath: '/blindtest'
+      preLoaderRoute: typeof BlindtestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ajouter-son': {
       id: '/ajouter-son'
       path: '/ajouter-son'
@@ -321,12 +501,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$region': {
+      id: '/$region'
+      path: '/$region'
+      fullPath: '/$region'
+      preLoaderRoute: typeof RegionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$region/': {
+      id: '/$region/'
+      path: '/'
+      fullPath: '/$region/'
+      preLoaderRoute: typeof RegionIndexRouteImport
+      parentRoute: typeof RegionRoute
+    }
+    '/blindtest/resultats': {
+      id: '/blindtest/resultats'
+      path: '/resultats'
+      fullPath: '/blindtest/resultats'
+      preLoaderRoute: typeof BlindtestResultatsRouteImport
+      parentRoute: typeof BlindtestRoute
     }
     '/api/report': {
       id: '/api/report'
@@ -355,6 +556,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/electoral-lists'
       preLoaderRoute: typeof ApiElectoralListsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$region/results': {
+      id: '/$region/results'
+      path: '/results'
+      fullPath: '/$region/results'
+      preLoaderRoute: typeof RegionResultsRouteImport
+      parentRoute: typeof RegionRoute
+    }
+    '/$region/duel': {
+      id: '/$region/duel'
+      path: '/duel'
+      fullPath: '/$region/duel'
+      preLoaderRoute: typeof RegionDuelRouteImport
+      parentRoute: typeof RegionRoute
+    }
+    '/$region/classement': {
+      id: '/$region/classement'
+      path: '/classement'
+      fullPath: '/$region/classement'
+      preLoaderRoute: typeof RegionClassementRouteImport
+      parentRoute: typeof RegionRoute
+    }
+    '/$region/blindtest': {
+      id: '/$region/blindtest'
+      path: '/blindtest'
+      fullPath: '/$region/blindtest'
+      preLoaderRoute: typeof RegionBlindtestRouteImport
+      parentRoute: typeof RegionRoute
+    }
+    '/$region/ajouter-son': {
+      id: '/$region/ajouter-son'
+      path: '/ajouter-son'
+      fullPath: '/$region/ajouter-son'
+      preLoaderRoute: typeof RegionAjouterSonRouteImport
+      parentRoute: typeof RegionRoute
     }
     '/api/vote/state': {
       id: '/api/vote/state'
@@ -391,6 +627,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrackSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/blindtest/state': {
+      id: '/api/blindtest/state'
+      path: '/api/blindtest/state'
+      fullPath: '/api/blindtest/state'
+      preLoaderRoute: typeof ApiBlindtestStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blindtest/start': {
+      id: '/api/blindtest/start'
+      path: '/api/blindtest/start'
+      fullPath: '/api/blindtest/start'
+      preLoaderRoute: typeof ApiBlindtestStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blindtest/answer': {
+      id: '/api/blindtest/answer'
+      path: '/api/blindtest/answer'
+      fullPath: '/api/blindtest/answer'
+      preLoaderRoute: typeof ApiBlindtestAnswerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/track': {
       id: '/api/admin/track'
       path: '/api/admin/track'
@@ -412,14 +669,75 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminElectoralListsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/blindtest-stats': {
+      id: '/api/admin/blindtest-stats'
+      path: '/api/admin/blindtest-stats'
+      fullPath: '/api/admin/blindtest-stats'
+      preLoaderRoute: typeof ApiAdminBlindtestStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$region/blindtest/resultats': {
+      id: '/$region/blindtest/resultats'
+      path: '/resultats'
+      fullPath: '/$region/blindtest/resultats'
+      preLoaderRoute: typeof RegionBlindtestResultatsRouteImport
+      parentRoute: typeof RegionBlindtestRoute
+    }
   }
 }
 
+interface RegionBlindtestRouteChildren {
+  RegionBlindtestResultatsRoute: typeof RegionBlindtestResultatsRoute
+}
+
+const RegionBlindtestRouteChildren: RegionBlindtestRouteChildren = {
+  RegionBlindtestResultatsRoute: RegionBlindtestResultatsRoute,
+}
+
+const RegionBlindtestRouteWithChildren = RegionBlindtestRoute._addFileChildren(
+  RegionBlindtestRouteChildren,
+)
+
+interface RegionRouteChildren {
+  RegionAjouterSonRoute: typeof RegionAjouterSonRoute
+  RegionBlindtestRoute: typeof RegionBlindtestRouteWithChildren
+  RegionClassementRoute: typeof RegionClassementRoute
+  RegionDuelRoute: typeof RegionDuelRoute
+  RegionResultsRoute: typeof RegionResultsRoute
+  RegionIndexRoute: typeof RegionIndexRoute
+}
+
+const RegionRouteChildren: RegionRouteChildren = {
+  RegionAjouterSonRoute: RegionAjouterSonRoute,
+  RegionBlindtestRoute: RegionBlindtestRouteWithChildren,
+  RegionClassementRoute: RegionClassementRoute,
+  RegionDuelRoute: RegionDuelRoute,
+  RegionResultsRoute: RegionResultsRoute,
+  RegionIndexRoute: RegionIndexRoute,
+}
+
+const RegionRouteWithChildren =
+  RegionRoute._addFileChildren(RegionRouteChildren)
+
+interface BlindtestRouteChildren {
+  BlindtestResultatsRoute: typeof BlindtestResultatsRoute
+}
+
+const BlindtestRouteChildren: BlindtestRouteChildren = {
+  BlindtestResultatsRoute: BlindtestResultatsRoute,
+}
+
+const BlindtestRouteWithChildren = BlindtestRoute._addFileChildren(
+  BlindtestRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  RegionRoute: RegionRouteWithChildren,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   AjouterSonRoute: AjouterSonRoute,
+  BlindtestRoute: BlindtestRouteWithChildren,
   ClassementRoute: ClassementRoute,
   DuelRoute: DuelRoute,
   ResultsRoute: ResultsRoute,
@@ -427,9 +745,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiLeaderboardRoute: ApiLeaderboardRoute,
   ApiOgRoute: ApiOgRoute,
   ApiReportRoute: ApiReportRoute,
+  ApiAdminBlindtestStatsRoute: ApiAdminBlindtestStatsRoute,
   ApiAdminElectoralListsRoute: ApiAdminElectoralListsRoute,
   ApiAdminSeedRoute: ApiAdminSeedRoute,
   ApiAdminTrackRoute: ApiAdminTrackRoute,
+  ApiBlindtestAnswerRoute: ApiBlindtestAnswerRoute,
+  ApiBlindtestStartRoute: ApiBlindtestStartRoute,
+  ApiBlindtestStateRoute: ApiBlindtestStateRoute,
   ApiTrackSubmitRoute: ApiTrackSubmitRoute,
   ApiVoteOptionsRoute: ApiVoteOptionsRoute,
   ApiVotePickRoute: ApiVotePickRoute,

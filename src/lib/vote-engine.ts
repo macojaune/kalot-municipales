@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { and, asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { getDb } from '../db/client'
 import {
+  aiGuesses,
+  aiGuessSessions,
   appSettings,
   artists,
   communes,
@@ -13,6 +15,7 @@ import {
   voteSessions,
   votes,
 } from '../db/schema'
+import { COMMUNES, getRegionForCommune, type Region } from '../types/song'
 import { getOrSetServerCache, invalidateServerCache } from './server-cache'
 
 const STARTING_RATING = 1200
@@ -138,6 +141,33 @@ type SessionSummary = {
   }>
 }
 
+type BlindtestGuessLabel = 'ai' | 'human'
+
+type BlindtestSummary = {
+  totalRounds: number
+  correctAnswers: number
+  accuracyPercentage: number
+  rounds: Array<{
+    trackId: number
+    title: string
+    userGuess: BlindtestGuessLabel
+    actualLabel: BlindtestGuessLabel
+    isCorrect: boolean
+  }>
+}
+
+type BlindtestTrackStats = {
+  trackId: number
+  actualLabel: BlindtestGuessLabel
+  totalAnswers: number
+  guessedAiCount: number
+  guessedHumanCount: number
+  guessedAiPercentage: number
+  guessedHumanPercentage: number
+  accuracyPercentage: number
+  ambiguityScore: number
+}
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -171,7 +201,10 @@ function canonicalizeCommuneName(input: string) {
 
 function getCommuneSlugCandidates(input: string) {
   const canonicalName = canonicalizeCommuneName(input)
-  const slugCandidates = new Set<string>([slugify(canonicalName), slugify(input)])
+  const slugCandidates = new Set<string>([
+    slugify(canonicalName),
+    slugify(input),
+  ])
 
   for (const [alias, candidate] of Object.entries(COMMUNE_ALIASES)) {
     if (candidate === canonicalName) {
@@ -190,6 +223,85 @@ function getElectoralListSlug(input: {
   listName: string
 }) {
   return slugify(input.candidateName?.trim() || input.listName.trim())
+}
+
+function getRegionCommuneSlugs(region: Region) {
+  return COMMUNES[region].map((communeName) =>
+    slugify(canonicalizeCommuneName(communeName)),
+  )
+}
+
+async function resolveRegionCommuneIds(db: Db, region: Region) {
+  const regionCommuneSlugs = getRegionCommuneSlugs(region)
+
+  if (regionCommuneSlugs.length === 0) {
+    return []
+  }
+
+  const rows = await db
+    .select({ id: communes.id })
+    .from(communes)
+    .where(inArray(communes.slug, regionCommuneSlugs))
+
+  return rows.map((row) => row.id)
+}
+
+async function getCommuneBySlug(db: Db, slug: string) {
+  const rows = await db
+    .select({
+      id: communes.id,
+      name: communes.name,
+      slug: communes.slug,
+    })
+    .from(communes)
+    .where(eq(communes.slug, slug))
+    .limit(1)
+
+  return rows.at(0) ?? null
+}
+
+async function getCommuneById(db: Db, communeId: number) {
+  const rows = await db
+    .select({
+      id: communes.id,
+      name: communes.name,
+      slug: communes.slug,
+    })
+    .from(communes)
+    .where(eq(communes.id, communeId))
+    .limit(1)
+
+  return rows.at(0) ?? null
+}
+
+async function resolveSessionRegion(
+  db: Db,
+  session: {
+    electionRound: ElectionRound
+    communeId: number | null
+    currentChampionTrackId: number
+    currentChallengerTrackId: number
+  },
+) {
+  if (typeof session.communeId === 'number') {
+    const commune = await getCommuneById(db, session.communeId)
+    return commune ? getRegionForCommune(commune.name) : null
+  }
+
+  const activeTracks = await getTrackViewsByIds(
+    db,
+    [session.currentChampionTrackId, session.currentChallengerTrackId],
+    session.electionRound,
+  )
+  const regions = Array.from(
+    new Set(activeTracks.map((track) => getRegionForCommune(track.communeName))),
+  )
+
+  if (regions.length !== 1) {
+    return null
+  }
+
+  return regions[0] ?? null
 }
 
 async function loadElectoralImportRows() {
@@ -229,13 +341,30 @@ async function loadElectoralImportRows() {
 
   return rows.sort(
     (left, right) =>
-      left.communeName.localeCompare(right.communeName, 'fr', { sensitivity: 'base' }) ||
-      left.candidateName.localeCompare(right.candidateName, 'fr', { sensitivity: 'base' }),
+      left.communeName.localeCompare(right.communeName, 'fr', {
+        sensitivity: 'base',
+      }) ||
+      left.candidateName.localeCompare(right.candidateName, 'fr', {
+        sensitivity: 'base',
+      }),
   )
 }
 
 function randomInt(maxExclusive: number) {
   return Math.floor(Math.random() * maxExclusive)
+}
+
+function shuffle<TValue>(items: TValue[]) {
+  const copy = [...items]
+
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = randomInt(index + 1)
+    const current = copy[index]
+    copy[index] = copy[swapIndex]
+    copy[swapIndex] = current
+  }
+
+  return copy
 }
 
 function calculateElo(winnerRating: number, loserRating: number) {
@@ -262,6 +391,31 @@ function parseSeenTrackIds(raw: string) {
   } catch {
     return new Set<number>()
   }
+}
+
+function parseBlindtestTrackIds(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) {
+      return []
+    }
+
+    return parsed.filter((value): value is number => typeof value === 'number')
+  } catch {
+    return []
+  }
+}
+
+function toBlindtestGuessLabel(isAiGenerated: boolean): BlindtestGuessLabel {
+  return isAiGenerated ? 'ai' : 'human'
+}
+
+function roundPercentage(value: number, total: number) {
+  if (total <= 0) {
+    return 0
+  }
+
+  return Math.round((value / total) * 100)
 }
 
 function parseIsoDate(raw: string | null | undefined) {
@@ -330,28 +484,33 @@ async function resolveRound2FinalizationAt(db: Db) {
     key: ROUND2_FINALIZATION_SETTING_KEY,
     fallback: DEFAULT_ROUND2_FINALIZATION_AT,
     envValue:
-      process.env.ROUND2_FINALIZATION_AT ?? process.env.ELECTION_FINALIZATION_AT,
+      process.env.ROUND2_FINALIZATION_AT ??
+      process.env.ELECTION_FINALIZATION_AT,
   })
 }
 
 async function resolveElectionPhase(db: Db): Promise<ElectionPhase> {
-  return getOrSetServerCache('election:phase', ELECTION_PHASE_CACHE_TTL_MS, async () => {
-    const [round1FinalizationAt, round2FinalizationAt] = await Promise.all([
-      resolveRound1FinalizationAt(db),
-      resolveRound2FinalizationAt(db),
-    ])
+  return getOrSetServerCache(
+    'election:phase',
+    ELECTION_PHASE_CACHE_TTL_MS,
+    async () => {
+      const [round1FinalizationAt, round2FinalizationAt] = await Promise.all([
+        resolveRound1FinalizationAt(db),
+        resolveRound2FinalizationAt(db),
+      ])
 
-    const now = new Date()
-    if (now < round1FinalizationAt) {
-      return 'round1'
-    }
+      const now = new Date()
+      if (now < round1FinalizationAt) {
+        return 'round1'
+      }
 
-    if (now < round2FinalizationAt) {
-      return 'round2'
-    }
+      if (now < round2FinalizationAt) {
+        return 'round2'
+      }
 
-    return 'closed'
-  })
+      return 'closed'
+    },
+  )
 }
 
 async function maybeFinalizeRound1Winners(db: Db) {
@@ -379,7 +538,12 @@ async function maybeFinalizeRound1Winners(db: Db) {
     .from(communes)
     .innerJoin(tracks, eq(tracks.communeId, communes.id))
     .where(eq(tracks.isActive, true))
-    .orderBy(communes.id, desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
+    .orderBy(
+      communes.id,
+      desc(tracks.rating),
+      desc(tracks.wins),
+      desc(tracks.appearances),
+    )
 
   const winnersByCommune = new Map<
     number,
@@ -439,7 +603,8 @@ async function getTrackViewsByIds(
       rating: round === 'round2' ? tracks.round2Rating : tracks.rating,
       wins: round === 'round2' ? tracks.round2Wins : tracks.wins,
       losses: round === 'round2' ? tracks.round2Losses : tracks.losses,
-      appearances: round === 'round2' ? tracks.round2Appearances : tracks.appearances,
+      appearances:
+        round === 'round2' ? tracks.round2Appearances : tracks.appearances,
       communeId: communes.id,
       artistName: sql<string>`coalesce(${artists.name}, '')`,
       communeName: communes.name,
@@ -474,12 +639,19 @@ async function pickRandomChallenger(
     excludedTrackIds: number[]
     round: ElectionRound
     communeId?: number | null
+    region?: Region | null
   },
 ) {
   const filters = [eq(tracks.isActive, true)]
 
   if (input.round === 'round1' && input.communeId) {
     filters.push(eq(tracks.communeId, input.communeId))
+  } else if (input.region) {
+    const regionCommuneIds = await resolveRegionCommuneIds(db, input.region)
+    if (regionCommuneIds.length === 0) {
+      return null
+    }
+    filters.push(inArray(tracks.communeId, regionCommuneIds))
   }
 
   if (input.excludedTrackIds.length > 0) {
@@ -490,7 +662,9 @@ async function pickRandomChallenger(
     .select({
       id: tracks.id,
       appearances:
-        input.round === 'round2' ? tracks.round2Appearances : tracks.appearances,
+        input.round === 'round2'
+          ? tracks.round2Appearances
+          : tracks.appearances,
     })
     .from(tracks)
 
@@ -560,7 +734,8 @@ async function getOrCreateUser(
 }
 
 async function ensureCommune(db: Db, communeName: string) {
-  const { canonicalName, slugCandidates } = getCommuneSlugCandidates(communeName)
+  const { canonicalName, slugCandidates } =
+    getCommuneSlugCandidates(communeName)
   const slug = slugify(canonicalName)
   const existing = await db
     .select()
@@ -776,7 +951,9 @@ export async function createTrack(input: {
   }
 
   const trimmedArtistName = input.artistName?.trim() || null
-  const artist = trimmedArtistName ? await ensureArtist(db, trimmedArtistName) : null
+  const artist = trimmedArtistName
+    ? await ensureArtist(db, trimmedArtistName)
+    : null
 
   let resolvedCommuneId: number | null = null
   let resolvedCommuneName: string | null = null
@@ -785,7 +962,10 @@ export async function createTrack(input: {
   let resolvedCandidateName: string | null = null
 
   if (typeof input.electoralListId === 'number') {
-    const electoralList = await getElectoralListReferenceById(db, input.electoralListId)
+    const electoralList = await getElectoralListReferenceById(
+      db,
+      input.electoralListId,
+    )
 
     if (!electoralList) {
       throw new Error('Electoral list not found')
@@ -816,7 +996,8 @@ export async function createTrack(input: {
 
     electoralListId = electoralList?.id ?? null
     resolvedListName = electoralList?.name ?? input.listName?.trim() ?? null
-    resolvedCandidateName = electoralList?.candidateName ?? input.candidateName?.trim() ?? null
+    resolvedCandidateName =
+      electoralList?.candidateName ?? input.candidateName?.trim() ?? null
   }
 
   const resolvedTitle =
@@ -825,8 +1006,7 @@ export async function createTrack(input: {
     resolvedListName ||
     (trimmedArtistName && resolvedCommuneName
       ? `${trimmedArtistName} - ${resolvedCommuneName}`
-      : resolvedCommuneName ||
-        'Son de campagne')
+      : resolvedCommuneName || 'Son de campagne')
 
   const slug = await getUniqueTrackSlug(db, resolvedTitle)
 
@@ -1063,104 +1243,122 @@ export async function seedElectoralLists() {
 export async function listElectoralListsForAdmin(input?: {
   communeName?: string | null
   excludeListsWithActiveTracks?: boolean
+  region?: Region | null
 }) {
   const db = getDb()
   const communeName = input?.communeName?.trim()
-  const excludeListsWithActiveTracks = input?.excludeListsWithActiveTracks ?? false
-  const cacheKey = `electoral-lists:${communeName ? canonicalizeCommuneName(communeName) : 'all'}:${excludeListsWithActiveTracks ? 'available-only' : 'all'}`
+  const excludeListsWithActiveTracks =
+    input?.excludeListsWithActiveTracks ?? false
+  const cacheKey = `electoral-lists:${input?.region ?? 'all'}:${communeName ? canonicalizeCommuneName(communeName) : 'all'}:${excludeListsWithActiveTracks ? 'available-only' : 'all'}`
 
-  return getOrSetServerCache(cacheKey, ELECTORAL_LISTS_CACHE_TTL_MS, async () => {
-    const rows = await db
-      .select({
-        id: electoralLists.id,
-        name: electoralLists.name,
-        slug: electoralLists.slug,
-        candidateName: electoralLists.candidateName,
-        photoUrl: electoralLists.photoUrl,
-        communeId: communes.id,
-        communeName: communes.name,
-        communeSlug: communes.slug,
-        activeTrackCount: sql<number>`count(${tracks.id})`,
-      })
-      .from(electoralLists)
-      .innerJoin(communes, eq(communes.id, electoralLists.communeId))
-      .leftJoin(
-        tracks,
-        and(
-          eq(tracks.electoralListId, electoralLists.id),
-          eq(tracks.isActive, true),
-        ),
-      )
-      .where(
-        communeName ? eq(communes.name, canonicalizeCommuneName(communeName)) : undefined,
-      )
-      .groupBy(
-        electoralLists.id,
-        electoralLists.name,
-        electoralLists.slug,
-        electoralLists.candidateName,
-        electoralLists.photoUrl,
-        communes.id,
-        communes.name,
-        communes.slug,
-      )
-      .orderBy(
-        asc(communes.name),
-        asc(electoralLists.candidateName),
-        asc(electoralLists.name),
-      )
+  return getOrSetServerCache(
+    cacheKey,
+    ELECTORAL_LISTS_CACHE_TTL_MS,
+    async () => {
+      const filters = []
 
-    const communesMap = new Map<
-      string,
-      {
-        id: number
-        name: string
-        slug: string
-        lists: Array<{
+      if (communeName) {
+        filters.push(eq(communes.name, canonicalizeCommuneName(communeName)))
+      }
+
+      if (input?.region) {
+        const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
+        if (regionCommuneSlugs.length === 0) {
+          return []
+        }
+        filters.push(inArray(communes.slug, regionCommuneSlugs))
+      }
+
+      const rows = await db
+        .select({
+          id: electoralLists.id,
+          name: electoralLists.name,
+          slug: electoralLists.slug,
+          candidateName: electoralLists.candidateName,
+          photoUrl: electoralLists.photoUrl,
+          communeId: communes.id,
+          communeName: communes.name,
+          communeSlug: communes.slug,
+          activeTrackCount: sql<number>`count(${tracks.id})`,
+        })
+        .from(electoralLists)
+        .innerJoin(communes, eq(communes.id, electoralLists.communeId))
+        .leftJoin(
+          tracks,
+          and(
+            eq(tracks.electoralListId, electoralLists.id),
+            eq(tracks.isActive, true),
+          ),
+        )
+        .where(filters.length > 0 ? and(...filters) : undefined)
+        .groupBy(
+          electoralLists.id,
+          electoralLists.name,
+          electoralLists.slug,
+          electoralLists.candidateName,
+          electoralLists.photoUrl,
+          communes.id,
+          communes.name,
+          communes.slug,
+        )
+        .orderBy(
+          asc(communes.name),
+          asc(electoralLists.candidateName),
+          asc(electoralLists.name),
+        )
+
+      const communesMap = new Map<
+        string,
+        {
           id: number
           name: string
           slug: string
-          candidateName: string | null
-          photoUrl: string | null
-        }>
-      }
-    >()
+          lists: Array<{
+            id: number
+            name: string
+            slug: string
+            candidateName: string | null
+            photoUrl: string | null
+          }>
+        }
+      >()
 
-    for (const row of rows) {
-      if (excludeListsWithActiveTracks && Number(row.activeTrackCount) > 0) {
-        continue
-      }
+      for (const row of rows) {
+        if (excludeListsWithActiveTracks && Number(row.activeTrackCount) > 0) {
+          continue
+        }
 
-      const existingCommune = communesMap.get(row.communeName)
-      if (existingCommune) {
-        existingCommune.lists.push({
-          id: row.id,
-          name: row.name,
-          slug: row.slug,
-          candidateName: row.candidateName,
-          photoUrl: row.photoUrl,
-        })
-        continue
-      }
-
-      communesMap.set(row.communeName, {
-        id: row.communeId,
-        name: row.communeName,
-        slug: row.communeSlug,
-        lists: [
-          {
+        const existingCommune = communesMap.get(row.communeName)
+        if (existingCommune) {
+          existingCommune.lists.push({
             id: row.id,
             name: row.name,
             slug: row.slug,
             candidateName: row.candidateName,
             photoUrl: row.photoUrl,
-          },
-        ],
-      })
-    }
+          })
+          continue
+        }
 
-    return Array.from(communesMap.values())
-  })
+        communesMap.set(row.communeName, {
+          id: row.communeId,
+          name: row.communeName,
+          slug: row.communeSlug,
+          lists: [
+            {
+              id: row.id,
+              name: row.name,
+              slug: row.slug,
+              candidateName: row.candidateName,
+              photoUrl: row.photoUrl,
+            },
+          ],
+        })
+      }
+
+      return Array.from(communesMap.values())
+    },
+  )
 }
 
 export async function electoralListHasActiveTrack(electoralListId: number) {
@@ -1169,7 +1367,10 @@ export async function electoralListHasActiveTrack(electoralListId: number) {
     .select({ id: tracks.id })
     .from(tracks)
     .where(
-      and(eq(tracks.electoralListId, electoralListId), eq(tracks.isActive, true)),
+      and(
+        eq(tracks.electoralListId, electoralListId),
+        eq(tracks.isActive, true),
+      ),
     )
     .limit(1)
 
@@ -1188,7 +1389,8 @@ export async function assertAdminAccess(input: {
   }
 
   const db = getDb()
-  const configuredAdminUserId = process.env.ADMIN_EXTERNAL_USER_ID?.trim() || null
+  const configuredAdminUserId =
+    process.env.ADMIN_EXTERNAL_USER_ID?.trim() || null
 
   if (configuredAdminUserId) {
     if (input.externalUserId !== configuredAdminUserId) {
@@ -1230,11 +1432,22 @@ async function listEligibleTrackIds(
   input: {
     round: ElectionRound
     communeId?: number | null
+    region?: Region | null
   },
 ) {
   const baseFilters = [eq(tracks.isActive, true)]
 
   if (input.round === 'round1') {
+    if (input.communeId) {
+      baseFilters.push(eq(tracks.communeId, input.communeId))
+    } else if (input.region) {
+      const regionCommuneIds = await resolveRegionCommuneIds(db, input.region)
+      if (regionCommuneIds.length === 0) {
+        return []
+      }
+      baseFilters.push(inArray(tracks.communeId, regionCommuneIds))
+    }
+
     return db
       .select({ id: tracks.id })
       .from(tracks)
@@ -1242,6 +1455,14 @@ async function listEligibleTrackIds(
   }
 
   await maybeFinalizeRound1Winners(db)
+
+  if (input.region) {
+    const regionCommuneIds = await resolveRegionCommuneIds(db, input.region)
+    if (regionCommuneIds.length === 0) {
+      return []
+    }
+    baseFilters.push(inArray(tracks.communeId, regionCommuneIds))
+  }
 
   return db
     .select({ id: tracks.id })
@@ -1253,7 +1474,17 @@ async function listEligibleTrackIds(
     .where(and(...baseFilters))
 }
 
-async function listEligibleCommunesForRound1(db: Db) {
+async function listEligibleCommunesForRound1(db: Db, region?: Region | null) {
+  const filters = [eq(tracks.isActive, true)]
+
+  if (region) {
+    const regionCommuneSlugs = getRegionCommuneSlugs(region)
+    if (regionCommuneSlugs.length === 0) {
+      return []
+    }
+    filters.push(inArray(communes.slug, regionCommuneSlugs))
+  }
+
   const rows = await db
     .select({
       id: communes.id,
@@ -1263,7 +1494,7 @@ async function listEligibleCommunesForRound1(db: Db) {
     })
     .from(communes)
     .innerJoin(tracks, eq(tracks.communeId, communes.id))
-    .where(eq(tracks.isActive, true))
+    .where(and(...filters))
     .groupBy(communes.id, communes.name, communes.slug)
     .having(sql`count(${tracks.id}) >= 2`)
     .orderBy(asc(communes.name))
@@ -1276,12 +1507,19 @@ async function countEligibleTracks(
   input: {
     round: ElectionRound
     communeId?: number | null
+    region?: Region | null
   },
 ) {
   const filters = [eq(tracks.isActive, true)]
 
   if (input.round === 'round1' && input.communeId) {
     filters.push(eq(tracks.communeId, input.communeId))
+  } else if (input.region) {
+    const regionCommuneIds = await resolveRegionCommuneIds(db, input.region)
+    if (regionCommuneIds.length === 0) {
+      return 0
+    }
+    filters.push(inArray(tracks.communeId, regionCommuneIds))
   }
 
   const countRows =
@@ -1306,6 +1544,7 @@ export async function startVoteSession(input: {
   externalUserId: string
   username?: string | null
   communeSlug?: string | null
+  region?: Region | null
 }) {
   const db = getDb()
   const phase = await resolveElectionPhase(db)
@@ -1327,12 +1566,39 @@ export async function startVoteSession(input: {
     username: input.username,
   })
 
+  const requestedCommune =
+    phase === 'round1' && input.communeSlug
+      ? await getCommuneBySlug(db, input.communeSlug)
+      : null
+
+  if (phase === 'round1' && input.communeSlug && !requestedCommune) {
+    return {
+      ok: false as const,
+      code: 'COMMUNE_NOT_FOUND' as const,
+      message: 'Commune introuvable.',
+    }
+  }
+
+  if (
+    requestedCommune &&
+    input.region &&
+    getRegionForCommune(requestedCommune.name) !== input.region
+  ) {
+    return {
+      ok: false as const,
+      code: 'COMMUNE_OUTSIDE_REGION' as const,
+      message: 'Cette commune ne fait pas partie de la region active.',
+    }
+  }
+
   const existingSessionRows = await db
     .select({
       id: voteSessions.id,
       status: voteSessions.status,
       electionRound: voteSessions.electionRound,
       communeId: voteSessions.communeId,
+      currentChampionTrackId: voteSessions.currentChampionTrackId,
+      currentChallengerTrackId: voteSessions.currentChallengerTrackId,
     })
     .from(voteSessions)
     .where(
@@ -1343,11 +1609,23 @@ export async function startVoteSession(input: {
       ),
     )
     .orderBy(desc(voteSessions.createdAt))
-    .limit(1)
+    .limit(10)
 
-  const existingSession = existingSessionRows.at(0)
-  if (existingSession) {
-    const existingState = await getSessionState({ sessionId: existingSession.id })
+  for (const existingSession of existingSessionRows) {
+    const sessionRegion = await resolveSessionRegion(db, existingSession)
+    const matchesCommune =
+      requestedCommune?.id != null
+        ? existingSession.communeId === requestedCommune.id
+        : existingSession.communeId == null
+    const matchesRegion = input.region ? sessionRegion === input.region : true
+
+    if (!matchesCommune || !matchesRegion) {
+      continue
+    }
+
+    const existingState = await getSessionState({
+      sessionId: existingSession.id,
+    })
 
     if (existingState?.status === 'active') {
       return {
@@ -1356,7 +1634,7 @@ export async function startVoteSession(input: {
         sessionId: existingSession.id,
         userId: user.id,
         electionRound: phase,
-        commune: null,
+        commune: requestedCommune,
         duel: existingState.duel,
       }
     }
@@ -1364,7 +1642,8 @@ export async function startVoteSession(input: {
 
   const available = await listEligibleTrackIds(db, {
     round: phase,
-    communeId: null,
+    communeId: requestedCommune?.id ?? null,
+    region: input.region ?? null,
   })
 
   if (available.length < 2) {
@@ -1398,7 +1677,7 @@ export async function startVoteSession(input: {
     id: sessionId,
     userId: user.id,
     electionRound: phase,
-    communeId: null,
+    communeId: requestedCommune?.id ?? null,
     currentChampionTrackId: firstId,
     currentChallengerTrackId: secondId,
     seenTrackIds: JSON.stringify([firstId, secondId]),
@@ -1418,7 +1697,7 @@ export async function startVoteSession(input: {
     sessionId,
     userId: user.id,
     electionRound: phase,
-    commune: null,
+    commune: requestedCommune,
     duel: {
       leftTrack,
       rightTrack,
@@ -1444,10 +1723,12 @@ export async function getSessionState(input: { sessionId: string }) {
   }
 
   const currentSession = session[0]
+  const sessionRegion = await resolveSessionRegion(db, currentSession)
   const seen = parseSeenTrackIds(currentSession.seenTrackIds)
   const totalEligibleTracks = await countEligibleTracks(db, {
     round: currentSession.electionRound,
     communeId: currentSession.communeId,
+    region: sessionRegion,
   })
 
   if (currentSession.status === 'completed') {
@@ -1460,7 +1741,10 @@ export async function getSessionState(input: { sessionId: string }) {
 
   const activeTracks = await getTrackViewsByIds(
     db,
-    [currentSession.currentChampionTrackId, currentSession.currentChallengerTrackId],
+    [
+      currentSession.currentChampionTrackId,
+      currentSession.currentChallengerTrackId,
+    ],
     currentSession.electionRound,
   )
   const leftTrack = activeTracks.at(0)
@@ -1511,9 +1795,11 @@ export async function pickWinner(input: {
     }
   }
 
+  const sessionRegion = await resolveSessionRegion(db, session)
   const totalEligibleTracks = await countEligibleTracks(db, {
     round: session.electionRound,
     communeId: session.communeId,
+    region: sessionRegion,
   })
 
   if (session.status === 'completed') {
@@ -1525,7 +1811,10 @@ export async function pickWinner(input: {
     }
   }
 
-  const pairIds = [session.currentChampionTrackId, session.currentChallengerTrackId]
+  const pairIds = [
+    session.currentChampionTrackId,
+    session.currentChallengerTrackId,
+  ]
   if (
     !pairIds.includes(input.winnerTrackId) ||
     !pairIds.includes(input.loserTrackId) ||
@@ -1621,6 +1910,7 @@ export async function pickWinner(input: {
     excludedTrackIds: Array.from(seen),
     round: session.electionRound,
     communeId: session.communeId,
+    region: sessionRegion,
   })
 
   if (!nextChallengerId) {
@@ -1678,12 +1968,14 @@ export async function getLeaderboard(input?: {
   electionRound?: ElectionRound | null
   communeSlug?: string | null
   limit?: number
+  region?: Region | null
 }) {
   const db = getDb()
   const phase = await resolveElectionPhase(db)
-  const electionRound = input?.electionRound ?? (phase === 'round1' ? 'round1' : 'round2')
+  const electionRound =
+    input?.electionRound ?? (phase === 'round1' ? 'round1' : 'round2')
   const limit = input?.limit ?? 20
-  const cacheKey = `leaderboard:${electionRound}:${input?.communeSlug ?? 'all'}:${limit}`
+  const cacheKey = `leaderboard:${electionRound}:${input?.region ?? 'all'}:${input?.communeSlug ?? 'all'}:${limit}`
 
   return getOrSetServerCache(cacheKey, LEADERBOARD_CACHE_TTL_MS, async () => {
     const filters = [eq(tracks.isActive, true)]
@@ -1696,6 +1988,14 @@ export async function getLeaderboard(input?: {
       filters.push(eq(communes.slug, input.communeSlug))
     }
 
+    if (input?.region) {
+      const regionCommuneSlugs = getRegionCommuneSlugs(input.region)
+      if (regionCommuneSlugs.length === 0) {
+        return []
+      }
+      filters.push(inArray(communes.slug, regionCommuneSlugs))
+    }
+
     const baseQuery = db
       .select({
         id: tracks.id,
@@ -1704,11 +2004,15 @@ export async function getLeaderboard(input?: {
         streamUrl: tracks.streamUrl,
         r2Key: tracks.r2Key,
         isAiGenerated: tracks.isAiGenerated,
-        rating: electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
+        rating:
+          electionRound === 'round2' ? tracks.round2Rating : tracks.rating,
         wins: electionRound === 'round2' ? tracks.round2Wins : tracks.wins,
-        losses: electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
+        losses:
+          electionRound === 'round2' ? tracks.round2Losses : tracks.losses,
         appearances:
-          electionRound === 'round2' ? tracks.round2Appearances : tracks.appearances,
+          electionRound === 'round2'
+            ? tracks.round2Appearances
+            : tracks.appearances,
         artistName: sql<string>`coalesce(${artists.name}, '')`,
         communeId: communes.id,
         communeName: communes.name,
@@ -1737,7 +2041,11 @@ export async function getLeaderboard(input?: {
             .limit(limit)
         : await baseQuery
             .where(and(...filters))
-            .orderBy(desc(tracks.rating), desc(tracks.wins), desc(tracks.appearances))
+            .orderBy(
+              desc(tracks.rating),
+              desc(tracks.wins),
+              desc(tracks.appearances),
+            )
             .limit(limit)
 
     return rows.map((row, index) => ({
@@ -1748,7 +2056,7 @@ export async function getLeaderboard(input?: {
   })
 }
 
-export async function getVotingStartOptions() {
+export async function getVotingStartOptions(input?: { region?: Region | null }) {
   const db = getDb()
   const electionRound = await resolveElectionPhase(db)
 
@@ -1767,7 +2075,10 @@ export async function getVotingStartOptions() {
     }
   }
 
-  const eligibleCommunes = await listEligibleCommunesForRound1(db)
+  const eligibleCommunes = await listEligibleCommunesForRound1(
+    db,
+    input?.region ?? null,
+  )
 
   return {
     electionRound,
@@ -1927,4 +2238,431 @@ export async function getSessionSummary(input: {
     winnerTrackId: session.currentChampionTrackId,
     scoreboard,
   }
+}
+
+async function listBlindtestTrackIds(db: Db) {
+  const rows = await db
+    .select({ id: tracks.id })
+    .from(tracks)
+    .where(eq(tracks.isActive, true))
+
+  return rows.map((row) => row.id)
+}
+
+export async function getBlindtestTrackStats(input: {
+  trackId: number
+}): Promise<BlindtestTrackStats> {
+  const db = getDb()
+  const track = await db
+    .select({
+      id: tracks.id,
+      isAiGenerated: tracks.isAiGenerated,
+    })
+    .from(tracks)
+    .where(eq(tracks.id, input.trackId))
+    .limit(1)
+
+  const currentTrack = track.at(0)
+  if (!currentTrack) {
+    throw new Error('Track not found')
+  }
+
+  const guesses = await db
+    .select({
+      guessedLabel: aiGuesses.guessedLabel,
+      isCorrect: aiGuesses.isCorrect,
+    })
+    .from(aiGuesses)
+    .where(eq(aiGuesses.trackId, input.trackId))
+
+  const guessedAiCount = guesses.filter(
+    (guess) => guess.guessedLabel === 'ai',
+  ).length
+  const guessedHumanCount = guesses.length - guessedAiCount
+  const correctCount = guesses.filter((guess) => guess.isCorrect).length
+  const totalAnswers = guesses.length
+
+  return {
+    trackId: input.trackId,
+    actualLabel: toBlindtestGuessLabel(currentTrack.isAiGenerated),
+    totalAnswers,
+    guessedAiCount,
+    guessedHumanCount,
+    guessedAiPercentage: roundPercentage(guessedAiCount, totalAnswers),
+    guessedHumanPercentage: roundPercentage(guessedHumanCount, totalAnswers),
+    accuracyPercentage: roundPercentage(correctCount, totalAnswers),
+    ambiguityScore: totalAnswers
+      ? Math.max(
+          0,
+          100 -
+            Math.abs(50 - roundPercentage(guessedAiCount, totalAnswers)) * 2,
+        )
+      : 0,
+  }
+}
+
+export async function getBlindtestSessionSummary(input: {
+  sessionId: string
+}): Promise<BlindtestSummary> {
+  const db = getDb()
+  const sessionRows = await db
+    .select()
+    .from(aiGuessSessions)
+    .where(eq(aiGuessSessions.id, input.sessionId))
+    .limit(1)
+
+  const session = sessionRows.at(0)
+  if (!session) {
+    throw new Error('Blindtest session not found')
+  }
+
+  const guesses = await db
+    .select({
+      trackId: aiGuesses.trackId,
+      roundNumber: aiGuesses.roundNumber,
+      guessedLabel: aiGuesses.guessedLabel,
+      actualLabel: aiGuesses.actualLabel,
+      isCorrect: aiGuesses.isCorrect,
+    })
+    .from(aiGuesses)
+    .where(eq(aiGuesses.sessionId, input.sessionId))
+    .orderBy(asc(aiGuesses.roundNumber))
+
+  const trackIds = parseBlindtestTrackIds(session.trackIds)
+  const uniqueTrackIds = Array.from(
+    new Set(guesses.map((guess) => guess.trackId)),
+  )
+  const trackViews = await getTrackViewsByIds(db, uniqueTrackIds)
+  const titlesByTrackId = new Map(
+    trackViews.map((track) => [track.id, track.title]),
+  )
+
+  const rounds = guesses.map((guess) => ({
+    trackId: guess.trackId,
+    title: titlesByTrackId.get(guess.trackId) ?? `Morceau #${guess.trackId}`,
+    userGuess: guess.guessedLabel,
+    actualLabel: guess.actualLabel,
+    isCorrect: guess.isCorrect,
+  }))
+
+  const correctAnswers = rounds.filter((round) => round.isCorrect).length
+  const totalRounds = trackIds.length
+
+  return {
+    totalRounds,
+    correctAnswers,
+    accuracyPercentage: roundPercentage(correctAnswers, totalRounds),
+    rounds,
+  }
+}
+
+export async function startBlindtestSession(input: {
+  externalUserId: string
+  username?: string | null
+}) {
+  const db = getDb()
+  const user = await getOrCreateUser(db, {
+    externalUserId: input.externalUserId,
+    username: input.username,
+  })
+
+  const allTrackIds = await listBlindtestTrackIds(db)
+  if (allTrackIds.length === 0) {
+    return {
+      ok: false as const,
+      code: 'NO_TRACKS_AVAILABLE' as const,
+      message: 'Aucun morceau disponible pour le blindtest.',
+    }
+  }
+
+  const selectedTrackIds = shuffle(allTrackIds).slice(
+    0,
+    Math.min(10, allTrackIds.length),
+  )
+  const firstTrack = await getTrackViewById(db, selectedTrackIds[0])
+
+  if (!firstTrack) {
+    throw new Error('Unable to initialize blindtest')
+  }
+
+  const sessionId = crypto.randomUUID()
+
+  await db.insert(aiGuessSessions).values({
+    id: sessionId,
+    userId: user.id,
+    trackIds: JSON.stringify(selectedTrackIds),
+    currentIndex: 0,
+    correctAnswers: 0,
+    status: 'active',
+  })
+
+  return {
+    ok: true as const,
+    sessionId,
+    totalRounds: selectedTrackIds.length,
+    currentRound: 1,
+    track: firstTrack,
+  }
+}
+
+export async function getBlindtestSessionState(input: { sessionId: string }) {
+  const db = getDb()
+  const sessionRows = await db
+    .select()
+    .from(aiGuessSessions)
+    .where(eq(aiGuessSessions.id, input.sessionId))
+    .limit(1)
+
+  const session = sessionRows.at(0)
+  if (!session) {
+    return null
+  }
+
+  const trackIds = parseBlindtestTrackIds(session.trackIds)
+
+  if (
+    session.status === 'completed' ||
+    session.currentIndex >= trackIds.length
+  ) {
+    const summary = await getBlindtestSessionSummary({ sessionId: session.id })
+    return {
+      status: 'completed' as const,
+      summary,
+    }
+  }
+
+  const currentTrackId = trackIds[session.currentIndex]
+  if (typeof currentTrackId !== 'number') {
+    throw new Error('Blindtest session is corrupted')
+  }
+
+  const track = await getTrackViewById(db, currentTrackId)
+  if (!track) {
+    throw new Error('Blindtest track not found')
+  }
+
+  return {
+    status: 'active' as const,
+    sessionId: session.id,
+    totalRounds: trackIds.length,
+    currentRound: session.currentIndex + 1,
+    track,
+  }
+}
+
+export async function submitBlindtestAnswer(input: {
+  sessionId: string
+  trackId: number
+  guessLabel: BlindtestGuessLabel
+}) {
+  const db = getDb()
+  const sessionRows = await db
+    .select()
+    .from(aiGuessSessions)
+    .where(eq(aiGuessSessions.id, input.sessionId))
+    .limit(1)
+
+  const session = sessionRows.at(0)
+  if (!session) {
+    return {
+      ok: false as const,
+      code: 'SESSION_NOT_FOUND' as const,
+      message: 'Session introuvable.',
+    }
+  }
+
+  if (session.status === 'completed') {
+    return {
+      ok: false as const,
+      code: 'SESSION_COMPLETED' as const,
+      message: 'Cette session est deja terminee.',
+    }
+  }
+
+  const trackIds = parseBlindtestTrackIds(session.trackIds)
+  const expectedTrackId = trackIds[session.currentIndex]
+
+  if (expectedTrackId !== input.trackId) {
+    return {
+      ok: false as const,
+      code: 'INVALID_TRACK' as const,
+      message: 'Le morceau ne correspond pas au round en cours.',
+    }
+  }
+
+  const track = await getTrackViewById(db, input.trackId)
+  if (!track) {
+    return {
+      ok: false as const,
+      code: 'TRACK_NOT_FOUND' as const,
+      message: 'Morceau introuvable.',
+    }
+  }
+
+  const actualLabel = toBlindtestGuessLabel(track.isAiGenerated)
+  const isCorrect = input.guessLabel === actualLabel
+  const nextIndex = session.currentIndex + 1
+  const isCompleted = nextIndex >= trackIds.length
+
+  await db.transaction(async (tx) => {
+    await tx.insert(aiGuesses).values({
+      sessionId: session.id,
+      userId: session.userId,
+      trackId: input.trackId,
+      roundNumber: session.currentIndex + 1,
+      guessedLabel: input.guessLabel,
+      actualLabel,
+      isCorrect,
+    })
+
+    await tx
+      .update(aiGuessSessions)
+      .set({
+        currentIndex: nextIndex,
+        correctAnswers: session.correctAnswers + (isCorrect ? 1 : 0),
+        status: isCompleted ? 'completed' : 'active',
+        completedAt: isCompleted ? new Date().toISOString() : null,
+      })
+      .where(eq(aiGuessSessions.id, session.id))
+  })
+
+  const trackStats = await getBlindtestTrackStats({ trackId: input.trackId })
+  const summary = await getBlindtestSessionSummary({ sessionId: session.id })
+  const result = {
+    trackId: input.trackId,
+    userGuess: input.guessLabel,
+    actualLabel,
+    isCorrect,
+  }
+
+  if (isCompleted) {
+    return {
+      ok: true as const,
+      status: 'completed' as const,
+      result,
+      trackStats,
+      summary,
+    }
+  }
+
+  const nextTrackId = trackIds[nextIndex]
+  if (typeof nextTrackId !== 'number') {
+    throw new Error('Blindtest next track missing')
+  }
+
+  const nextTrack = await getTrackViewById(db, nextTrackId)
+  if (!nextTrack) {
+    throw new Error('Blindtest next track not found')
+  }
+
+  return {
+    ok: true as const,
+    status: 'active' as const,
+    result,
+    trackStats,
+    totalRounds: trackIds.length,
+    currentRound: nextIndex + 1,
+    nextTrack,
+    summary,
+  }
+}
+
+export async function listBlindtestStatsForAdmin() {
+  const db = getDb()
+  const trackRows = await db
+    .select({
+      id: tracks.id,
+      title: tracks.title,
+      isAiGenerated: tracks.isAiGenerated,
+      isActive: tracks.isActive,
+      artistName: sql<string>`coalesce(${artists.name}, '')`,
+      communeName: communes.name,
+      listName: electoralLists.name,
+      candidateName: electoralLists.candidateName,
+    })
+    .from(tracks)
+    .leftJoin(artists, eq(artists.id, tracks.artistId))
+    .innerJoin(communes, eq(communes.id, tracks.communeId))
+    .leftJoin(electoralLists, eq(electoralLists.id, tracks.electoralListId))
+
+  const guessRows = await db
+    .select({
+      trackId: aiGuesses.trackId,
+      guessedLabel: aiGuesses.guessedLabel,
+      isCorrect: aiGuesses.isCorrect,
+    })
+    .from(aiGuesses)
+
+  const aggregateByTrackId = new Map<
+    number,
+    { totalAnswers: number; guessedAiCount: number; correctCount: number }
+  >()
+
+  for (const guess of guessRows) {
+    const current = aggregateByTrackId.get(guess.trackId) ?? {
+      totalAnswers: 0,
+      guessedAiCount: 0,
+      correctCount: 0,
+    }
+
+    current.totalAnswers += 1
+    if (guess.guessedLabel === 'ai') {
+      current.guessedAiCount += 1
+    }
+    if (guess.isCorrect) {
+      current.correctCount += 1
+    }
+
+    aggregateByTrackId.set(guess.trackId, current)
+  }
+
+  return trackRows
+    .map((track) => {
+      const aggregate = aggregateByTrackId.get(track.id) ?? {
+        totalAnswers: 0,
+        guessedAiCount: 0,
+        correctCount: 0,
+      }
+      const guessedHumanCount =
+        aggregate.totalAnswers - aggregate.guessedAiCount
+      const guessedAiPercentage = roundPercentage(
+        aggregate.guessedAiCount,
+        aggregate.totalAnswers,
+      )
+
+      return {
+        id: track.id,
+        title: track.title,
+        isActive: track.isActive,
+        artistName: track.artistName,
+        communeName: track.communeName,
+        listName: track.listName,
+        candidateName: track.candidateName,
+        actualLabel: toBlindtestGuessLabel(track.isAiGenerated),
+        totalAnswers: aggregate.totalAnswers,
+        guessedAiPercentage,
+        guessedHumanPercentage: roundPercentage(
+          guessedHumanCount,
+          aggregate.totalAnswers,
+        ),
+        accuracyPercentage: roundPercentage(
+          aggregate.correctCount,
+          aggregate.totalAnswers,
+        ),
+        ambiguityScore: aggregate.totalAnswers
+          ? Math.max(0, 100 - Math.abs(50 - guessedAiPercentage) * 2)
+          : 0,
+      }
+    })
+    .sort((left, right) => {
+      const leftEligible = left.totalAnswers >= 3 ? 1 : 0
+      const rightEligible = right.totalAnswers >= 3 ? 1 : 0
+
+      return (
+        rightEligible - leftEligible ||
+        right.ambiguityScore - left.ambiguityScore ||
+        right.totalAnswers - left.totalAnswers ||
+        left.title.localeCompare(right.title, 'fr', { sensitivity: 'base' })
+      )
+    })
 }

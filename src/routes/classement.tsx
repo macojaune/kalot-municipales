@@ -18,6 +18,7 @@ import type {
   StartSessionResponse,
   VotingStartOptionsResponse,
 } from '../lib/kalot-client'
+import { useRegionPath, useResolvedRegion } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
 import clsx from 'clsx'
 
@@ -37,28 +38,43 @@ export const Route = createFileRoute('/classement')({
         'Consulte le classement général KalotMunicipales et découvre les morceaux de campagne les mieux notés.',
       path: '/classement',
     }),
-  component: LeaderboardPage,
+  component: LeaderboardRoutePage,
 })
 
-function LeaderboardPage() {
-  if (!clerkEnabled) {
-    return <LeaderboardPageContent />
-  }
+function LeaderboardRoutePage() {
+  const search = Route.useSearch()
 
-  return <AuthenticatedLeaderboardPage />
+  return <LeaderboardPage initialCommuneSlug={search.commune ?? ''} />
 }
 
-function AuthenticatedLeaderboardPage() {
+type LeaderboardPageProps = {
+  initialCommuneSlug?: string
+}
+
+export function LeaderboardPage({
+  initialCommuneSlug = '',
+}: LeaderboardPageProps = {}) {
+  if (!clerkEnabled) {
+    return <LeaderboardPageContent initialCommuneSlug={initialCommuneSlug} />
+  }
+
+  return (
+    <AuthenticatedLeaderboardPage initialCommuneSlug={initialCommuneSlug} />
+  )
+}
+
+function AuthenticatedLeaderboardPage({
+  initialCommuneSlug = '',
+}: LeaderboardPageProps) {
   const navigate = useNavigate()
   const { openSignIn } = useClerk()
   const { user } = useUser()
-  const search = Route.useSearch()
 
   return (
     <LeaderboardPageContent
       user={user}
       navigate={navigate}
-      initialCommuneSlug={search.commune ?? ''}
+      initialCommuneSlug={initialCommuneSlug}
       onOpenSignIn={() =>
         openSignIn({
           fallbackRedirectUrl: window.location.href,
@@ -81,16 +97,18 @@ function LeaderboardPageContent({
   initialCommuneSlug = '',
   onOpenSignIn,
 }: LeaderboardPageContentProps = {}) {
+  const classementHref = useRegionPath('/classement')
+  const duelHref = useRegionPath('/duel')
+  const resolvedRegion = useResolvedRegion()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const loadedTrackIdRef = useRef<number | null>(null)
   const [playingTrackId, setPlayingTrackId] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const safeNavigate = useNavigate()
-  const search = Route.useSearch()
 
   const externalUserId = getExternalUserId(user)
   const displayName = getDisplayName(user)
-  const selectedCommuneSlug = initialCommuneSlug || search.commune || ''
+  const selectedCommuneSlug = initialCommuneSlug
 
   useEffect(() => {
     const audio = new Audio()
@@ -130,10 +148,12 @@ function LeaderboardPageContent({
   }, [])
 
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'full-table', selectedCommuneSlug],
+    queryKey: ['leaderboard', 'full-table', resolvedRegion, selectedCommuneSlug],
     queryFn: () =>
       getJson<LeaderboardResponse>(
         `/api/leaderboard?limit=500${
+          resolvedRegion ? `&region=${encodeURIComponent(resolvedRegion)}` : ''
+        }${
           selectedCommuneSlug
             ? `&commune=${encodeURIComponent(selectedCommuneSlug)}`
             : ''
@@ -145,8 +165,13 @@ function LeaderboardPageContent({
   })
 
   const voteOptionsQuery = useQuery({
-    queryKey: ['vote-options'],
-    queryFn: () => getJson<VotingStartOptionsResponse>('/api/vote/options'),
+    queryKey: ['vote-options', resolvedRegion],
+    queryFn: () =>
+      getJson<VotingStartOptionsResponse>(
+        `/api/vote/options${
+          resolvedRegion ? `?region=${encodeURIComponent(resolvedRegion)}` : ''
+        }`,
+      ),
     staleTime: 30 * 60_000,
     refetchOnWindowFocus: false,
   })
@@ -185,6 +210,7 @@ function LeaderboardPageContent({
         externalUserId,
         username: displayName,
         communeSlug: selectedCommuneSlug || null,
+        region: resolvedRegion ?? null,
       })
     },
     onSuccess: async (response) => {
@@ -195,7 +221,7 @@ function LeaderboardPageContent({
 
       setActiveSessionId(response.sessionId)
       setFeedback(null)
-      await (navigate ?? safeNavigate)({ to: '/duel' })
+      await (navigate ?? safeNavigate)({ to: duelHref })
     },
     onError: (error) => {
       setFeedback(
@@ -330,7 +356,7 @@ function LeaderboardPageContent({
                 onChange={(event) => {
                   const communeSlug = event.target.value
                   void (navigate ?? safeNavigate)({
-                    to: '/classement',
+                    to: classementHref,
                     search: () => (communeSlug ? { commune: communeSlug } : {}),
                     replace: false,
                   })
