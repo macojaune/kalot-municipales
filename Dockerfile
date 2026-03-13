@@ -23,6 +23,10 @@ FROM node:22-slim AS runner
 
 WORKDIR /app
 
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
