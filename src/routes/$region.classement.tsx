@@ -8,6 +8,10 @@ export const Route = createFileRoute('/$region/classement')({
       typeof search.commune === 'string' && search.commune.trim().length > 0
         ? search.commune
         : undefined,
+    round:
+      search.round === 'round1' || search.round === 'round2'
+        ? search.round
+        : undefined,
   }),
   head: ({ params }) =>
     buildSeo({
@@ -22,5 +26,10 @@ export const Route = createFileRoute('/$region/classement')({
 function RegionalLeaderboardRoutePage() {
   const search = Route.useSearch()
 
-  return <LeaderboardPage initialCommuneSlug={search.commune ?? ''} />
+  return (
+    <LeaderboardPage
+      initialCommuneSlug={search.commune ?? ''}
+      initialRound={search.round}
+    />
+  )
 }

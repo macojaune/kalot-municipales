@@ -1,3 +1,5 @@
+import type { Region } from '../types/song'
+
 type AuthUser = {
   id: string
   username: string | null
@@ -20,6 +22,7 @@ export type DuelTrack = {
   appearances: number
   artistName: string
   communeName: string
+  communeRegion: Region
   listName: string | null
   candidateName: string | null
 }
@@ -106,6 +109,7 @@ export type SessionStateResponse =
       status: 'active'
       electionRound: ElectionRound
       communeId: number | null
+      region: Region | null
       duel: SessionDuel
     }
   | {
@@ -363,28 +367,47 @@ export function getDisplayName(user: AuthUser | null | undefined) {
   return user.primaryEmailAddress?.emailAddress ?? 'fan-son'
 }
 
-export function setActiveSessionId(sessionId: string) {
+function getActiveSessionStorageKey(region?: Region | null) {
+  return region ? `${ACTIVE_SESSION_KEY}:${region}` : ACTIVE_SESSION_KEY
+}
+
+export function setActiveSessionId(sessionId: string, region?: Region | null) {
   if (typeof window === 'undefined') {
     return
   }
 
-  window.localStorage.setItem(ACTIVE_SESSION_KEY, sessionId)
+  window.localStorage.setItem(getActiveSessionStorageKey(region), sessionId)
 }
 
-export function getActiveSessionId() {
+export function getActiveSessionId(region?: Region | null) {
   if (typeof window === 'undefined') {
+    return null
+  }
+
+  const scopedKey = getActiveSessionStorageKey(region)
+  const scopedValue = window.localStorage.getItem(scopedKey)
+
+  if (scopedValue) {
+    return scopedValue
+  }
+
+  if (region) {
     return null
   }
 
   return window.localStorage.getItem(ACTIVE_SESSION_KEY)
 }
 
-export function clearActiveSessionId() {
+export function clearActiveSessionId(region?: Region | null) {
   if (typeof window === 'undefined') {
     return
   }
 
-  window.localStorage.removeItem(ACTIVE_SESSION_KEY)
+  window.localStorage.removeItem(getActiveSessionStorageKey(region))
+
+  if (!region) {
+    window.localStorage.removeItem(ACTIVE_SESSION_KEY)
+  }
 }
 
 export function setLastSummary(summary: SessionSummary) {

@@ -5,6 +5,7 @@ import { Layout } from '../components/Layout'
 import { SongCard } from '../components/SongCard'
 import { CrownIcon } from '../components/icons/CrownIcon'
 import { trackEvent } from '../lib/analytics'
+import { useResolvedRegion } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
 import { useRegionPath } from '../lib/region-routing'
 import {
@@ -18,6 +19,7 @@ import type {
   DuelTrack,
   PickVoteResponse,
   SessionStateResponse,
+  VotingStartOptionsResponse,
 } from '../lib/kalot-client'
 
 type DuelStage = 'duel' | 'interlude'
@@ -54,6 +56,7 @@ export function DuelPage() {
   const navigate = useNavigate()
   const classementHref = useRegionPath('/classement')
   const resultsHref = useRegionPath('/results')
+  const resolvedRegion = useResolvedRegion()
 
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [champion, setChampion] = useState<DuelTrack | null>(null)
@@ -101,7 +104,10 @@ export function DuelPage() {
       }
 
       const duration = Number.isFinite(audio.duration) ? audio.duration : 0
-      const seekTarget = Math.max(0, Math.min(pendingSeekTimeRef.current, duration))
+      const seekTarget = Math.max(
+        0,
+        Math.min(pendingSeekTimeRef.current, duration),
+      )
 
       if (seekTarget > 0) {
         audio.currentTime = seekTarget
@@ -158,8 +164,8 @@ export function DuelPage() {
   }, [])
 
   useEffect(() => {
-    setSessionId(getActiveSessionId())
-  }, [])
+    setSessionId(getActiveSessionId(resolvedRegion))
+  }, [resolvedRegion])
 
   useEffect(() => {
     if (!champion || !challenger) {
@@ -187,8 +193,21 @@ export function DuelPage() {
     refetchOnWindowFocus: false,
   })
 
+  const voteOptionsQuery = useQuery({
+    queryKey: ['vote-options'],
+    queryFn: () => getJson<VotingStartOptionsResponse>('/api/vote/options'),
+    staleTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+  })
+
   useEffect(() => {
     const payload = stateQuery.data
+    const currentElectionRound =
+      voteOptionsQuery.data?.ok &&
+      (voteOptionsQuery.data.electionRound === 'round1' ||
+        voteOptionsQuery.data.electionRound === 'round2')
+        ? voteOptionsQuery.data.electionRound
+        : null
 
     if (!payload || !payload.ok) {
       return
@@ -196,7 +215,7 @@ export function DuelPage() {
 
     if (payload.status === 'completed') {
       setLastSummary(payload.summary)
-      clearActiveSessionId()
+      clearActiveSessionId(resolvedRegion)
       void navigate({ to: resultsHref })
       return
     }
@@ -210,6 +229,58 @@ export function DuelPage() {
       return
     }
 
+    if (
+      currentElectionRound &&
+      payload.electionRound !== currentElectionRound
+    ) {
+      clearActiveSessionId(resolvedRegion)
+      setSessionId(null)
+      setChampion(null)
+      setChallenger(null)
+      setInterlude(null)
+      setStage('duel')
+      setWaitingMessage(null)
+      setFeedback(
+        `Cette session appartenait au ${
+          payload.electionRound === 'round1' ? '1er tour' : '2nd tour'
+        }. Lance un nouveau duel pour le ${
+          currentElectionRound === 'round1' ? '1er tour' : '2nd tour'
+        }.`,
+      )
+      void navigate({
+        to: classementHref,
+        search: () => ({ round: currentElectionRound }),
+        replace: true,
+      })
+      return
+    }
+
+    if (resolvedRegion && payload.region && payload.region !== resolvedRegion) {
+      clearActiveSessionId(resolvedRegion)
+      setSessionId(null)
+      setChampion(null)
+      setChallenger(null)
+      setInterlude(null)
+      setStage('duel')
+      setWaitingMessage(null)
+      setFeedback(
+        `Cette session appartient a ${
+          payload.region
+        }. Lance un nouveau duel pour ${
+          resolvedRegion === 'guadeloupe'
+            ? 'la Guadeloupe'
+            : resolvedRegion === 'martinique'
+              ? 'la Martinique'
+              : 'la Guyane'
+        }.`,
+      )
+      void navigate({
+        to: classementHref,
+        replace: true,
+      })
+      return
+    }
+
     if (stage === 'interlude') {
       return
     }
@@ -219,7 +290,13 @@ export function DuelPage() {
     setChallenger(payload.duel.rightTrack)
     setDuelIndex(payload.duel.roundsPlayed + 1)
     setTotalDuels(Math.max(payload.duel.progress?.total ?? 2, 2))
-  }, [navigate, stateQuery.data])
+  }, [
+    classementHref,
+    navigate,
+    resolvedRegion,
+    stateQuery.data,
+    voteOptionsQuery.data,
+  ])
 
   const voteMutation = useMutation({
     mutationFn: async (winnerSide: 'left' | 'right') => {
@@ -280,7 +357,7 @@ export function DuelPage() {
 
       if (response.status === 'completed') {
         setLastSummary(response.summary)
-        clearActiveSessionId()
+        clearActiveSessionId(resolvedRegion)
         void navigate({ to: resultsHref })
         return
       }
@@ -476,7 +553,9 @@ export function DuelPage() {
                     playbackCurrentTime={
                       playbackByTrackId[champion.id]?.currentTime ?? 0
                     }
-                    playbackDuration={playbackByTrackId[champion.id]?.duration ?? 0}
+                    playbackDuration={
+                      playbackByTrackId[champion.id]?.duration ?? 0
+                    }
                     disabled={voteLocked}
                   />
                 </div>
@@ -529,7 +608,9 @@ export function DuelPage() {
                   }
                 }}
                 onSeek={(ratio) => seekTrack(champion.id, ratio)}
-                playbackCurrentTime={playbackByTrackId[champion.id]?.currentTime ?? 0}
+                playbackCurrentTime={
+                  playbackByTrackId[champion.id]?.currentTime ?? 0
+                }
                 playbackDuration={playbackByTrackId[champion.id]?.duration ?? 0}
                 disabled={voteLocked}
               />
@@ -551,8 +632,12 @@ export function DuelPage() {
                   }
                 }}
                 onSeek={(ratio) => seekTrack(challenger.id, ratio)}
-                playbackCurrentTime={playbackByTrackId[challenger.id]?.currentTime ?? 0}
-                playbackDuration={playbackByTrackId[challenger.id]?.duration ?? 0}
+                playbackCurrentTime={
+                  playbackByTrackId[challenger.id]?.currentTime ?? 0
+                }
+                playbackDuration={
+                  playbackByTrackId[challenger.id]?.duration ?? 0
+                }
                 disabled={voteLocked}
               />
             </div>

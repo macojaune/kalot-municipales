@@ -50,51 +50,52 @@ const ELECTORAL_SOURCE_PATHS: Partial<Record<Region, string>> = {
   ),
 }
 
-const REGION_COMMUNE_ALIASES: Partial<Record<Region, Record<string, string>>> = {
-  guadeloupe: {
-    'capesterre-belle-eau': 'Capesterre Belle-Eau',
-    'capesterre belle eau': 'Capesterre Belle-Eau',
-    'capesterre-de-marie-galante': 'Capesterre de Marie-Galante',
-    'capesterre de marie galante': 'Capesterre de Marie-Galante',
-    'la desirade': 'La Desirade',
-    'la-desirade': 'La Desirade',
-    'le lamentin': 'Lamentin',
-    lamentin: 'Lamentin',
-    "morne-a-l'eau": "Morne-a-l'Eau",
-    "morne a l'eau": "Morne-a-l'Eau",
-    'pointe-a-pitre': 'Pointe-a-Pitre',
-    'pointe a pitre': 'Pointe-a-Pitre',
-    'saint-francois': 'Saint-Francois',
-    'saint francois': 'Saint-Francois',
-    'trois-rivieres': 'Trois-Rivieres',
-    'trois rivieres': 'Trois-Rivieres',
-  },
-  martinique: {
-    "l ajoupa bouillon": "L'Ajoupa-Bouillon",
-    "l'ajoupa-bouillon": "L'Ajoupa-Bouillon",
-    'grand riviere': "Grand'Riviere",
-    "grand'riviere": "Grand'Riviere",
-    'les anses d arlet': "Les Anses-d'Arlet",
-    "les anses-d'arlet": "Les Anses-d'Arlet",
-    'la trinite': 'La Trinite',
-    'le francois': 'Le Francois',
-    'le lamentin': 'Le Lamentin',
-    'les trois ilets': 'Les Trois-Ilets',
-    'riviere pilote': 'Riviere-Pilote',
-    'riviere salee': 'Riviere-Salee',
-    'sainte luce': 'Sainte-Luce',
-    'le precheur': 'Le Precheur',
-  },
-  guyane: {
-    'awala yalimapo': 'Awala-Yalimapo',
-    'montsinery tonnegrande': 'Montsinery-Tonnegrande',
-    'remire montjoly': 'Remire-Montjoly',
-    regina: 'Regina',
-    saul: 'Saul',
-    'saint elie': 'Saint-Elie',
-    'saint georges': 'Saint-Georges',
-  },
-}
+const REGION_COMMUNE_ALIASES: Partial<Record<Region, Record<string, string>>> =
+  {
+    guadeloupe: {
+      'capesterre-belle-eau': 'Capesterre Belle-Eau',
+      'capesterre belle eau': 'Capesterre Belle-Eau',
+      'capesterre-de-marie-galante': 'Capesterre de Marie-Galante',
+      'capesterre de marie galante': 'Capesterre de Marie-Galante',
+      'la desirade': 'La Desirade',
+      'la-desirade': 'La Desirade',
+      'le lamentin': 'Lamentin',
+      lamentin: 'Lamentin',
+      "morne-a-l'eau": "Morne-a-l'Eau",
+      "morne a l'eau": "Morne-a-l'Eau",
+      'pointe-a-pitre': 'Pointe-a-Pitre',
+      'pointe a pitre': 'Pointe-a-Pitre',
+      'saint-francois': 'Saint-Francois',
+      'saint francois': 'Saint-Francois',
+      'trois-rivieres': 'Trois-Rivieres',
+      'trois rivieres': 'Trois-Rivieres',
+    },
+    martinique: {
+      'l ajoupa bouillon': "L'Ajoupa-Bouillon",
+      "l'ajoupa-bouillon": "L'Ajoupa-Bouillon",
+      'grand riviere': "Grand'Riviere",
+      "grand'riviere": "Grand'Riviere",
+      'les anses d arlet': "Les Anses-d'Arlet",
+      "les anses-d'arlet": "Les Anses-d'Arlet",
+      'la trinite': 'La Trinite',
+      'le francois': 'Le Francois',
+      'le lamentin': 'Le Lamentin',
+      'les trois ilets': 'Les Trois-Ilets',
+      'riviere pilote': 'Riviere-Pilote',
+      'riviere salee': 'Riviere-Salee',
+      'sainte luce': 'Sainte-Luce',
+      'le precheur': 'Le Precheur',
+    },
+    guyane: {
+      'awala yalimapo': 'Awala-Yalimapo',
+      'montsinery tonnegrande': 'Montsinery-Tonnegrande',
+      'remire montjoly': 'Remire-Montjoly',
+      regina: 'Regina',
+      saul: 'Saul',
+      'saint elie': 'Saint-Elie',
+      'saint georges': 'Saint-Georges',
+    },
+  }
 
 type Db = ReturnType<typeof getDb>
 
@@ -637,6 +638,7 @@ async function getTrackViewsByIds(
       appearances:
         round === 'round2' ? tracks.round2Appearances : tracks.appearances,
       communeId: communes.id,
+      communeRegion: communes.region,
       artistName: sql<string>`coalesce(${artists.name}, '')`,
       communeName: communes.name,
       communeSlug: communes.slug,
@@ -783,9 +785,15 @@ function resolveCommuneRegion(
   return matchingRegions[0] ?? getRegionForCommune(communeName)
 }
 
-async function ensureCommune(db: Db, communeName: string, region?: Region | null) {
-  const { canonicalName, slugCandidates } =
-    getCommuneSlugCandidates(communeName, region)
+async function ensureCommune(
+  db: Db,
+  communeName: string,
+  region?: Region | null,
+) {
+  const { canonicalName, slugCandidates } = getCommuneSlugCandidates(
+    communeName,
+    region,
+  )
   const resolvedRegion = resolveCommuneRegion(canonicalName, region)
   const slug = slugify(canonicalName)
   const existing = await db
@@ -1212,7 +1220,12 @@ export async function seedRegionCommunes(region: Region) {
   const existingRows = await db
     .select({ name: communes.name })
     .from(communes)
-    .where(and(eq(communes.region, region), inArray(communes.name, [...targetCommunes])))
+    .where(
+      and(
+        eq(communes.region, region),
+        inArray(communes.name, [...targetCommunes]),
+      ),
+    )
 
   const existingSet = new Set(existingRows.map((row) => row.name))
 
@@ -1826,6 +1839,7 @@ export async function getSessionState(input: { sessionId: string }) {
     status: 'active' as const,
     electionRound: currentSession.electionRound,
     communeId: currentSession.communeId,
+    region: sessionRegion,
     duel: {
       leftTrack,
       rightTrack,
@@ -2120,7 +2134,9 @@ export async function getLeaderboard(input?: {
   })
 }
 
-export async function getVotingStartOptions(input?: { region?: Region | null }) {
+export async function getVotingStartOptions(input?: {
+  region?: Region | null
+}) {
   const db = getDb()
   const electionRound = await resolveElectionPhase(db)
 

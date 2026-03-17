@@ -1,7 +1,7 @@
 import { useClerk, useUser } from '@clerk/clerk-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { LogOut, User } from 'lucide-react'
+import { ArrowRight, LogOut, Trophy, User } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Layout } from '../components/Layout'
 import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
@@ -171,7 +171,7 @@ function HomePageContent({
         return
       }
 
-      setActiveSessionId(response.sessionId)
+      setActiveSessionId(response.sessionId, resolvedRegion)
       setFeedback(null)
       await (navigate ?? safeNavigate)({ to: duelHref })
     },
@@ -259,6 +259,12 @@ function HomePageContent({
 
         <div className="z-10 mt-auto space-y-8 px-4 animate-fade-in md:pt-24 md:pb-10">
           <section className="space-y-6 text-center">
+            {electionRound === 'round2' ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/45 bg-accent/10 px-4 py-2 text-xs font-body font-semibold uppercase tracking-[0.16em] text-accent shadow-[0_0_18px_rgba(255,107,53,0.14)]">
+                <Trophy className="h-3.5 w-3.5" />
+                2EME TOUR EN COURS
+              </div>
+            ) : null}
             <h1 className="text-6xl font-display font-bold leading-[0.9] text-foreground md:text-8xl">
               <span className="text-glow-white">KALOT</span>
               <br />
@@ -280,7 +286,7 @@ function HomePageContent({
             </div>
 
             <NeonButton
-              color="green"
+              color="orange"
               size="lg"
               fullWidth
               className="whitespace-nowrap"
@@ -322,6 +328,43 @@ function HomePageContent({
             >
               {feedback}
             </p>
+          ) : null}
+
+          {topTracks.length > 0 ? (
+            <section className="mx-auto w-full max-w-3xl rounded-[1.8rem] border border-border bg-card/75 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.38)] backdrop-blur-md md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-body font-semibold uppercase tracking-[0.16em] text-accent">
+                    2nd tour
+                  </div>
+                  <h2 className="mt-3 font-display text-2xl text-foreground md:text-3xl">
+                    Un seul son par commune pour la finale territoriale
+                  </h2>
+                  <p className="mt-2 max-w-xl font-body text-sm text-muted-foreground md:text-base">
+                    Pour le 2nd tour, on a retenu dans chaque commune le son le
+                    mieux noté du 1er tour. Chaque commune est donc représentée
+                    par un seul morceau dans la sélection finale.
+                  </p>
+                  <p className="mt-3 max-w-xl font-body text-sm text-muted-foreground md:text-base">
+                    Ces sélectionnés s'affrontent maintenant dans un classement
+                    unique pour départager les meilleurs sons de campagne du
+                    territoire.
+                  </p>
+                </div>
+
+                <Link
+                  to={classementHref}
+                  search={() => ({ round: 'round2' })}
+                  onClick={() => {
+                    trackEvent('home_round2_nominees_click')
+                  }}
+                  className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-accent/35 bg-accent/10 px-4 py-2 font-display text-sm tracking-[0.14em] text-accent transition-all hover:border-accent hover:bg-accent hover:text-background hover:box-glow-orange"
+                >
+                  Voir les sélectionnés
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </section>
           ) : null}
 
           <p className="text-center text-xs font-body text-accent">
