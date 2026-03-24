@@ -5,9 +5,9 @@ import { HomePage } from './index'
 export const Route = createFileRoute('/$region/')({
   head: ({ params }) =>
     buildSeo({
-      title: 'Vote pour la meilleure musique de campagne',
+      title: 'Classement final des musiques de campagne 2026',
       description:
-        'Découvre les duels KalotMunicipales, vote pour les meilleures musiques de campagne 2026 et consulte le classement en direct.',
+        'Découvre le top 3 final de Kalot Municipales 2026, écoute les morceaux gagnants et accède au classement complet.',
       path: `/${params.region}`,
     }),
   component: HomePage,

@@ -1,36 +1,25 @@
 import { useClerk, useUser } from '@clerk/clerk-react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight, LogOut, Trophy, User } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { LeaderboardTrackList } from '../components/LeaderboardTrackList'
 import { Layout } from '../components/Layout'
-import { EqualizerBars } from '../components/soundsystem/EqualizerBars'
-import { NeonButton } from '../components/soundsystem/NeonButton'
-import { ScrollingTicker } from '../components/soundsystem/ScrollingTicker'
+import { useLeaderboardAudioPlayer } from '../hooks/useLeaderboardAudioPlayer'
 import { trackEvent } from '../lib/analytics'
 import { useRegionPath, useResolvedRegion } from '../lib/region-routing'
 import { buildSeo } from '../lib/seo'
-import {
-  getDisplayName,
-  getExternalUserId,
-  getJson,
-  postJson,
-  setActiveSessionId,
-} from '../lib/kalot-client'
-import type {
-  ElectionRound,
-  LeaderboardResponse,
-  StartSessionResponse,
-} from '../lib/kalot-client'
+import { getDisplayName, getJson } from '../lib/kalot-client'
+import type { LeaderboardResponse } from '../lib/kalot-client'
 
 const clerkEnabled = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY)
 
 export const Route = createFileRoute('/')({
   head: () =>
     buildSeo({
-      title: 'Vote pour la meilleure musique de campagne',
+      title: 'Classement final des musiques de campagne 2026',
       description:
-        'Découvre les duels KalotMunicipales, vote pour les meilleures musiques de campagne 2026 et consulte le classement en direct.',
+        'Découvre le top 3 final de Kalot Municipales 2026, écoute les morceaux gagnants et accède au classement complet.',
       path: '/',
     }),
   component: HomePage,
@@ -45,47 +34,33 @@ export function HomePage() {
 }
 
 function AuthenticatedHomePage() {
-  const navigate = useNavigate()
-  const { openSignIn, signOut } = useClerk()
+  const { signOut } = useClerk()
   const { user } = useUser()
   const homeHref = useRegionPath('/')
   return (
     <HomePageContent
       user={user}
-      onOpenSignIn={() =>
-        openSignIn({
-          fallbackRedirectUrl: window.location.href,
-        })
-      }
       onSignOut={() => signOut({ redirectUrl: homeHref })}
-      navigate={navigate}
     />
   )
 }
 
 type HomePageContentProps = {
   user?: ReturnType<typeof useUser>['user'] | null
-  onOpenSignIn?: () => void
   onSignOut?: () => void
-  navigate?: ReturnType<typeof useNavigate>
 }
 
 function HomePageContent({
   user = null,
-  onOpenSignIn,
   onSignOut,
-  navigate,
 }: HomePageContentProps = {}) {
   const classementHref = useRegionPath('/classement')
-  const duelHref = useRegionPath('/duel')
-  const submitTrackHref = useRegionPath('/ajouter-son')
+  const blindtestHref = useRegionPath('/blindtest')
   const resolvedRegion = useResolvedRegion()
-  const safeNavigate = useNavigate()
-  const [feedback, setFeedback] = useState<string | null>(null)
+  const { playingTrackId, toggleTrack } = useLeaderboardAudioPlayer('home_podium')
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement | null>(null)
 
-  const externalUserId = getExternalUserId(user)
   const displayName = getDisplayName(user)
 
   useEffect(() => {
@@ -115,10 +90,10 @@ function HomePageContent({
   }, [isUserMenuOpen])
 
   const leaderboardQuery = useQuery({
-    queryKey: ['leaderboard', 'home-full', resolvedRegion],
+    queryKey: ['leaderboard', 'home-podium', resolvedRegion],
     queryFn: () =>
       getJson<LeaderboardResponse>(
-        `/api/leaderboard?limit=20${
+        `/api/leaderboard?limit=3&round=round2${
           resolvedRegion ? `&region=${encodeURIComponent(resolvedRegion)}` : ''
         }`,
       ),
@@ -135,85 +110,17 @@ function HomePageContent({
     [leaderboardQuery.data?.leaderboard],
   )
 
-  const topTracks = useMemo(
-    () => [...songs].sort((a, b) => b.rating - a.rating).slice(0, 5),
-    [songs],
-  )
-
-  const electionRound: ElectionRound | 'closed' =
-    songs.at(0)?.electionRound ?? 'round1'
-
-  const tickerItems = useMemo(
-    () =>
-      topTracks.map((track) =>
-        track.artistName.trim()
-          ? `${track.title} - ${track.artistName}`
-          : track.title,
-      ),
-    [topTracks],
-  )
-
-  const startSessionMutation = useMutation({
-    mutationFn: async () => {
-      if (!externalUserId) {
-        throw new Error('Utilisateur non connecte.')
-      }
-
-      return postJson<StartSessionResponse>('/api/vote/start', {
-        externalUserId,
-        username: displayName,
-        region: resolvedRegion ?? null,
-      })
-    },
-    onSuccess: async (response) => {
-      if (!response.ok) {
-        setFeedback(response.message)
-        return
-      }
-
-      setActiveSessionId(response.sessionId, resolvedRegion)
-      setFeedback(null)
-      await (navigate ?? safeNavigate)({ to: duelHref })
-    },
-    onError: (error) => {
-      setFeedback(
-        error instanceof Error
-          ? error.message
-          : 'Impossible de lancer un duel.',
-      )
-    },
-  })
-
-  function handleStart() {
-    trackEvent('home_start_vote_click', {
-      electionRound,
-      isAuthenticated: Boolean(externalUserId),
-    })
-
-    if (electionRound === 'closed') {
-      setFeedback('Le vote est termine.')
-      return
-    }
-
-    if (!externalUserId) {
-      trackEvent('home_vote_requires_signin', {
-        electionRound,
-      })
-      if (onOpenSignIn) {
-        setFeedback(null)
-        onOpenSignIn()
-      } else {
-        setFeedback('Connexion indisponible pour le moment.')
-      }
-      return
-    }
-
-    void startSessionMutation.mutate()
-  }
+  const regionLabel = getRegionLabel(resolvedRegion)
+  const title = regionLabel
+    ? `Le top 3 final en ${regionLabel}`
+    : 'Le top 3 final'
+  const intro = regionLabel
+    ? 'Le vote est terminé. Voici les trois morceaux qui terminent en tête dans votre territoire.'
+    : 'Le vote est terminé. Voici les trois morceaux qui terminent en tête du classement final.'
 
   return (
     <Layout hideHeader>
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-around overflow-hidden">
+      <div className="relative flex min-h-screen w-full flex-col items-center overflow-hidden">
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_46%,rgba(57,255,20,0.09),transparent_44%)]" />
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(255,255,255,0.035),transparent_38%)]" />
         <div className="absolute inset-0 pointer-events-none opacity-[0.24] bg-[radial-gradient(circle_at_4px_4px,rgba(255,255,255,0.22)_1.5px,transparent_1.6px),radial-gradient(circle_at_14px_14px,rgba(255,255,255,0.18)_1.5px,transparent_1.6px)] bg-[length:20px_20px]" />
@@ -257,136 +164,132 @@ function HomePageContent({
           </div>
         ) : null}
 
-        <div className="z-10 mt-auto space-y-8 px-4 animate-fade-in md:pt-24 md:pb-10">
-          <section className="space-y-6 text-center">
-            {electionRound === 'round2' ? (
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent/45 bg-accent/10 px-4 py-2 text-xs font-body font-semibold uppercase tracking-[0.16em] text-accent shadow-[0_0_18px_rgba(255,107,53,0.14)]">
-                <Trophy className="h-3.5 w-3.5" />
-                2EME TOUR EN COURS
-              </div>
-            ) : null}
+        <div className="z-10 w-full max-w-5xl px-4 pb-10 pt-24 animate-fade-in md:pb-14">
+          <section className="mb-8 space-y-4 text-center md:mb-10">
             <h1 className="text-6xl font-display font-bold leading-[0.9] text-foreground md:text-8xl">
               <span className="text-glow-white">KALOT</span>
               <br />
               <span className="text-primary text-glow-green">MUNICIPALES</span>
             </h1>
-            <p className="mx-auto max-w-[19rem] font-body text-base leading-relaxed text-white md:max-w-xl md:text-lg">
-              Vote pour la meilleure musique de campagne des municipales 2026.
-            </p>
           </section>
 
-          <section className="relative mx-auto w-full max-w-2xl space-y-4 pt-5">
-            <div className="pointer-events-none absolute left-1/2 top-[-20%] w-[90%] max-w-xl -translate-x-1/2 opacity-[0.14]">
-              <EqualizerBars
-                barCount={10}
-                variant="large"
-                color="green"
-                className="w-full justify-between"
-              />
-            </div>
-
-            <NeonButton
-              color="orange"
-              size="lg"
-              fullWidth
-              className="whitespace-nowrap"
-              onClick={handleStart}
-              disabled={startSessionMutation.isPending}
-            >
-              {startSessionMutation.isPending
-                ? 'Lancement...'
-                : 'Lancer le vote'}
-            </NeonButton>
-
-            <Link
-              to={classementHref}
-              onClick={() => {
-                trackEvent('home_classement_click')
-              }}
-              className="relative z-10 inline-flex min-h-14 w-full items-center justify-center whitespace-nowrap rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-[1.55rem] font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
-            >
-              Classement général
-            </Link>
-
-            <div className="text-center">
-              <Link
-                to={submitTrackHref}
-                onClick={() => {
-                  trackEvent('home_add_track_click')
-                }}
-                className="relative z-10 inline-flex text-sm font-display tracking-[0.12em] text-muted-foreground underline decoration-primary/50 underline-offset-4 transition-colors hover:text-primary"
-              >
-                Ajouter un son de campagne
-              </Link>
-            </div>
-          </section>
-
-          {feedback ? (
-            <p
-              aria-live="polite"
-              className="text-center font-body text-sm text-accent"
-            >
-              {feedback}
-            </p>
-          ) : null}
-
-          {topTracks.length > 0 ? (
-            <section className="mx-auto w-full max-w-3xl rounded-[1.8rem] border border-border bg-card/75 p-4 shadow-[0_20px_70px_rgba(0,0,0,0.38)] backdrop-blur-md md:p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-body font-semibold uppercase tracking-[0.16em] text-accent">
-                    2nd tour
-                  </div>
-                  <h2 className="mt-3 font-display text-2xl text-foreground md:text-3xl">
-                    Un seul son par commune pour la finale territoriale
-                  </h2>
-                  <p className="mt-2 max-w-xl font-body text-sm text-muted-foreground md:text-base">
-                    Pour le 2nd tour, on a retenu dans chaque commune le son le
-                    mieux noté du 1er tour. Chaque commune est donc représentée
-                    par un seul morceau dans la sélection finale.
-                  </p>
-                  <p className="mt-3 max-w-xl font-body text-sm text-muted-foreground md:text-base">
-                    Ces sélectionnés s'affrontent maintenant dans un classement
-                    unique pour départager les meilleurs sons de campagne du
-                    territoire.
+          <section className="mx-auto max-w-4xl rounded-[2rem] border border-border bg-card/78 p-5 shadow-[0_20px_70px_rgba(0,0,0,0.4)] backdrop-blur-md md:p-8">
+            <div className="space-y-8">
+              <div className="space-y-5 text-center">
+                <div className="inline-flex items-center gap-2 rounded-full border border-accent/45 bg-accent/10 px-4 py-2 text-xs font-body font-semibold uppercase tracking-[0.16em] text-accent shadow-[0_0_18px_rgba(255,107,53,0.14)]">
+                  <Trophy className="h-3.5 w-3.5" />
+                  Résultats finaux 2026
+                </div>
+                <div className="space-y-3">
+                  <h1 className="font-display text-4xl leading-[0.95] text-foreground md:text-6xl">
+                    {title}
+                  </h1>
+                  <p className="mx-auto max-w-2xl font-body text-sm leading-relaxed text-muted-foreground md:text-base">
+                    {intro}
                   </p>
                 </div>
+              </div>
 
+              {songs.length > 0 ? (
+                <LeaderboardTrackList
+                  songs={songs}
+                  playingTrackId={playingTrackId}
+                  onToggleTrack={toggleTrack}
+                  variant="top3"
+                />
+              ) : (
+                <div className="rounded-2xl border border-border bg-background/45 px-5 py-8 text-center text-sm text-muted-foreground md:text-base">
+                  Le classement final n&apos;est pas encore disponible.
+                </div>
+              )}
+
+              <div className="space-y-4 text-center">
+                <div className="space-y-1">
+                  <p className="font-display text-lg text-foreground md:text-xl">
+                    Voir le classement complet
+                  </p>
+                  <p className="font-body text-sm text-muted-foreground">
+                    Classement global, par tour et par commune.
+                  </p>
+                </div>
                 <Link
                   to={classementHref}
-                  search={() => ({ round: 'round2' })}
                   onClick={() => {
-                    trackEvent('home_round2_nominees_click')
+                    trackEvent('home_classement_click', {
+                      hasRegion: Boolean(resolvedRegion),
+                    })
                   }}
-                  className="inline-flex min-h-11 items-center gap-2 self-start rounded-full border border-accent/35 bg-accent/10 px-4 py-2 font-display text-sm tracking-[0.14em] text-accent transition-all hover:border-accent hover:bg-accent hover:text-background hover:box-glow-orange"
+                  className="relative z-10 inline-flex min-h-12 items-center justify-center gap-2 rounded-[4px] border-2 border-secondary bg-transparent px-6 py-3 font-display text-base font-bold tracking-[0.08em] text-secondary transition-all duration-300 hover:bg-secondary hover:text-background hover:box-glow-blue active:scale-[0.97]"
                 >
-                  Voir les sélectionnés
+                  Voir le classement complet
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
-            </section>
-          ) : null}
+            </div>
+          </section>
 
-          <p className="text-center text-xs font-body text-accent">
+          <section className="mx-auto mt-8 max-w-3xl text-center">
+            <p className="font-body text-sm leading-relaxed text-muted-foreground md:text-base">
+              Merci à toutes les personnes qui ont participé, proposé, écouté et
+              partagé cette édition 2026 de Kalot Municipales. Le vote est
+              maintenant terminé, mais rendez-vous bientôt pour le prochain
+              projet.
+            </p>
+          </section>
+
+          <section className="mx-auto mt-8 max-w-3xl rounded-[1.8rem] border border-primary/20 bg-background/45 p-5 text-center shadow-[0_18px_50px_rgba(0,0,0,0.28)] md:p-6">
+            <div className="inline-flex rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-body font-semibold uppercase tracking-[0.16em] text-primary">
+              Bonus
+            </div>
+            <h2 className="mt-4 font-display text-2xl text-foreground md:text-3xl">
+              Jouer à IA ou pas IA
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl font-body text-sm text-muted-foreground md:text-base">
+              Les municipales sont finies, mais tu peux encore tester ton
+              oreille sur notre blindtest.
+            </p>
+            <Link
+              to={blindtestHref}
+              onClick={() => {
+                trackEvent('home_blindtest_click', {
+                  hasRegion: Boolean(resolvedRegion),
+                })
+              }}
+              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-[4px] border border-primary/45 bg-primary/10 px-5 py-2.5 font-display text-sm tracking-[0.1em] text-primary transition-all duration-300 hover:bg-primary hover:text-background hover:box-glow-green active:scale-[0.97]"
+            >
+              Lancer le jeu
+            </Link>
+          </section>
+
+          <p className="mt-8 text-center text-xs font-body text-accent">
             Politisé avec <span className="mr-1">🫶</span> par{' '}
             <a
               href="https://marvinl.com"
+              target="_blank"
+              rel="noreferrer"
               className="font-semibold text-glow-white text-white"
             >
               Marvinl.com
             </a>
           </p>
         </div>
-
-        <div className="relative z-10 mt-auto w-full">
-          <div className="mx-auto max-w-6xl border-y border-primary/30 bg-card/70 px-4 py-3">
-            <span className="font-display text-lg text-white">
-              TOP TRACKS DU MOMENT
-            </span>
-          </div>
-          <ScrollingTicker items={tickerItems} />
-        </div>
       </div>
     </Layout>
   )
+}
+
+function getRegionLabel(region: ReturnType<typeof useResolvedRegion>) {
+  if (region === 'guadeloupe') {
+    return 'Guadeloupe'
+  }
+
+  if (region === 'martinique') {
+    return 'Martinique'
+  }
+
+  if (region === 'guyane') {
+    return 'Guyane'
+  }
+
+  return null
 }
